@@ -45,7 +45,9 @@ const safeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'
 document.title=puzzle.name+' — Puzzle Atlas';
 $('puzzle-title').textContent=puzzle.name;
 frame.title='Interactive '+puzzle.name+' game';
-frame.src='games/'+key+'.html'+(advanced?'?mirror=1':'');
+const release=document.querySelector('meta[name="atlas-release"]')?.getAttribute('content');
+const frameParams=new URLSearchParams();if(advanced)frameParams.set('mirror','1');if(release)frameParams.set('v',release);
+frame.src='games/'+key+'.html'+(frameParams.toString()?'?'+frameParams:'');
 function syncGuideButton(){frame.contentWindow?.postMessage({type:'guide-panel-state',open:!layout.classList.contains('guide-hidden')},location.origin==='null'?'*':location.origin);}
 window.addEventListener('message',event=>{
  if(event.source!==frame.contentWindow||event.origin!==location.origin)return;

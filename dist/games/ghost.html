@@ -5,9 +5,9 @@
 <meta name="color-scheme" content="dark">
 <title>Ghost Cube · Puzzle Atlas</title>
 <meta name="description" content="Play Ghost Cube with a precise 3D model, solid-color sticker ring map, fresh seeded scrambles and an animated solve journal.">
-<link rel="stylesheet" href="game-theme.css">
-<link rel="stylesheet" href="constrained-solver.css">
-<link rel="stylesheet" href="play-timer.css"></head>
+<link rel="stylesheet" href="game-theme.css?v=8ba48de005a51b47ce10">
+<link rel="stylesheet" href="constrained-solver.css?v=8ba48de005a51b47ce10">
+<link rel="stylesheet" href="play-timer.css?v=8ba48de005a51b47ce10"><meta name="atlas-release" content="8ba48de005a51b47ce10"></head>
 <body class="game-shape" data-puzzle="ghost">
 <main class="app" id="puzzleApp">
 
@@ -20,11 +20,11 @@
 <section class="panel log-panel"><details class="journal" id="journalPanel"><summary aria-label="Move journal and keyboard help"><h2 id="logTitle">Move journal</h2><span class="journal-hint">Moves &amp; help</span></summary><div id="log" class="log" role="log" aria-live="off"><span class="empty">Your moves will appear here. Try a ring or press Randomize.</span></div><p id="message" class="message" role="status">Every turn follows the cube mechanism.</p><details class="journal-help"><summary>How to play &amp; keyboard shortcuts</summary><p id="cubeNote"></p><p>This Ghost Cube is an original polyhedral realization of the classic design: an oblique cube shell cut with two offset outer layers. The solved shell uses a different alignment from the 3×3 turning frame. Opening and closing alignment motions are animated automatically and are not counted as additional journal moves. All U R F D L B turns operate in the aligned frame, including during Auto Solve.</p><p>Every node is one actual sticker, in one solid color. Connected rings show the sticker paths for every rotation axis. The selected axis stays bright while the other rings remain visible. Click any ring to select it, then drag along its path to turn. “Focus selected rings” dims the other axes without removing them.</p><p>Drag along a ring to turn its axis, or select U, R, F, D, L or B and use the direction buttons. The notation buttons turn clockwise looking inward along the corresponding labeled 3D axis. Hold Shift for inverse keyboard moves. Click a colored dot to inspect its piece’s home, current position, and full orientation, including a center’s quarter-turn reference. Piece labels show the piece name on each of its stickers.</p><p>Drag the 3D puzzle to look around; scroll or pinch to zoom. Click a visible axis letter to select it. With the 3D view focused, arrows rotate the camera and +/− zoom. The animation slider controls every move, including randomizing and auto solving, and can be changed while a sequence is running.</p><p>Mirror mode is an advanced shape-only challenge. It replaces face colors with a silver finish and hides the ring map and piece identity hints. The solved status checks the actual shape. Switching modes keeps your puzzle, move history and camera exactly where they are.</p><p>Randomize continues from the current position and applies legal moves using a fresh seed. Auto solve opens the Constrained Solver and works from the current arrangement, pausing between stages and highlighting solved nodes that later stages protect. It does not need recorded moves or promise the shortest solution; difficult states may reach the computation limit. Stop exits Auto Solve after a completed stage; Reset returns to solved. The built-in solution guide explains how to solve by hand. State stays in this browser tab.</p></details></details><div class="log-tools"><button id="copy" class="small outline">Copy moves</button></div></section>
 
 </main><div class="toast" id="toast" role="status"></div>
-<script src="shape-engine.js"></script><script src="ghost-engine.js"></script><script src="shape-bsp.js"></script><script src="shape-renderer.js"></script><script src="ghost-renderer.js"></script><script src="balanced-ring-projection.js"></script>
-<script src="connected-rings.js"></script>
-<script src="face-grouped-rings.js"></script><script src="shape-rings.js"></script><script src="ghost-rings.js"></script><script src="shape-guide-orientation.js"></script><script src="shape-app.js"></script>
-<script src="play-timer.js"></script>
-<script src="ring-panel.js"></script>
-<script src="constrained-solver-core.js"></script>
-<script src="constrained-solver.js"></script>
+<script src="shape-engine.js?v=8ba48de005a51b47ce10"></script><script src="ghost-engine.js?v=8ba48de005a51b47ce10"></script><script src="shape-bsp.js?v=8ba48de005a51b47ce10"></script><script src="shape-renderer.js?v=8ba48de005a51b47ce10"></script><script src="ghost-renderer.js?v=8ba48de005a51b47ce10"></script><script src="balanced-ring-projection.js?v=8ba48de005a51b47ce10"></script>
+<script src="connected-rings.js?v=8ba48de005a51b47ce10"></script>
+<script src="face-grouped-rings.js?v=8ba48de005a51b47ce10"></script><script src="shape-rings.js?v=8ba48de005a51b47ce10"></script><script src="ghost-rings.js?v=8ba48de005a51b47ce10"></script><script src="shape-guide-orientation.js?v=8ba48de005a51b47ce10"></script><script src="shape-app.js?v=8ba48de005a51b47ce10"></script>
+<script src="play-timer.js?v=8ba48de005a51b47ce10"></script>
+<script src="ring-panel.js?v=8ba48de005a51b47ce10"></script>
+<script src="constrained-solver-core.js?v=8ba48de005a51b47ce10"></script>
+<script src="constrained-solver.js?v=8ba48de005a51b47ce10"></script>
 </body></html>

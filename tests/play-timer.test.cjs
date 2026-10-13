@@ -25,7 +25,7 @@ test('Timer is independent of moves, reset, scramble, and Auto Solve controls',a
  app.click('playTimerToggle');const stopped=timer().elapsedMs;app.context.PUZZLE_API.randomize();await app.advance(3000);assert.equal(timer().elapsedMs,stopped);assert.equal(timer().running,false);
 });
 test('Every puzzle includes the timer and engine-updated legend elements survive replacement',()=>{
- const htmls=fs.readdirSync(games).filter(x=>x.endsWith('.html'));assert.equal(htmls.length,28);
- for(const file of htmls){const html=fs.readFileSync(path.join(games,file),'utf8');assert.equal((html.match(/src="play-timer.js"/g)||[]).length,1,file);assert.equal((html.match(/href="play-timer.css"/g)||[]).length,1,file);assert(html.includes('class="cube-bottom"'),file);}
+ const htmls=fs.readdirSync(games).filter(x=>x.endsWith('.html'));assert.equal(htmls.length,34);
+ for(const file of htmls){const html=fs.readFileSync(path.join(games,file),'utf8');assert.equal((html.match(/src="play-timer\.js(?:[?#][^"]*)?"/g)||[]).length,1,file);assert.equal((html.match(/href="play-timer\.css(?:[?#][^"]*)?"/g)||[]).length,1,file);assert(html.includes('class="cube-bottom"'),file);}
  for(const puzzle of ['mirror','pyraminx','homer','crystal']){const app=createPage(puzzle);assert(app.element('playTimerToggle'),puzzle);assert(app.document.querySelector('.cube-bottom').classList.contains('has-play-timer'),puzzle);const old=app.document.querySelector('.cube-bottom .legend, .cube-bottom .shape-key');assert(old&&old.hidden,puzzle);app.context.PUZZLE_API.reset();assert(app.element('playTimerToggle'),puzzle);}
 });

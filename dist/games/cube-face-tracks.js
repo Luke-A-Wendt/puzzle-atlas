@@ -72,19 +72,19 @@ function install(G){
   ctx.save();ctx.shadowBlur=0;
   for(const active of [false,true])for(const track of tracks){
    if((track.name===selected)!==active)continue;
-   ctx.globalAlpha=active?1:.24;
+   ctx.globalAlpha=active?1:options.focus===false?.62:.24;
    ctx.beginPath();track.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
    ctx.strokeStyle=active?'#baacfb':'#797087';ctx.lineWidth=(active?1.6:.65)/scale;ctx.stroke();
   }
   ctx.restore();
  };
- G.drawTracks=function(ctx,selected,scale){
+ G.drawTracks=function(ctx,selected,scale,options={}){
   ctx.save();ctx.shadowBlur=0;
   for(const r of G.rings){
    if(r.name===selected)continue;
-   ctx.globalAlpha=.28;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#797087';ctx.lineWidth=.7/scale;ctx.stroke();
+   ctx.globalAlpha=options.focus===false?.72:.28;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#797087';ctx.lineWidth=.7/scale;ctx.stroke();
   }
-  G.drawFaceRings(ctx,selected,{scale});
+  G.drawFaceRings(ctx,selected,{scale,focus:options.focus});
   const r=G.getRing(selected);ctx.globalAlpha=1;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#baacfb';ctx.lineWidth=2/scale;ctx.stroke();
   ctx.restore();
  };

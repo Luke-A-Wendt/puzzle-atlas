@@ -38,19 +38,29 @@ function normalize(model,request={}){
  }
  const protection=request.protection??'endpoint';if(!['endpoint','throughout'].includes(protection))throw Error('protection must be endpoint or throughout');
  const mode=request.mode??'protected_swap';if(!['protected_swap','exact_swap'].includes(mode))throw Error('mode must be protected_swap or exact_swap');
+ const holdSemantics=request.holdSemantics??'sticker';if(!['sticker','color'].includes(holdSemantics))throw Error('holdSemantics must be sticker or color');
+ let colorByNode;
+ if(holdSemantics==='color'){
+  if(protection!=='endpoint'||mode!=='protected_swap')throw Error('color holds require protected_swap mode with endpoint protection');
+  if(!Array.isArray(request.colorByNode)||request.colorByNode.length!==d||Array.from(request.colorByNode).some(c=>c!==null&&typeof c!=='string'&&(typeof c!=='number'||!Number.isFinite(c))))throw Error('colorByNode must contain one string, finite number, or null for every model address');
+  colorByNode=request.colorByNode.slice();
+  if([...swap,...(request.protected??[]).map(node)].some(x=>colorByNode[x]===null))throw Error('selected nodes must have an occupied color');
+  if(occupied){const set=new Set(occupied);if(colorByNode.some((c,i)=>(c!==null)!==set.has(i)))throw Error('colorByNode occupancy must match occupiedNodes');}
+  else if(colorByNode.some(c=>c===null))throw Error('fixed-node models require a color at every address');
+ }
  let protect=[...new Set((request.protected??[]).map(node))];if(swap.some(x=>protect.includes(x)))throw Error('swap nodes cannot be protected');
  if(mode==='exact_swap')protect=(occupied??Array.from({length:d},(_,i)=>i)).filter(i=>!swap.includes(i));protect.sort((a,b)=>a-b);
- return {protected:protect,swap,mode,protection,...(occupied?{occupiedNodes:occupied}:{})};
+ return {protected:protect,swap,mode,protection,...(occupied?{occupiedNodes:occupied}:{}),...(holdSemantics==='color'?{holdSemantics,colorByNode}:{})};
 }
 function permutation(model,indices){let p=Array.from({length:model.degree},(_,i)=>i);for(const i of indices){if(!Number.isInteger(i)||!model.moves[i])throw Error('invalid witness move');const q=model.moves[i].perm;p=p.map(v=>q[v]);}return p;}
-function verify(model,req,indices){const p=permutation(model,indices),ok=p[req.swap[0]]===req.swap[1]&&p[req.swap[1]]===req.swap[0]&&req.protected.every(x=>p[x]===x);if(!ok)return false;if(req.protection==='throughout'&&indices.some(i=>req.protected.some(x=>model.moves[i].perm[x]!==x)))return false;return true;}
+function verify(model,req,indices){const p=permutation(model,indices);if(p[req.swap[0]]!==req.swap[1]||p[req.swap[1]]!==req.swap[0])return false;if(req.holdSemantics==='color'){const held=new Set(req.protected);for(let source=0;source<model.degree;source++)if(held.has(p[source])&&req.colorByNode[source]!==req.colorByNode[p[source]])return false;return true;}if(!req.protected.every(x=>p[x]===x))return false;if(req.protection==='throughout'&&indices.some(i=>req.protected.some(x=>model.moves[i].perm[x]!==x)))return false;return true;}
 function finish(model,req,result,t,maxOutputMoves=5000){
  // Internal group engines may retain a legacy moves alias. Never publish a
  // second sequence that could be stale after index remapping or shortening.
  const {moves:legacyMoves,...clean}=result;result=clean;
  if(result.status==='solved'&&result.moveIndices.length>maxOutputMoves)result={status:'unknown',reason:'output_limit',optimal:false,requiredMoves:result.moveIndices.length,lowerBound:result.lowerBound,stats:result.stats};
  const stats={...result.stats,totalMs:performance.now()-t};
- const occupancy=req.occupiedNodes?{occupiedNodes:req.occupiedNodes}:{};
+ const occupancy={...(req.occupiedNodes?{occupiedNodes:req.occupiedNodes}:{}),...(req.holdSemantics==='color'?{holdSemantics:'color'}:{})};
  if(result.optimal===undefined)result.optimal=false;
  if(result.status!=='solved')return {...result,protected:req.protected,swap:req.swap,mode:req.mode,protection:req.protection,...occupancy,stats};
  if(!verify(model,req,result.moveIndices))return {status:'unknown',reason:'internal_witness_verification_failed',optimal:false,stats};
@@ -61,6 +71,10 @@ function solveSync(model,request,options={}){
  const t=performance.now();let req;try{options=validateOptions(options);req=normalize(model,request);}catch(e){return {status:'invalid',reason:e.message,optimal:false};}
  const maxMs=options.maxMs??3000,budget={maxMs,maxStrongGenerators:options.maxStrongGenerators??2000,maxDagNodes:options.maxDagNodes??100000,maxOutputMoves:options.maxOutputMoves??5000,maxOrbitStates:options.maxOrbitStates??100000,maxSchreierTests:options.maxSchreierTests??3000000,maxStorageBytes:options.maxStorageBytes??64*1024*1024};
  const done=result=>finish(model,req,result,t,budget.maxOutputMoves);
+ if(req.holdSemantics==='color'&&req.protected.length){
+  const {solveColors}=require('./color-solve.cjs');
+  return done(solveColors(model,req,options,remaining=>solveSync(model,{...req,holdSemantics:'sticker'},{...options,maxMs:remaining,colorCache:undefined})));
+ }
  let working=model,map=model.moves.map((_,i)=>i);
  if(req.protection==='throughout'){
   map=map.filter(i=>req.protected.every(x=>model.moves[i].perm[x]===x));working={...model,moves:map.map(i=>model.moves[i])};
@@ -69,7 +83,20 @@ function solveSync(model,request,options={}){
  let r=search(working,req.protected,req.swap,{maxMs:Math.min(maxMs,options.searchMs??500),maxStates:Math.min(250000,options.maxSearchStates??25000),maxDepth:options.maxSearchDepth??12,maxBytes:Math.min(32*1024*1024,options.maxStorageBytes??32*1024*1024)});
  if(r.status==='solved')r.moveIndices=r.moveIndices.map(i=>map[i]);
  if(r.status!=='unknown'||options.group===false)return done(r);
- const remaining=maxMs-(performance.now()-t);if(remaining<=0)return done({...r,reason:'request_time_limit'});
+ let remaining=Math.floor(maxMs-(performance.now()-t));if(remaining<=0)return done({...r,reason:'request_time_limit'});
+ // Retain and rebase words from the already complete cache instead of building
+ // the group again. The ordered-pair orbit is at most d(d-1) states. A bounded
+ // attempt may remain unknown; it must not become an impossibility claim.
+ if(req.protection==='endpoint'&&(options.fullCache||!req.protected.length)){
+  const cached=require('./cached-swap.cjs').solveCachedSwap(model,req,{...budget,cache:options.fullCache,maxMs:Math.min(800,remaining)});
+  if(cached.status==='solved'||cached.status==='impossible'){
+   cached.lowerBound=r.lowerBound;cached.stats={...cached.stats,shortSearch:r.stats};
+   if(cached.status==='solved'&&cached.moveIndices.length===r.lowerBound)cached.optimal=true;
+   return done(cached);
+  }
+  r.stats={...r.stats,cachedSwap:{reason:cached.reason,...cached.stats}};
+  remaining=Math.floor(maxMs-(performance.now()-t));if(remaining<=0)return done({...r,reason:'request_time_limit'});
+ }
  try{
   const {solveGroup}=require('./group.cjs');const g=solveGroup({model:working,protected:req.protected,swap:req.swap,budget:{...budget,maxMs:remaining}});
   if(g.status==='solved'){g.moveIndices=g.moveIndices.map(i=>map[i]);g.optimal=Boolean(g.optimal);g.lowerBound=r.lowerBound;
@@ -376,16 +403,28 @@ function mapSnapshot(model,snapshot){
  * select exact_swap to protect all other CURRENT physical stickers; empty pose
  * addresses must remain free. The returned request is ready for core swap.
  */
-function requestFromSnapshot(model,snapshot,{protectedStickerIds=[],swapStickerIds,mode='protected_swap',protection='endpoint'}={}){
+function colorsFromSnapshot(model,snapshot,mapping=mapSnapshot(model,snapshot)){
+ const stickers=Array.isArray(snapshot)?snapshot:snapshot?.stickers||snapshot?.stickerState;
+ const colors=new Array(model.degree).fill(null);
+ for(const sticker of stickers){
+  const id=String(sticker.id),color=model.colorBySticker?.[id]??sticker.color;
+  if(typeof color!=='string'&&typeof color!=='number')throw Error('Snapshot does not identify every sticker color');
+  colors[mapping.stickerToNode[id]]=String(color);
+ }
+ return colors;
+}
+function requestFromSnapshot(model,snapshot,{protectedStickerIds=[],swapStickerIds,mode='protected_swap',protection='endpoint',holdSemantics='sticker'}={}){
  if(!Array.isArray(swapStickerIds)||swapStickerIds.length!==2)throw Error('Choose two sticker IDs');
  if(!['protected_swap','exact_swap'].includes(mode))throw Error('Unknown swap semantics');
+ if(!['sticker','color'].includes(holdSemantics))throw Error('Unknown hold semantics');
+ if(holdSemantics==='color'&&(mode!=='protected_swap'||protection!=='endpoint'))throw Error('Color holds require protected_swap mode with endpoint protection');
  const mapping=mapSnapshot(model,snapshot),index=id=>{const n=mapping.stickerToNode[String(id)];if(n===undefined)throw Error('Unknown current sticker '+id);return n;};
  const swap=swapStickerIds.map(index);if(swap[0]===swap[1])throw Error('Swap endpoints must be different');
  let protectedNodes=protectedStickerIds.map(index);if(protectedNodes.some(n=>swap.includes(n)))throw Error('A protected node cannot be a swap endpoint');
  if(mode==='exact_swap')protectedNodes=mapping.occupiedNodes.filter(n=>!swap.includes(n));
- return{swap,protected:[...new Set(protectedNodes)],occupiedNodes:mapping.occupiedNodes,mode:'protected_swap',protection,requestedMode:mode,selectionMapping:mapping};
+ return{swap,protected:[...new Set(protectedNodes)],occupiedNodes:mapping.occupiedNodes,mode:'protected_swap',protection,requestedMode:mode,selectionMapping:mapping,...(holdSemantics==='color'?{holdSemantics,colorByNode:colorsFromSnapshot(model,snapshot,mapping)}:{})};
 }
-module.exports={mapSnapshot,requestFromSnapshot};
+module.exports={mapSnapshot,requestFromSnapshot,colorsFromSnapshot};
 
 },
 "./auto-adapter.cjs":function(module,exports,require){
@@ -404,37 +443,44 @@ function targetMapping(model){
 function autoRequestFromSnapshot(model,snapshot){
  const mapping=mapSnapshot(model,snapshot),homeBySticker=targetMapping(model),currentBySticker=mapping.stickerToNode;
  if(Object.keys(currentBySticker).length!==Object.keys(homeBySticker).length||Object.keys(homeBySticker).some(id=>!Object.hasOwn(currentBySticker,id)))throw Error('Snapshot contains a different set of sticker identities');
- return{currentBySticker:{...currentBySticker},homeBySticker:{...homeBySticker},occupiedNodes:mapping.occupiedNodes.slice()};
+ return{currentBySticker:{...currentBySticker},homeBySticker:{...homeBySticker},occupiedNodes:mapping.occupiedNodes.slice(),...(model.colorBySticker?{colorBySticker:{...model.colorBySticker}}:{})};
 }
+function colorGoalEnabled(model,home){return model.colorRelaxationSafe===true&&!model.requiresOccupiedState&&Object.keys(home).length===model.degree&&model.colorBySticker&&Object.keys(home).every(id=>typeof model.colorBySticker[id]==='string'&&model.colorBySticker[id].length>0);}
 function solvedProgress(model,snapshot){
  const {currentBySticker,homeBySticker}=autoRequestFromSnapshot(model,snapshot),solvedStickerIds=[],solvedNodes=[],remainingStickerIds=[];
- for(const [id,home]of Object.entries(homeBySticker)){if(currentBySticker[id]===home){solvedStickerIds.push(id);solvedNodes.push(home);}else remainingStickerIds.push(id);}
+ const colorGoal=colorGoalEnabled(model,homeBySticker),homeIdByNode=new Map(Object.entries(homeBySticker).map(([id,node])=>[node,id]));
+ for(const [id,home]of Object.entries(homeBySticker)){const at=currentBySticker[id],solved=colorGoal?model.colorBySticker[id]===model.colorBySticker[homeIdByNode.get(at)]:at===home;if(solved){solvedStickerIds.push(id);solvedNodes.push(at);}else remainingStickerIds.push(id);}
  return{solvedStickerIds,solvedNodes,remainingStickerIds,solvedCount:solvedNodes.length,totalCount:model.stickerCount};
 }
 function verifyAutoPlan(model,snapshot,plan){
  try{
   if(plan?.status!=='solved'||!Array.isArray(plan.stages))return false;
   const {currentBySticker:current,homeBySticker:home}=autoRequestFromSnapshot(model,snapshot),byHome=new Map(Object.entries(home).map(([id,node])=>[node,id]));
+  const colors=plan.goalSemantics==='colors';if(colors&&!colorGoalEnabled(model,home))return false;
+  let currentByNode=new Map(Object.entries(current).map(([id,node])=>[node,id]));
+  const currentIdAt=n=>currentByNode.get(n),correct=n=>colors?model.colorBySticker[currentIdAt(n)]===model.colorBySticker[byHome.get(n)]:current[byHome.get(n)]===n;
   const locked=new Set(),flat=[],validNodes=nodes=>Array.isArray(nodes)&&new Set(nodes).size===nodes.length&&nodes.every(n=>Number.isInteger(n)&&byHome.has(n));
-  if(plan.initialProtectedNodes!==undefined){if(!validNodes(plan.initialProtectedNodes)||plan.initialProtectedNodes.some(n=>current[byHome.get(n)]!==n))return false;for(const n of plan.initialProtectedNodes)locked.add(n);}
+  if(plan.initialProtectedNodes!==undefined){if(!validNodes(plan.initialProtectedNodes)||plan.initialProtectedNodes.some(n=>!correct(n)))return false;for(const n of plan.initialProtectedNodes)locked.add(n);}
   for(const stage of plan.stages){
    if(!stage||!Array.isArray(stage.moveIndices)||!validNodes(stage.protectedNodes)||!validNodes(stage.newlySolvedNodes))return false;
-   if(!Number.isInteger(stage.targetNode)||!byHome.has(stage.targetNode)||stage.sourceNode!==current[byHome.get(stage.targetNode)])return false;
+   if(!Number.isInteger(stage.targetNode)||!byHome.has(stage.targetNode)||!Number.isInteger(stage.sourceNode)||!currentByNode.has(stage.sourceNode))return false;
+   if(colors?model.colorBySticker[currentIdAt(stage.sourceNode)]!==model.colorBySticker[byHome.get(stage.targetNode)]:stage.sourceNode!==current[byHome.get(stage.targetNode)])return false;
    const held=new Set(stage.protectedNodes);
-   if([...locked].some(n=>!held.has(n))||[...held].some(n=>current[byHome.get(n)]!==n))return false;
+   if([...locked].some(n=>!held.has(n))||[...held].some(n=>!correct(n)))return false;
    const perm=Array.from({length:model.degree},(_,i)=>i);
    for(const i of stage.moveIndices){
     if(!Number.isInteger(i)||i<0||i>=model.moves.length||flat.length>=20000)return false;
     const move=model.moves[i].perm;for(let node=0;node<perm.length;node++)perm[node]=move[perm[node]];flat.push(i);
    }
-   if([...held].some(n=>perm[n]!==n)||perm[stage.sourceNode]!==stage.targetNode)return false;
+   if((!colors&&[...held].some(n=>perm[n]!==n))||perm[stage.sourceNode]!==stage.targetNode)return false;
    for(const id of Object.keys(current))current[id]=perm[current[id]];
-   if(!stage.newlySolvedNodes.includes(stage.targetNode)||stage.newlySolvedNodes.some(n=>current[byHome.get(n)]!==n))return false;
+   currentByNode=new Map(Object.entries(current).map(([id,node])=>[node,id]));
+   if([...held].some(n=>!correct(n))||!stage.newlySolvedNodes.includes(stage.targetNode)||stage.newlySolvedNodes.some(n=>!correct(n)))return false;
    for(const n of held)locked.add(n);for(const n of stage.newlySolvedNodes)locked.add(n);
   }
   if(!Array.isArray(plan.moveIndices)||flat.length!==plan.moveIndices.length||flat.some((v,i)=>v!==plan.moveIndices[i]))return false;
-  if(Object.entries(home).some(([id,node])=>current[id]!==node))return false;
-  if(plan.finalProtectedNodes!==undefined&&(!validNodes(plan.finalProtectedNodes)||plan.finalProtectedNodes.length!==byHome.size||plan.finalProtectedNodes.some(n=>current[byHome.get(n)]!==n)))return false;
+  if([...byHome.keys()].some(n=>!correct(n)))return false;
+  if(plan.finalProtectedNodes!==undefined&&(!validNodes(plan.finalProtectedNodes)||plan.finalProtectedNodes.length!==byHome.size||plan.finalProtectedNodes.some(n=>!correct(n))))return false;
   return true;
  }catch{return false;}
 }
@@ -521,6 +567,77 @@ function precomputeFull(model,options={}){
  try{const compiled=compileModel(model);ctx.moveCount=compiled.moves.length;words=new Words(compiled.moves,ctx);const base=options.base??chooseBase(model,compiled);if(base.length!==compiled.degree||new Set(base).size!==compiled.degree||base.some(x=>!Number.isInteger(x)||x<0||x>=compiled.degree))throw Error('Invalid full stabilizer base');const chain=options.algorithm==='unweighted'?buildChain(compiled,base,ctx,words):weightedChain(compiled,base,ctx,words);return serializeChain(model,chain,{...ctx.stats,elapsedMs:now()-started});}
  catch(e){if(e instanceof Limit)return {status:'unknown',reason:e.message,stats:{...ctx.stats,dagNodes:words?.nodes.length??0,elapsedMs:now()-started}};throw e;}
 }
+// A color quotient is sound only when colors describe the entire goal. The
+// build explicitly excludes shape-changing / pose-expanded and picture goals.
+// Nothing here invents a sticker permutation or assumes that equal-colored
+// stickers can be swapped in isolation: every candidate remains a legal word.
+function colorGoal(model,request,home,current){
+ if(model.colorRelaxationSafe!==true||model.requiresOccupiedState)return null;
+ const colors=request?.colorBySticker??model.colorBySticker,ids=Object.keys(home);
+ if(!colors||ids.length!==model.degree)return null;
+ const palette=new Map(),initial=new Array(model.degree),goal=new Array(model.degree);
+ for(const id of ids){const color=colors[id];if(typeof color!=='string'||!color)return null;
+  if(!palette.has(color))palette.set(color,String.fromCharCode(palette.size+1));
+  const token=palette.get(color);initial[current[id]]=token;goal[home[id]]=token;
+ }
+ return{initial:initial.join(''),goal:goal.join('')};
+}
+function permuteColors(state,perm){const out=new Array(perm.length);for(let i=0;i<perm.length;i++)out[perm[i]]=state[i];return out.join('');}
+function colorSolvedPlan(model,goal,elapsedMs=0){const nodes=Array.from({length:model.degree},(_,i)=>i);return{status:'solved',stages:[],moveIndices:[],initialProtectedNodes:nodes,finalProtectedNodes:nodes,optimal:true,verified:true,goalSemantics:'colors',method:'already_color_solved',stats:{elapsedMs,moves:0,stages:0}};}
+function optimizeColorPlan(model,request,baseline,options={},overallDeadline=Infinity){
+ const started=now(),goal=colorGoal(model,request,request.homeBySticker??model.homeBySticker,request.currentBySticker);
+ if(!goal||options.colorOptimize===false||baseline.status!=='solved')return baseline;
+ if(goal.initial===goal.goal)return colorSolvedPlan(model,goal,baseline.stats.elapsedMs);
+ const deadline=Math.min(overallDeadline,started+(options.maxColorMs??250)),maxBytes=options.maxColorBytes??16*1024*1024;
+ const maxRecords=Math.max(2,Math.floor(maxBytes/(model.degree*2+160)));
+ const ends=new Set();let end=0;for(const stage of baseline.stages){end+=stage.moveIndices.length;ends.add(end);}
+ const records=[{state:goal.initial,boundary:true,moveIndex:null}],seen=new Map([[goal.initial,0]]);
+ let state=goal.initial,loopsRemoved=0,bridgeChecks=0,bridges=0;
+ for(let i=0;i<baseline.moveIndices.length;i++){
+  if((i&31)===0&&now()>deadline)return baseline;
+  const moveIndex=baseline.moveIndices[i];state=permuteColors(state,model.moves[moveIndex].perm);
+  const previous=seen.get(state);
+  if(previous!==undefined){while(records.length>previous+1)seen.delete(records.pop().state);records[previous].boundary ||= ends.has(i+1);loopsRemoved++;}
+  else{if(records.length>=maxRecords)return baseline;seen.set(state,records.length);records.push({state,boundary:ends.has(i+1),moveIndex});}
+  if(state===goal.goal)break;
+ }
+ if(records.at(-1).state!==goal.goal)return baseline;
+ // Add bounded, legal one-move edges between states already present in this
+ // witness. A shortcut only replaces a strictly longer interval; it never
+ // enumerates puzzle configurations or depends on a guessed assignment.
+ const compact=[records[0]],maxChecks=options.maxColorBridgeChecks??12000,bridgeDeadline=Math.min(deadline,started+(options.maxColorMs??250)*0.7);
+ let at=0;
+ while(at<records.length-1){let next=at+1,moveIndex=records[next].moveIndex;
+  if(bridgeChecks<maxChecks&&now()<bridgeDeadline){for(let j=0;j<model.moves.length;j++){
+   if(bridgeChecks>=maxChecks||(bridgeChecks&15)===0&&now()>bridgeDeadline)break;
+   bridgeChecks++;const candidate=seen.get(permuteColors(records[at].state,model.moves[j].perm));
+   if(candidate!==undefined&&candidate>next){next=candidate;moveIndex=j;}
+  }}
+  if(next>at+1)bridges++;compact.push({...records[next],moveIndex});at=next;
+ }
+ compact.at(-1).boundary=true;
+ // Retain surviving exact-plan endpoints. The suffix intersection determines
+ // which correct colors will stay correct at EVERY remaining stage endpoint.
+ // This can secure a color earlier and removes identity-only placement stages.
+ const boundaries=[0];for(let i=1;i<compact.length;i++)if(compact[i].boundary)boundaries.push(i);
+ const masks=new Array(boundaries.length);let suffix=new Uint8Array(model.degree).fill(1);
+ for(let k=boundaries.length-1;k>=0;k--){if((k&31)===0&&now()>deadline)return baseline;const mask=suffix.slice(),s=compact[boundaries[k]].state;for(let n=0;n<mask.length;n++)mask[n]&=+(s[n]===goal.goal[n]);masks[k]=mask;suffix=mask;}
+ const nodes=mask=>Array.from(mask,(v,i)=>v?i:-1).filter(i=>i>=0),initialProtectedNodes=nodes(masks[0]),locked=new Set(initialProtectedNodes),stages=[],moveIndices=[];
+ let from=0;
+ for(let k=1;k<boundaries.length;k++){
+  if((k&15)===0&&now()>deadline)return baseline;
+  const newlySolvedNodes=nodes(masks[k]).filter(n=>!locked.has(n));if(!newlySolvedNodes.length)continue;
+  const to=boundaries[k],sequence=compact.slice(from+1,to+1).map(r=>r.moveIndex),targetNode=newlySolvedNodes.find(n=>compact[from].state[n]!==goal.goal[n])??newlySolvedNodes[0];
+  let p=identity(model.degree);for(const index of sequence)p=compose(p,model.moves[index].perm);
+  const sourceNode=Array.from(p).indexOf(targetNode);
+  if(compact[from].state[sourceNode]!==goal.goal[targetNode]||[...locked,...newlySolvedNodes].some(n=>compact[to].state[n]!==goal.goal[n]))return baseline;
+  stages.push({moveIndices:sequence,protectedNodes:[...locked],newlySolvedNodes,targetNode,sourceNode});moveIndices.push(...sequence);for(const n of newlySolvedNodes)locked.add(n);from=to;
+ }
+ if(from!==compact.length-1||locked.size!==model.degree||moveIndices.length>baseline.moveIndices.length||stages.length>baseline.stages.length)return baseline;
+ // Independently replay the proposed flat witness from the original colors.
+ state=goal.initial;for(let k=0;k<moveIndices.length;k++){if((k&63)===0&&now()>deadline)return baseline;state=permuteColors(state,model.moves[moveIndices[k]].perm);}if(state!==goal.goal)return baseline;
+ return{...baseline,stages,moveIndices,initialProtectedNodes,finalProtectedNodes:[...locked],goalSemantics:'colors',method:'color_quotient_witness_shortcuts',optimal:false,stats:{...baseline.stats,moves:moveIndices.length,stages:stages.length,elapsedMs:baseline.stats.elapsedMs+now()-started,colorOptimizationMs:now()-started,baselineMoves:baseline.moveIndices.length,baselineStages:baseline.stages.length,colorLoopsRemoved:loopsRemoved,colorBridges:bridges,colorBridgeChecks:bridgeChecks,colorStateBytesEstimate:records.length*(model.degree*2+160)}};
+}
 function solveFull(model,request,options={}){
  const started=now(),deadline=started+(options.maxMs??30000),maxOutput=options.maxOutputMoves??20000;
  const fail=(status,reason,extra={})=>({status,reason,...extra,stats:{elapsedMs:now()-started}});
@@ -531,6 +648,8 @@ function solveFull(model,request,options={}){
   const valid=x=>Number.isInteger(x)&&x>=0&&x<model.degree;
   if(ids.some(id=>!valid(home[id])||!valid(current[id]))||new Set(ids.map(id=>home[id])).size!==ids.length||new Set(ids.map(id=>current[id])).size!==ids.length)return fail('invalid','non_bijective_sticker_mapping');
   if(model.stickerCount!==undefined&&ids.length!==model.stickerCount)return fail('invalid','sticker_count_mismatch');
+  const colorTarget=options.colorOptimize===false?null:colorGoal(model,request,home,current);
+  if(colorTarget&&colorTarget.initial===colorTarget.goal)return colorSolvedPlan(model,colorTarget,now()-started);
   if(ids.every(id=>current[id]===home[id]))return {status:'solved',stages:[],moveIndices:[],initialProtectedNodes:ids.map(id=>home[id]),finalProtectedNodes:ids.map(id=>home[id]),optimal:true,verified:true,method:'already_solved',stats:{elapsedMs:now()-started,moves:0,stages:0}};
   const cache=options.cache??precomputeFull(model,{...options,maxMs:Math.max(1,deadline-now())});if(cache.status!=='ready')return fail('unknown',cache.reason??'full_solver_cache_unavailable');
   if(cache.schemaVersion!==1||cache.degree!==model.degree||cache.modelSignature!==modelSignature(model)||!cache.complete)return fail('invalid','full_solver_cache_mismatch');
@@ -544,7 +663,13 @@ function solveFull(model,request,options={}){
   while(at<base.length){
    if(now()>deadline)return fail('unknown','time_limit');const target=base[at],source=byHome.get(target),level=cache.levels[at];
    if(level.base!==target)return fail('invalid','cache_base_level_mismatch');const entry=level.entries.find(e=>e[0]===source);
-   if(!entry)return fail('impossible','state_outside_legal_stabilizer_orbit',{proof:'complete_stabilizer_chain',failedTargetNode:target});
+   if(!entry){
+    // Failure to restore these exact identities does not prove that no legal
+    // word reaches their color-equivalence class. Normal engine states have a
+    // legal identity witness, but imported or relabeled inputs need this limit.
+    if(colorTarget)return fail('unknown','color_goal_identity_baseline_unreachable',{identityBaselineReason:'state_outside_legal_stabilizer_orbit',failedTargetNode:target});
+    return fail('impossible','state_outside_legal_stabilizer_orbit',{proof:'complete_stabilizer_chain',failedTargetNode:target});
+   }
    let sequence=words.flatten(-entry[1]);if(allMoves.length+sequence.length>maxOutput)return fail('unknown','output_move_limit',{requiredAtLeastMoves:allMoves.length+sequence.length});
    if(options.shorten===true&&sequence.length>10&&deadline-now()>10)sequence=shorten(model,sequence,{maxMs:Math.min(80,deadline-now()),maxBytes:4*1024*1024}).moveIndices;
    let p=identity(model.degree);for(const index of sequence){if(now()>deadline)return fail('unknown','time_limit');p=compose(p,compiled.moves[index].perm);}
@@ -554,16 +679,18 @@ function solveFull(model,request,options={}){
    stages.push({moveIndices:sequence,protectedNodes,newlySolvedNodes,targetNode:target,sourceNode:source});allMoves.push(...sequence);
   }
   if([...byHome].some(([h,x])=>h!==x))return fail('unknown','internal_final_verification_failed');
-  return {status:'solved',stages,moveIndices:allMoves,initialProtectedNodes,finalProtectedNodes:locked,optimal:false,verified:true,method:'weighted_stabilizer_placements',stats:{elapsedMs:now()-started,moves:allMoves.length,stages:stages.length}};
+  const baseline={status:'solved',stages,moveIndices:allMoves,initialProtectedNodes,finalProtectedNodes:locked,optimal:false,verified:true,method:'weighted_stabilizer_placements',stats:{elapsedMs:now()-started,moves:allMoves.length,stages:stages.length}};
+  return optimizeColorPlan(model,request,baseline,options,deadline);
  }catch(e){if(e instanceof Limit)return fail('unknown',e.message);return fail('invalid',e.message);}
 }
-module.exports={precomputeFull,solveFull,modelSignature,chooseBase,weightedChain};
+module.exports={precomputeFull,solveFull,modelSignature,chooseBase,weightedChain,optimizeColorPlan};
 
 },
 "./eligibility.cjs":function(module,exports,require){
 'use strict';
-// Exact swap reachability under a pointwise stabilizer. No move words are
-// expanded: this module classifies reachability, not path length or witnesses.
+// Exact swap reachability under a pointwise stabilizer. Classification never
+// expands words. Constructive callers may attach ctx.words to retain witnesses
+// while reusing the same certified chain and adjacent-base-swap machinery.
 const {compileModel,identity,compose,inverse}=require('./group.cjs');
 const {modelSignature}=require('./full-solve.cjs');
 const {eligibilityStatus}=require('./eligibility-status.cjs');
@@ -575,9 +702,9 @@ function context(options={}){
  return {config,stats,started,tick(n=1){stats.operations+=n;if(stats.operations>config.maxOperations)throw new EligibilityLimit('operation_limit');if((stats.operations&1023)<n)this.check();},check(){if(performance.now()-started>=config.maxMs)throw new EligibilityLimit('time_limit');},storage(bytes){stats.storageEstimateBytes=Math.max(stats.storageEstimateBytes,bytes);if(bytes>config.maxStorageBytes)throw new EligibilityLimit('storage_limit');},generators(count,d,extra=0){if(count>config.maxStrongGenerators)throw new EligibilityLimit('strong_generator_limit');this.storage((this.baseStorage??0)+count*(d*4+128)+extra);}};
 }
 function orbit(point,generators,d,ctx,representatives=false){
- const seen=new Uint8Array(d),nodes=[point],reps=representatives?new Array(d):null;seen[point]=1;if(reps)reps[point]=identity(d);
- for(let head=0;head<nodes.length;head++){const x=nodes[head];for(const g of generators){ctx.tick();const y=g.perm[x];if(seen[y])continue;seen[y]=1;nodes.push(y);if(reps)reps[y]=compose(reps[x],g.perm);}}
- return {nodes,seen,reps};
+ const seen=new Uint8Array(d),nodes=[point],reps=representatives?new Array(d):null,wordReps=representatives&&ctx.words?new Array(d):null;seen[point]=1;if(reps)reps[point]=identity(d);if(wordReps)wordReps[point]=0;
+ for(let head=0;head<nodes.length;head++){const x=nodes[head];for(const g of generators){ctx.tick();const y=g.perm[x];if(seen[y])continue;seen[y]=1;nodes.push(y);if(reps)reps[y]=compose(reps[x],g.perm);if(wordReps)wordReps[y]=ctx.words.join(wordReps[x],g.word);}}
+ return {nodes,seen,reps,wordReps};
 }
 function validateStoredPermutation(raw,d,prefix,imageBase,image){if(!Array.isArray(raw)||raw.length!==d)throw Error('Malformed stabilizer cache permutation');const seen=new Uint8Array(d);for(const x of raw){if(!Number.isInteger(x)||x<0||x>=d||seen[x])throw Error('Malformed stabilizer cache permutation');seen[x]=1;}if(raw[imageBase]!==image||prefix.some(x=>raw[x]!==x))throw Error('Malformed stabilizer cache representative');return Uint32Array.from(raw);}
 function prepareChain(model,cache,ctx){
@@ -588,7 +715,7 @@ function prepareChain(model,cache,ctx){
  // A subgroup containing G_(k+1) equals G_k once its orbit of b_k has
  // the certified index [G_k:G_(k+1)]. This keeps a small strong generator set.
  for(let k=d-1;k>=0;k--){ctx.check();const l=cache.levels[k];if(l.base!==base[k])throw Error('Malformed stabilizer cache level');let reached=new Uint8Array(d);reached[base[k]]=1;let size=1;
-  for(const [image,,raw]of l.entries){if(reached[image])continue;const perm=validateStoredPermutation(raw,d,base.slice(0,k),base[k],image);generators.push({perm,level:k});ctx.generators(generators.length,d);const o=orbit(base[k],generators,d,ctx);reached=o.seen;size=o.nodes.length;if(size>=sizes[k])break;}
+  for(const [image,word,raw]of l.entries){if(reached[image])continue;const perm=validateStoredPermutation(raw,d,base.slice(0,k),base[k],image);generators.push({perm,level:k,...(ctx.words?{word}:{})});ctx.generators(generators.length,d);const o=orbit(base[k],generators,d,ctx);reached=o.seen;size=o.nodes.length;if(size>=sizes[k])break;}
   if(size!==sizes[k])throw Error('Stabilizer cache orbit size is inconsistent');
  }
  return {base,sizes,generators,cacheStorage:ctx.baseStorage};
@@ -605,7 +732,7 @@ function adjacentSwap(chain,k,d,ctx){
  ctx.generators(chain.generators.length,d,nextOrbit.nodes.length*d*8+d*16);
  if(reached.nodes.length>target)throw Error('Adjacent stabilizer index exceeded');
  outer:for(const x of nextOrbit.nodes){if(reached.nodes.length===target)break;const rx=nextOrbit.reps[x];for(const g of upper){ctx.tick();const y=g.perm[x],inv=inverses[y]??(inverses[y]=inverse(nextOrbit.reps[y]));const image=inv[g.perm[rx[a]]];if(reached.seen[image])continue;
-   const perm=compose(compose(rx,g.perm),inv);const record={perm,level:k+1};fixB.push(record);chain.generators.push(record);ctx.stats.generatedStabilizers++;ctx.generators(chain.generators.length,d,nextOrbit.nodes.length*d*8+d*16);reached=orbit(a,fixB,d,ctx);if(reached.nodes.length>target)throw Error('Adjacent stabilizer index exceeded');if(reached.nodes.length===target)break outer;
+   const perm=compose(compose(rx,g.perm),inv);const record={perm,level:k+1,...(ctx.words?{word:ctx.words.list([nextOrbit.wordReps[x],g.word,-nextOrbit.wordReps[y]])}:{})};fixB.push(record);chain.generators.push(record);ctx.stats.generatedStabilizers++;ctx.generators(chain.generators.length,d,nextOrbit.nodes.length*d*8+d*16);reached=orbit(a,fixB,d,ctx);if(reached.nodes.length>target)throw Error('Adjacent stabilizer index exceeded');if(reached.nodes.length===target)break outer;
   }}
  if(reached.nodes.length!==target)throw Error('Adjacent stabilizer Schreier generation did not complete');
  chain.base[k]=b;chain.base[k+1]=a;chain.sizes[k]=nextOrbit.nodes.length;chain.sizes[k+1]=target;
@@ -660,12 +787,13 @@ class EligibilityAnalyzer{
  }
 }
 function eligibleSwaps(model,request,options={}){try{return new EligibilityAnalyzer(model,options.cache,{cacheBytes:0}).analyze(request,options);}catch(error){return {status:'invalid',reason:error.message};}}
-module.exports={EligibilityAnalyzer,eligibleSwaps,eligibilityStatus,prepareChain,stabilizer};
+module.exports={EligibilityAnalyzer,eligibleSwaps,eligibilityStatus,prepareChain,stabilizer,eligibilityContext:context,EligibilityLimit};
 
 },
 "./eligibility-status.cjs":function(module,exports,require){
 'use strict';
-// 0 unknown, 1 feasible, 2 proved infeasible. Unknown must stay selectable.
+// Mathematical classification: 0 unknown, 1 feasible, 2 proved infeasible.
+// Feasibility is distinct from having a bounded, executable move sequence.
 function eligibilityStatus(result,a,b){
  if(!result||!Number.isInteger(result.degree)||!Number.isInteger(a)||a<0||a>=result.degree)return 0;
  if(b===undefined){const value=result.firstStatus?.[a];return value===1||value===2?value:0;}
@@ -674,7 +802,586 @@ function eligibilityStatus(result,a,b){
  if(!result.knownPairs||!(result.knownPairs[byte]&mask))return 0;
  return result.feasiblePairs?.[byte]&mask?1:2;
 }
-module.exports={eligibilityStatus};
+function eligibilityReady(result,a,b){
+ if(!result||!Number.isInteger(result.degree)||!Number.isInteger(a)||a<0||a>=result.degree)return false;
+ if(b===undefined)return result.readyFirstStatus?.[a]===1;
+ if(!Number.isInteger(b)||b<0||b>=result.degree||a===b)return false;
+ const index=a*result.degree+b;
+ return !!(result.readyPairs?.[index>>>3]&(1<<(index&7)));
+}
+function eligibilityWitness(result,a,b){
+ if(!eligibilityReady(result,a,b))return null;
+ for(const entry of result.readyWitnesses??[]){
+  if(!Array.isArray(entry.word)||!entry.word.length||entry.word.length>5000||!Array.isArray(entry.pairs))continue;
+  for(let i=0;i<entry.pairs.length;i+=2){const x=entry.pairs[i],y=entry.pairs[i+1];if((a===x&&b===y)||(a===y&&b===x))return entry.word.slice();}
+ }
+ return null;
+}
+module.exports={eligibilityStatus,eligibilityReady,eligibilityWitness};
+
+},
+"./color-solve.cjs":function(module,exports,require){
+'use strict';
+
+// Endpoint color holds. The selected A and B stickers still exchange addresses.
+// All permutations map source -> destination. A failed bounded attempt is not
+// an impossibility certificate: color transporters are not point stabilizers.
+const {modelSignature}=require('./full-solve.cjs');
+const {search}=require('./search.cjs');
+
+function verifyColorWitness(model,request,word){
+ const d=model.degree,p=Array.from({length:d},(_,i)=>i);
+ for(const index of word){const move=model.moves[index];if(!Number.isInteger(index)||!move)return false;for(let i=0;i<d;i++)p[i]=move.perm[p[i]];}
+ const [a,b]=request.swap;if(p[a]!==b||p[b]!==a)return false;
+ const held=new Set(request.protected),colors=request.colorByNode;
+ for(let source=0;source<d;source++)if(held.has(p[source])&&colors[source]!==colors[p[source]])return false;
+ return true;
+}
+
+// A compact precomputed catalog is a supply of legal witnesses, not a complete
+// reachability table. Sparse support contains [source,destination,...] pairs.
+function catalogWitness(model,request,cache,{deadline,maxOutputMoves=5000}={}){
+ const started=performance.now(),stats={catalogOperations:0,catalogMs:0};
+ const done=value=>({...value,stats:{...stats,catalogMs:performance.now()-started}});
+ if(!cache||cache.kind!=='color-macros'||cache.schemaVersion!==1||cache.degree!==model.degree||cache.modelSignature!==modelSignature(model)||!Array.isArray(cache.operations))return done({status:'unknown',reason:'color_catalog_unavailable'});
+ const [a,b]=request.swap,held=new Set(request.protected),colors=request.colorByNode;
+ let best=null;
+ for(const op of cache.operations){
+  if((stats.catalogOperations++&63)===0&&performance.now()>=deadline)break;
+  if(!op||!Array.isArray(op.word)||!op.word.length||op.word.length>maxOutputMoves||best&&op.word.length>=best.length||!Array.isArray(op.support)||op.support.length%2)continue;
+  let pa=a,pb=b,colorsMatch=true;
+  for(let i=0;i<op.support.length;i+=2){const source=op.support[i],dest=op.support[i+1];if(source===a)pa=dest;if(source===b)pb=dest;if(held.has(dest)&&colors[source]!==colors[dest]){colorsMatch=false;break;}}
+  if(colorsMatch&&pa===b&&pb===a&&verifyColorWitness(model,request,op.word)){best=op.word.slice();if(best.length===1)break;}
+ }
+ return done(best?{status:'solved',moveIndices:best,optimal:best.length===1,lowerBound:1,method:'color_hold_short_catalog'}:{status:'unknown',reason:'no_catalog_color_witness'});
+}
+
+// Exact bounded search of an ordered tuple, never the full configuration.
+// The tuple stores g^-1(h) for each held location and g^-1(A),g^-1(B).
+// Updating with P_j^-1 prepends legal move j to the chronological word; hence
+// parent pointers read from the leaf to the root already give the forward word.
+// Goal: c(g^-1(h))=c(h), g^-1(A)=B, g^-1(B)=A.
+function searchColors(model,request,options={}){
+ const started=performance.now(),deadline=started+(options.maxMs??300),d=model.degree;
+ const held=request.protected,colors=request.colorByNode,[a,b]=request.swap,initial=[...held,a,b],targetColors=held.map(h=>colors[h]);
+ const maxDepth=options.maxDepth??12,maxBytes=options.maxBytes??16*1024*1024,bytesPerState=256+40*initial.length;
+ const stateLimit=Math.min(options.maxStates??25000,Math.floor(maxBytes/bytesPerState)),maxOutputMoves=options.maxOutputMoves??5000;
+ let transitions=0,completedRadius=0;
+ const records=[{tuple:initial,parent:-1,move:-1,depth:0}],seen=new Set([initial.join(',')]);
+ const stats=()=>({method:'color-preimage-tuple-bfs',searchStates:records.length,transitions,searchMs:performance.now()-started,completedRadius,bytesPerState,stateLimit,estimatedBytes:records.length*bytesPerState});
+ const unknown=reason=>({status:'unknown',reason,optimal:false,lowerBound:completedRadius+1,stats:stats()});
+ if(stateLimit<1)return unknown('color_search_storage_limit');
+ const inverses=model.moves.map(move=>{const p=new Uint32Array(d);move.perm.forEach((dest,source)=>p[dest]=source);return p;});
+ const goal=tuple=>tuple[held.length]===b&&tuple[held.length+1]===a&&targetColors.every((color,i)=>colors[tuple[i]]===color);
+ for(let head=0;head<records.length;head++){
+  const row=records[head];
+  // Reaching a new parent depth means every target up to that depth was tested.
+  completedRadius=row.depth;
+  if(row.depth>=maxDepth||row.depth>=maxOutputMoves)return unknown('color_search_depth_limit');
+  for(let move=0;move<inverses.length;move++){
+   if((transitions++&127)===0&&performance.now()>=deadline)return unknown('color_search_time_limit');
+   const inverse=inverses[move],tuple=row.tuple.map(x=>inverse[x]),key=tuple.join(',');if(seen.has(key))continue;
+   if(goal(tuple)){
+    const word=[move];for(let cursor=head;records[cursor].parent!==-1;cursor=records[cursor].parent)word.push(records[cursor].move);
+    return {status:'solved',moveIndices:word,optimal:true,lowerBound:word.length,method:'color_preimage_tuple_bfs',stats:stats()};
+   }
+   if(records.length>=stateLimit)return unknown('color_search_state_limit');
+   seen.add(key);records.push({tuple,parent:head,move,depth:row.depth+1});
+  }
+ }
+ return {status:'impossible',reason:'exhausted_color_preimage_tuple_orbit',proof:'complete_color_preimage_tuple_orbit',optimal:false,stats:stats()};
+}
+
+function solveColors(model,request,options,strictSolve){
+ const started=performance.now(),maxMs=options.maxMs??3000,deadline=started+maxMs,maxOutputMoves=options.maxOutputMoves??5000;
+ const catalog=catalogWitness(model,request,options.colorCache,{deadline:Math.min(deadline,started+Math.min(100,maxMs/8)),maxOutputMoves});
+ // One/two-turn catalog words need no expensive subgroup work. Longer words
+ // supply an incumbent while a small projected search looks for a shorter one.
+ if(catalog.status==='solved'&&catalog.moveIndices.length<=2)return catalog;
+ const remaining=()=>Math.max(0,Math.floor(deadline-performance.now()));
+ const incumbent=catalog.status==='solved'?catalog.moveIndices:null;
+ const relaxedBudget=Math.min(options.searchMs??450,incumbent?150:450,Math.floor(maxMs/3),remaining());
+ const relaxed=searchColors(model,request,{maxMs:relaxedBudget,maxStates:options.maxSearchStates??25000,maxDepth:Math.min(options.maxSearchDepth??12,incumbent?incumbent.length-1:Infinity),maxBytes:Math.min(16*1024*1024,options.maxStorageBytes??16*1024*1024),maxOutputMoves});
+ const stats={catalog:catalog.stats,colorSearch:relaxed.stats};
+ if(relaxed.status==='solved')return {...relaxed,stats};
+ if(incumbent){
+  // The older bidirectional tuple search can beat the broader unidirectional
+  // search on some requests. Give it a small budget as a competing shortcut,
+  // retaining the color witness unless it returns a strictly shorter word.
+  if(remaining()<1)return {...catalog,lowerBound:relaxed.lowerBound,stats};
+  const strictSearch=search(model,request.protected,request.swap,{maxMs:Math.min(50,remaining()),maxStates:options.maxSearchStates??25000,maxDepth:Math.min(options.maxSearchDepth??12,incumbent.length-1),maxBytes:Math.min(16*1024*1024,options.maxStorageBytes??16*1024*1024)});
+  stats.pointwiseCompetitor=strictSearch.stats;
+  if(strictSearch.status==='solved'&&strictSearch.moveIndices.length<incumbent.length)return {...strictSearch,method:'color_hold_pointwise_shortcut',optimal:strictSearch.moveIndices.length===relaxed.lowerBound,lowerBound:relaxed.lowerBound,stats};
+  return {...catalog,lowerBound:relaxed.lowerBound,stats};
+ }
+ if(relaxed.status==='impossible')return {...relaxed,stats};
+ if(remaining()<1)return {status:'unknown',reason:'color_request_time_limit',optimal:false,lowerBound:relaxed.lowerBound,stats};
+ const strict=strictSolve(remaining());
+ if(strict.status==='solved')return {...strict,optimal:strict.moveIndices.length===relaxed.lowerBound,lowerBound:relaxed.lowerBound,method:'color_hold_pointwise_fallback',stats:{...stats,pointwiseFallback:strict.stats}};
+ // Complete pointwise infeasibility does not imply color-hold infeasibility.
+ // The UI leaves this pair available and can explain the bounded attempt.
+ return {status:'unknown',reason:strict.status==='impossible'?'color_hold_search_incomplete':'color_hold_budget_exhausted',optimal:false,lowerBound:relaxed.lowerBound,stats:{...stats,pointwiseFallback:strict.stats},strictStatus:strict.status,strictReason:strict.reason};
+}
+
+module.exports={catalogWitness,searchColors,solveColors,verifyColorWitness};
+
+},
+"./color-eligibility.cjs":function(module,exports,require){
+'use strict';
+
+// Sound, bounded eligibility for color-preserving endpoint holds. Unlike a
+// pointwise stabilizer, selected color constraints need not form a subgroup.
+// A strict YES remains valid; a strict NO must therefore remain UNKNOWN unless
+// even the unrestricted legal group cannot exchange the requested pair.
+const {EligibilityAnalyzer,eligibilityStatus}=require('./eligibility.cjs');
+const {eligibilityReady,eligibilityWitness}=require('./eligibility-status.cjs');
+const {identity,compose}=require('./group.cjs');
+const {modelSignature}=require('./full-solve.cjs');
+
+class ColorEligibilityLimit extends Error {}
+function normalize(model,request){
+ const d=model.degree;
+ if(!Number.isInteger(d)||d<2||d>4096||model.supported===false||model.fixedPermutation===false||model.stateDependentLegality===true)throw Error('Unsupported eligibility move model');
+ if(request.mode&&request.mode!=='protected_swap')throw Error('Eligibility uses protected-swap semantics');
+ const protection=request.protection??'endpoint';
+ if(!['endpoint','throughout'].includes(protection))throw Error('Unknown protection semantics');
+ const node=x=>{if(!Number.isInteger(x)||x<0||x>=d)throw Error('Unknown node address');return x;};
+ if(request.protected!==undefined&&!Array.isArray(request.protected))throw Error('Protected nodes must be an array');
+ const held=[...new Set((request.protected??[]).map(node))].sort((a,b)=>a-b);
+ const raw=request.occupiedNodes??(model.requiresOccupiedState?null:Array.from({length:d},(_,i)=>i));
+ if(!Array.isArray(raw))throw Error('Current occupied pose addresses are required');
+ const occupied=raw.map(node).sort((a,b)=>a-b),occupiedSet=new Set(occupied);
+ if(occupiedSet.size!==occupied.length||occupied.length!==(model.stickerCount??d))throw Error('Occupied addresses must identify every physical sticker exactly once');
+ if(held.some(x=>!occupiedSet.has(x)))throw Error('Protected nodes must be occupied');
+ const colors=request.colorByNode;
+ if(!Array.isArray(colors)||colors.length!==d)throw Error('colorByNode must contain one color or null for every model address');
+ for(let x=0;x<d;x++){
+  const c=colors[x];
+  if(occupiedSet.has(x)){if(typeof c!=='string'&&!(typeof c==='number'&&Number.isFinite(c)))throw Error('Occupied addresses require finite numeric or string colors');}
+  else if(c!==null)throw Error('Unoccupied addresses must have null colors');
+ }
+ const heldSet=new Set(held);
+ return {protectedNodes:held,occupiedNodes:occupied,candidateNodes:occupied.filter(x=>!heldSet.has(x)),protection,colorByNode:colors.slice(),holdSemantics:'color'};
+}
+function initResult(d,req){
+ const bytes=Math.ceil(d*d/8),result={degree:d,...req,knownPairs:new Uint8Array(bytes),feasiblePairs:new Uint8Array(bytes),firstStatus:new Uint8Array(d).fill(2),readyPairs:new Uint8Array(bytes),readyFirstStatus:new Uint8Array(d),readyWitnesses:[]},candidates=new Set(req.candidateNodes);
+ for(let a=0;a<d;a++){
+  if(candidates.has(a))result.firstStatus[a]=0;
+  for(let b=0;b<d;b++)if(a===b||!candidates.has(a)||!candidates.has(b))mark(result,a,b,false);
+ }
+ return result;
+}
+function mark(result,a,b,yes){
+ const i=a*result.degree+b,mask=1<<(i&7);result.knownPairs[i>>>3]|=mask;
+ if(yes)result.feasiblePairs[i>>>3]|=mask;
+}
+function cloneResult(r){return {...r,protectedNodes:r.protectedNodes.slice(),occupiedNodes:r.occupiedNodes.slice(),candidateNodes:r.candidateNodes.slice(),colorByNode:r.colorByNode.slice(),knownPairs:r.knownPairs.slice(),feasiblePairs:r.feasiblePairs.slice(),firstStatus:r.firstStatus.slice(),readyPairs:r.readyPairs.slice(),readyFirstStatus:r.readyFirstStatus.slice(),readyWitnesses:r.readyWitnesses.map(x=>({word:x.word.slice(),pairs:x.pairs.slice()})),stats:{...r.stats}};}
+function retainWitness(result,word,pairs,ctx){
+ // Keep one verified word for all new exchanges made by that operation.
+ // Numeric arrays are charged conservatively for memory as well as their
+ // exact ASCII JSON size. A truncated word must never count as executable.
+ if(!word.length||word.length>5000)return false;
+ const entry={word:word.slice(),pairs:pairs.flat()},bytes=Math.max(JSON.stringify(entry).length,128+8*(word.length+entry.pairs.length));
+ if(ctx.stats.readyWitnessBytes+bytes>2*1024*1024||ctx.stats.storageEstimateBytes+bytes>ctx.config.maxStorageBytes){ctx.stats.readyStorageLimited=true;return false;}
+ result.readyWitnesses.push(entry);ctx.stats.readyWitnessBytes+=bytes;ctx.stats.storageEstimateBytes+=bytes;
+ for(const [a,b]of pairs){
+  for(const [x,y]of [[a,b],[b,a]]){const i=x*result.degree+y;result.readyPairs[i>>>3]|=1<<(i&7);}
+  result.readyFirstStatus[a]=1;result.readyFirstStatus[b]=1;ctx.stats.readyPairs+=2;
+ }
+ return true;
+}
+function finalize(result,ctx,reason){
+ let unresolved=0,known=0;
+ for(const a of result.candidateNodes){
+  let yes=false,pending=false;
+  for(const b of result.candidateNodes){if(a===b)continue;const s=eligibilityStatus(result,a,b);if(s===1)yes=true;if(s===0){pending=true;unresolved++;}else known++;}
+  result.firstStatus[a]=yes?1:pending?0:2;
+ }
+ return {...result,status:unresolved?(known?'partial':'unknown'):'complete',complete:unresolved===0,proof:'witnesses_and_unrestricted_impossibility',...(unresolved?{reason:reason??'color_search_incomplete'}:{}),stats:{...ctx.stats,unknownPairs:unresolved,elapsedMs:performance.now()-ctx.started}};
+}
+function context(options){
+ const bounds={maxMs:[60000,3000],maxStorageBytes:[128*1024*1024,48*1024*1024],maxStrongGenerators:[10000,2000],maxOperations:[100000000,100000000],maxBaseSwaps:[100000,50000]},config={};
+ for(const [name,[max,fallback]]of Object.entries(bounds)){const value=options[name]??fallback;if(!Number.isSafeInteger(value)||value<0||value>max)throw Error('Invalid eligibility budget '+name);config[name]=value;}
+ const started=performance.now(),stats={operations:0,macroTests:0,macroVerifications:0,macroWitnessPairs:0,strictWitnessPairs:0,globalExcludedPairs:0,invalidMacros:0,storageEstimateBytes:0,readyPairs:0,readyWitnessBytes:0};
+ return {started,stats,config,remaining(){return Math.max(0,Math.floor(config.maxMs-(performance.now()-started)));},check(){if(performance.now()-started>=config.maxMs)throw new ColorEligibilityLimit('time_limit');if(stats.operations>config.maxOperations)throw new ColorEligibilityLimit('operation_limit');},tick(n=1){stats.operations+=n;if((stats.operations&255)<n)this.check();},options(cap=Infinity){return {...config,maxMs:Math.min(this.remaining(),cap),maxOperations:Math.max(0,config.maxOperations-stats.operations)};}};
+}
+
+class ColorEligibilityAnalyzer{
+ constructor(model,cache=null,{cacheBytes=2*1024*1024,colorCache=null}={}){
+  this.model=model;this.strict=new EligibilityAnalyzer(model,cache,{cacheBytes});this.compiled=this.strict.compiled;
+  this.colorCache=null;this.verifiedOperations=new WeakMap();this.results=new Map();this.bytes=0;
+  this.maxBytes=Math.min(8*1024*1024,Math.max(0,cacheBytes));this.signature=modelSignature(model);this.setColorCache(colorCache);
+ }
+ get cache(){return this.strict.cache;}
+ setCache(cache){this.strict.setCache(cache);}
+ setColorCache(cache){if(this.colorCache!==cache){this.colorCache=cache;this.verifiedOperations=new WeakMap();this.results.clear();this.bytes=0;}}
+ analyze(request={},options={}){
+  if(request.holdSemantics!==undefined&&!['color','sticker'].includes(request.holdSemantics))return {status:'invalid',reason:'Unknown hold semantics'};
+  if(request.holdSemantics!=='color')return this.strict.analyze(request,options);
+  if(options.colorCache!==undefined)this.setColorCache(options.colorCache);
+  let ctx,result;
+  try{
+   ctx=context(options);const req=normalize(this.model,request),key=JSON.stringify(req);
+   if(this.results.has(key)){const entry=this.results.get(key);this.results.delete(key);this.results.set(key,entry);return {...cloneResult(entry.value),cacheHit:true};}
+   const bytes=Math.ceil(this.model.degree*this.model.degree/8)*3+this.model.degree*25;
+   ctx.stats.storageEstimateBytes=bytes;if(bytes>ctx.config.maxStorageBytes)throw new ColorEligibilityLimit('storage_limit');
+   result=initResult(this.model.degree,req);
+   if(req.candidateNodes.length<2)return finalize(result,ctx);
+   // Prioritize concrete executable witnesses. Reachability proofs below do
+   // not carry move words and therefore cannot make a selection ready.
+   ctx.check();this.macroWitnesses(result,ctx);
+   ctx.check();
+   const unrestricted=this.strict.analyze({protected:[],occupiedNodes:req.occupiedNodes,protection:'endpoint'},ctx.options(req.protectedNodes.length?750:Infinity));
+   if(unrestricted.status==='invalid')return unrestricted;
+   ctx.stats.operations+=unrestricted.cacheHit?0:(unrestricted.stats?.operations??0);
+   ctx.stats.globalStatus=unrestricted.status;
+   for(const a of req.candidateNodes)for(const b of req.candidateNodes){
+    if(a===b)continue;const s=eligibilityStatus(unrestricted,a,b);
+    if(s===2){mark(result,a,b,false);ctx.stats.globalExcludedPairs++;}
+    else if(s===1&&!req.protectedNodes.length)mark(result,a,b,true);
+   }
+   if(!req.protectedNodes.length)return this.finish(result,ctx,key,unrestricted.reason);
+   // This is a conservative fallback, not an impossibility oracle for colors.
+   // With unique held colors, strict negatives could also be reused, but no
+   // such extra inference is necessary for this sound bounded implementation.
+   ctx.check();
+   const strict=this.strict.analyze({protected:req.protectedNodes,occupiedNodes:req.occupiedNodes,protection:req.protection},ctx.options());
+   if(strict.status==='invalid')return strict;
+   ctx.stats.operations+=strict.cacheHit?0:(strict.stats?.operations??0);ctx.stats.strictStatus=strict.status;
+   for(const a of req.candidateNodes)for(const b of req.candidateNodes)if(a!==b&&eligibilityStatus(strict,a,b)===1){if(eligibilityStatus(result,a,b)!==1)ctx.stats.strictWitnessPairs++;mark(result,a,b,true);}
+   return this.finish(result,ctx,key,strict.reason);
+  }catch(error){
+   if(error instanceof ColorEligibilityLimit&&result)return finalize(result,ctx,error.message);
+   return {status:error instanceof ColorEligibilityLimit?'unknown':'invalid',reason:error.message,stats:ctx?{...ctx.stats,elapsedMs:performance.now()-ctx.started}:undefined};
+  }
+ }
+ finish(result,ctx,key,reason){
+  const final=finalize(result,ctx,reason);
+  // Never cache a partial proof or a result whose executable witnesses were
+  // dropped for storage: a retry with a larger budget must discover them.
+  if(final.status==='complete'&&!final.stats.readyStorageLimited){
+   const bytes=final.knownPairs.byteLength+final.feasiblePairs.byteLength+final.firstStatus.byteLength+final.readyPairs.byteLength+final.readyFirstStatus.byteLength+final.stats.readyWitnessBytes+key.length*2+this.model.degree*24+1024;
+   if(bytes<=this.maxBytes){while(this.bytes+bytes>this.maxBytes&&this.results.size){const first=this.results.keys().next().value;this.bytes-=this.results.get(first).bytes;this.results.delete(first);}this.results.set(key,{value:cloneResult(final),bytes});this.bytes+=bytes;}
+  }
+  return final;
+ }
+ macroWitnesses(result,ctx){
+  const d=this.model.degree,held=new Set(result.protectedNodes),candidates=new Set(result.candidateNodes),colors=result.colorByNode;
+  const primitive=this.compiled.moves.map(move=>({word:[move.index],support:Array.from(move.perm).flatMap((dst,src)=>src===dst?[]:[src,dst]),trusted:true}));
+  const cache=this.colorCache;
+  let operations=[];
+  if(cache){
+   if(cache.schemaVersion===1&&cache.kind==='color-macros'&&cache.degree===d&&cache.modelSignature===this.signature&&Array.isArray(cache.operations))operations=cache.operations;
+   else ctx.stats.colorCacheError='color_macro_cache_mismatch';
+  }
+  for(const op of [...primitive,...operations]){
+   ctx.check();ctx.stats.macroTests++;
+   if(!op||!Array.isArray(op.word)||!op.word.length||op.word.length>5000||!Array.isArray(op.support)||op.support.length%2||op.support.length>d*2){ctx.stats.invalidMacros++;continue;}
+   const mapping=new Map(),destinations=new Set();let valid=true,preserves=true;
+   for(let i=0;i<op.support.length;i+=2){
+    ctx.tick();const a=op.support[i],b=op.support[i+1];
+    if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||a>=d||b<0||b>=d||a===b||mapping.has(a)||destinations.has(b)){valid=false;break;}
+    mapping.set(a,b);destinations.add(b);if(held.has(b)&&colors[a]!==colors[b])preserves=false;
+   }
+   if(!valid||mapping.size!==destinations.size||[...mapping.keys()].some(x=>!destinations.has(x))){ctx.stats.invalidMacros++;continue;}
+   if(!preserves)continue;
+   const pairs=[];
+   for(const [a,b]of mapping)if(a<b&&mapping.get(b)===a&&candidates.has(a)&&candidates.has(b)&&!eligibilityReady(result,a,b))pairs.push([a,b]);
+   if(!pairs.length)continue;
+   const memo=this.verifiedOperations.get(op);
+   let verified=op.trusted===true&&primitive.includes(op)?true:
+    memo&&memo.word.length===op.word.length&&memo.support.length===op.support.length&&memo.word.every((x,i)=>x===op.word[i])&&memo.support.every((x,i)=>x===op.support[i])?memo.valid:undefined;
+   if(verified===undefined){
+    ctx.stats.macroVerifications++;let p=identity(d);
+    for(const move of op.word){ctx.tick(d);if(!Number.isInteger(move)||move<0||move>=this.compiled.moves.length){valid=false;break;}p=compose(p,this.compiled.moves[move].perm);}
+    verified=valid&&p.every((dst,src)=>dst===(mapping.get(src)??src));this.verifiedOperations.set(op,{valid:verified,word:op.word.slice(),support:op.support.slice()});
+   }
+   if(!verified){ctx.stats.invalidMacros++;continue;}
+   if(result.protection==='throughout'){
+    let current=colors.slice();
+    for(const move of op.word){ctx.tick(d);const next=new Array(d),perm=this.compiled.moves[move].perm;for(let x=0;x<d;x++)next[perm[x]]=current[x];current=next;if(result.protectedNodes.some(x=>current[x]!==colors[x])){preserves=false;break;}}
+    if(!preserves)continue;
+   }
+   for(const [a,b]of pairs){mark(result,a,b,true);mark(result,b,a,true);ctx.stats.macroWitnessPairs+=2;}
+   retainWitness(result,op.word,pairs,ctx);
+  }
+ }
+}
+function colorEligibleSwaps(model,request,options={}){try{return new ColorEligibilityAnalyzer(model,options.cache,{cacheBytes:0,colorCache:options.colorCache}).analyze(request,options);}catch(error){return {status:'invalid',reason:error.message};}}
+module.exports={ColorEligibilityAnalyzer,colorEligibleSwaps,eligibilityStatus,eligibilityReady,eligibilityWitness};
+
+},
+"./cached-swap.cjs":function(module,exports,require){
+'use strict';
+
+// Construct a pointwise-held pair exchange from the existing complete cache.
+// The cache already certifies the group. Changing its base needs only adjacent
+// swaps, not a fresh Schreier-Sims closure. Words are retained as a bounded DAG
+// and expanded only once a transporter of (A,B) to (B,A) has been found.
+const {compileModel,makeContext,Words,inverse,Limit}=require('./group.cjs');
+const {prepareChain,stabilizer,eligibilityContext,EligibilityLimit}=require('./eligibility.cjs');
+const {normalize,verify,permutation}=require('./index.cjs');
+
+function restoreWords(compiled,cache,ctx){
+ const words=new Words(compiled.moves,ctx);
+ if(!cache)return words;
+ if(!Array.isArray(cache.words)||cache.words[0]!==null)throw Error('Malformed cached word DAG');
+ if(cache.words.length>ctx.config.maxDagNodes)throw new Limit('word_dag_limit');
+ words.nodes=[null];words.leaves=[];
+ for(let id=1;id<cache.words.length;id++){
+  if((id&1023)===0)ctx.check();const row=cache.words[id];
+  if(!Array.isArray(row)||(row.length!==1&&row.length!==2))throw Error('Malformed cached word DAG');
+  if(row.length===1){const move=row[0];if(!Number.isInteger(move)||!compiled.moves[move])throw Error('Malformed cached move index');words.nodes.push({move,len:1});words.leaves[move]=id;}
+  else {if(row.some(x=>!Number.isSafeInteger(x)||Math.abs(x)>=id))throw Error('Malformed cached word reference');words.nodes.push({a:row[0],b:row[1],len:Math.min(Number.MAX_SAFE_INTEGER,words.length(row[0])+words.length(row[1]))});}
+ }
+ // Serialization drops unreachable leaves. Restore them after all persisted
+ // IDs so primitive words and cached representative IDs remain unambiguous.
+ for(const move of compiled.moves)if(words.leaves[move.index]===undefined){words.leaves[move.index]=words.nodes.length;words.nodes.push({move:move.index,len:1});}
+ return words;
+}
+
+// Dijkstra over the ordered-pair orbit (at most d(d-1) states), weighted by
+// primitive-word lengths. This is not a search of full puzzle configurations.
+// Weights estimate expansion cost; cancellations may shorten the final word.
+function pairWord(generators,a,b,d,words,ctx,groupCtx){
+ const actions=[];for(const g of generators){actions.push(g);actions.push({perm:inverse(g.perm),word:-g.word});}
+ const start=a*d+b,target=b*d+a,records=new Map([[start,{distance:0,parent:-1,gen:-1}]]),heap=[[0,start]];
+ function push(item){let i=heap.length;heap.push(item);while(i>0){const parent=(i-1)>>1;if(heap[parent][0]<=item[0])break;heap[i]=heap[parent];i=parent;}heap[i]=item;}
+ function pop(){const root=heap[0],last=heap.pop();if(heap.length){let i=0;while(i*2+1<heap.length){let child=i*2+1;if(child+1<heap.length&&heap[child+1][0]<heap[child][0])child++;if(heap[child][0]>=last[0])break;heap[i]=heap[child];i=child;}heap[i]=last;}return root;}
+ while(heap.length){
+  ctx.check();const [distance,state]=pop(),record=records.get(state);if(record.distance!==distance)continue;
+  if(state===target){const parts=[];for(let at=target;at!==start;){const row=records.get(at);parts.push(actions[row.gen].word);at=row.parent;}parts.reverse();return words.list(parts);}
+  const x=Math.floor(state/d),y=state%d;
+  for(let i=0;i<actions.length;i++){
+   ctx.tick();ctx.stats.pairTransitions++;const g=actions[i],next=g.perm[x]*d+g.perm[y];if(next===state)continue;
+   const cost=Math.min(Number.MAX_SAFE_INTEGER,distance+words.length(g.word)),old=records.get(next);if(old&&old.distance<=cost)continue;
+   if(!old&&records.size>=groupCtx.config.maxOrbitStates)throw new Limit('pair_orbit_limit');
+   records.set(next,{distance:cost,parent:state,gen:i});push([cost,next]);ctx.stats.pairStates=records.size;
+   if((ctx.stats.pairTransitions&255)===0)ctx.storage((ctx.baseStorage??0)+actions.length*(d*4+128)+words.nodes.length*80+records.size*160+heap.length*32);
+  }
+ }
+ return null;
+}
+
+class CachedSwapSolver{
+ constructor(model,cache=null){this.model=model;this.compiled=compileModel(model);this.cache=cache;this.prepared=null;}
+ solve(request,options={}){
+  const started=performance.now();let ctx,words,req;
+  const result=(status,extra={})=>({status,optimal:false,...extra,stats:{...ctx?.stats,dagNodes:words?.nodes.length??0,elapsedMs:performance.now()-started}});
+  try{
+   req=normalize(this.model,request);ctx=eligibilityContext(options);ctx.stats.pairStates=0;
+   const maxOutputMoves=options.maxOutputMoves??5000,maxDagNodes=options.maxDagNodes??300000,maxOrbitStates=options.maxOrbitStates??100000;
+   for(const [name,value,max]of [['maxOutputMoves',maxOutputMoves,20000],['maxDagNodes',maxDagNodes,1000000],['maxOrbitStates',maxOrbitStates,250000]])if(!Number.isSafeInteger(value)||value<0||value>max)throw Error('Invalid cached-swap budget '+name);
+   const groupCtx=makeContext({maxMs:options.maxMs??3000,maxOutputMoves,maxDagNodes,maxOrbitStates,maxStorageBytes:ctx.config.maxStorageBytes});
+   const d=this.model.degree,usesCache=req.protection==='endpoint'&&req.protected.length>0;
+   words=restoreWords(this.compiled,usesCache?this.cache:null,groupCtx);ctx.words=words;
+   let generators=this.compiled.moves.map(g=>({perm:g.perm,word:words.leaves[g.index],level:0}));
+   if(req.protection==='throughout')generators=generators.filter(g=>req.protected.every(x=>g.perm[x]===x));
+   else if(usesCache){
+    if(!this.prepared)this.prepared=prepareChain(this.model,this.cache,ctx);
+    generators=stabilizer(this.prepared,req.protected,d,ctx);
+   }
+   ctx.check();const word=pairWord(generators,...req.swap,d,words,ctx,groupCtx);
+   if(word===null){
+    // This module constructs pointwise witnesses. A failure under the stricter
+    // rule must never become an impossibility claim for a color-hold request.
+    if(req.holdSemantics==='color'&&req.protected.length)return result('unknown',{reason:'color_hold_pointwise_fallback_impossible'});
+    return result('impossible',{reason:'pair_outside_stabilizer_orbit',proof:'complete_cached_chain_and_pair_orbit'});
+   }
+   const moveIndices=words.flatten(word);ctx.check();
+   if(!verify(this.model,req,moveIndices))return result('unknown',{reason:'internal_cached_witness_verification_failed'});ctx.check();
+   const p=permutation(this.model,moveIndices),occupied=req.occupiedNodes?new Set(req.occupiedNodes):null,changedNodes=p.map((x,i)=>x!==i&&(!occupied||occupied.has(i))?i:-1).filter(x=>x>=0);
+   return result('solved',{moveIndices,sequence:moveIndices.map(i=>this.model.moves[i].name),permutation:p,changedNodes,collateralNodes:changedNodes.filter(x=>!req.swap.includes(x)),protected:req.protected,swap:req.swap,mode:req.mode,protection:req.protection,...(occupied?{occupiedNodes:req.occupiedNodes}:{}),...(req.holdSemantics==='color'?{holdSemantics:'color'}:{}),verified:true,method:usesCache?'cached_stabilizer_pair_transporter':'ordered_pair_transporter'});
+  }catch(error){if(error instanceof Limit||error instanceof EligibilityLimit)return result('unknown',{reason:error.message});return result('invalid',{reason:error.message});}
+ }
+}
+function solveCachedSwap(model,request,options={}){try{return new CachedSwapSolver(model,options.cache).solve(request,options);}catch(error){return {status:'invalid',reason:error.message,optimal:false};}}
+module.exports={solveCachedSwap,CachedSwapSolver};
+
+},
+"./manual-session.cjs":function(module,exports,require){
+'use strict';
+
+// One live manual request. Unlike solveSync, this object keeps its projected
+// search frontier between calls. No completed BFS transition is repeated.
+// Permutations map source -> destination; the tuple is g^-1(H,A,B). Applying
+// an inverse generator to the tuple PREPENDS its forward move to the word.
+const {normalize,verify,permutation,validateOptions}=require('./index.cjs');
+const {modelSignature}=require('./full-solve.cjs');
+const {CachedSwapSolver}=require('./cached-swap.cjs');
+const STAGES=[3000,10000,30000,60000],MAX_MS=60000;
+
+class ManualSwapSession {
+ constructor(model,request,options={}){
+  this.clock=typeof options._clock==='function'?options._clock:()=>performance.now();
+  this.model=model;this.options=options;this.elapsedMs=0;this.budgetMs=0;this.advances=0;
+  this.records=[];this.seen=new Set();this.head=0;this.moveCursor=0;this.transitions=0;
+  this.completedRadius=0;this.catalogIndex=0;this.catalogOperations=0;this.catalogBest=null;
+  this.cachedAttempts=0;this.cachedLastBudget=0;this.cachedReason=null;this.cachedRetry=false;
+  this.initialized=false;this.catalogDone=false;this.bfsStopped=null;this.result=null;
+  const started=this.clock();
+  try{
+   validateOptions(options);this.request=normalize(model,request);
+   this.maxBytes=options.maxStorageBytes??48*1024*1024;
+   this.maxStates=options.maxSearchStates??100000;
+   this.maxOutputMoves=options.maxOutputMoves??5000;
+   this.maxDepth=Math.min(options.maxSearchDepth??this.maxOutputMoves,this.maxOutputMoves);
+   this.width=this.request.protected.length+2;this.bytesPerState=256+40*this.width;
+   // Includes one temporary/pending frontier row, so a transition can pause
+   // at a workspace reservation without recomputing it or overshooting memory.
+   this.inverseBytes=model.moves.length*model.degree*2+model.degree*16+this.width*32+this.bytesPerState;
+   this.cachedPossible=options.constructive!==false&&(options.fullCache||!this.request.protected.length||this.request.protection==='throughout');
+   this.catalog=options.colorCache;
+  }catch(error){this.result={status:'invalid',reason:error.message,optimal:false};}
+  this.elapsedMs=Math.max(0,this.clock()-started);
+ }
+ _retainedCacheBytes(){
+  const p=this.cachedSolver?.prepared;
+  return p?(p.cacheStorage+p.generators.length*(this.model.degree*4+128)):0;
+ }
+ _bytes(){return (this.inverseBytes??0)+this.records.length*(this.bytesPerState??0);}
+ _stats(){return {method:'resumable_preimage_tuple_bfs',searchStates:this.records.length,transitions:this.transitions,completedRadius:this.completedRadius,bytesPerState:this.bytesPerState,estimatedBytes:this._bytes()+this._retainedCacheBytes(),catalogOperations:this.catalogOperations,cachedAttempts:this.cachedAttempts,cachedReason:this.cachedReason};}
+ _metadata(resumed,terminalReason){
+  const canContinue=!this.result&&this.budgetMs<MAX_MS&&(!this.bfsStopped||!this.catalogDone||this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry));
+  return {budgetMs:this.budgetMs,elapsedMs:this.elapsedMs,states:this.records.length,transitions:this.transitions,completedRadius:this.completedRadius,canContinue,nextBudgetMs:canContinue?(STAGES.find(n=>n>this.budgetMs)??MAX_MS):null,resumed,...(terminalReason?{terminalReason}:{})};
+ }
+ _finish(result){
+  if(result.status!=='solved'){this.result={optimal:false,...result};return;}
+  const word=result.moveIndices;
+  if(!Array.isArray(word)||word.length>this.maxOutputMoves||!verify(this.model,this.request,word)){
+   this.result={status:'unknown',reason:'internal_witness_verification_failed',optimal:false};return;
+  }
+  const req=this.request,p=permutation(this.model,word),occupied=req.occupiedNodes?new Set(req.occupiedNodes):null;
+  const allChanged=p.flatMap((to,from)=>to===from?[]:[from]),changed=occupied?allChanged.filter(x=>occupied.has(x)):allChanged;
+  this.result={...result,moveIndices:word.slice(),optimal:result.optimal===true,sequence:word.map(i=>this.model.moves[i].name),permutation:p,changedNodes:changed,collateralNodes:changed.filter(x=>!req.swap.includes(x)),protected:req.protected,swap:req.swap,mode:req.mode,protection:req.protection,...(occupied?{occupiedNodes:req.occupiedNodes,allChangedPoseAddresses:allChanged}:{}),...(req.holdSemantics==='color'?{holdSemantics:'color'}:{}),verified:true};
+ }
+ _initialize(){
+  this.initialized=true;
+  const req=this.request,d=this.model.degree;
+  this.moveMap=this.model.moves.map((_,i)=>i).filter(i=>req.protection!=='throughout'||req.protected.every(x=>this.model.moves[i].perm[x]===x));
+  if(!this.moveMap.length){this.catalogDone=true;this._finish({status:'impossible',reason:'no_move_preserves_protected_nodes_at_each_step',proof:'no_allowed_generators'});return;}
+  this.inverses=this.inverseBytes<=this.maxBytes?this.moveMap.map(i=>{const inverse=new Uint16Array(d);this.model.moves[i].perm.forEach((to,from)=>inverse[to]=from);return inverse;}):[];
+  this.initial=Uint16Array.from([...req.protected,...req.swap]);
+  this.targetColors=req.holdSemantics==='color'?req.protected.map(h=>req.colorByNode[h]):null;
+  if(this.maxStates<1||this._bytes()+this.bytesPerState>this.maxBytes){this.bfsStopped=this.maxStates<1?'state_limit':'storage_limit';}
+  else {this.records.push({tuple:this.initial,parent:-1,move:-1,depth:0});this.seen.add(this.initial.join(','));}
+  const c=this.catalog;
+  if(!c||c.kind!=='color-macros'||c.schemaVersion!==1||c.degree!==d||c.modelSignature!==modelSignature(this.model)||!Array.isArray(c.operations))this.catalogDone=true;
+ }
+ _catalogStep(){
+  const req=this.request,c=this.catalog;
+  if(this.catalogIndex>=c.operations.length){this.catalogDone=true;return;}
+  const op=c.operations[this.catalogIndex++];this.catalogOperations++;
+  if(!op||!Array.isArray(op.word)||!op.word.length||op.word.length>this.maxOutputMoves||this.catalogBest&&op.word.length>=this.catalogBest.length||!Array.isArray(op.support)||op.support.length%2)return;
+  const [a,b]=req.swap,held=new Set(req.protected);let pa=a,pb=b,matches=true;
+  for(let i=0;i<op.support.length;i+=2){
+   const source=op.support[i],dest=op.support[i+1];
+   if(source===a)pa=dest;if(source===b)pb=dest;
+   if(req.holdSemantics==='color'?held.has(dest)&&req.colorByNode[source]!==req.colorByNode[dest]:held.has(source)&&source!==dest){matches=false;break;}
+  }
+  if(matches&&pa===b&&pb===a&&verify(this.model,req,op.word)){
+   this.catalogBest=op.word.slice();if(op.word.length===1)this.catalogDone=true;
+  }
+ }
+ _goal(tuple){
+  const req=this.request,h=req.protected.length;
+  if(tuple[h]!==req.swap[1]||tuple[h+1]!==req.swap[0])return false;
+  for(let i=0;i<h;i++)if(this.targetColors?req.colorByNode[tuple[i]]!==this.targetColors[i]:tuple[i]!==req.protected[i])return false;
+  return true;
+ }
+ _bfsStep(){
+  if(this.head>=this.records.length){
+   if(this.truncatedDepth){this.bfsStopped=this.maxDepth<this.maxOutputMoves?'depth_limit':'output_limit';return;}
+   this.bfsStopped='exhausted';this._finish({status:'impossible',reason:'exhausted_preimage_tuple_orbit',proof:'complete_preimage_tuple_orbit'});return;
+  }
+  const row=this.records[this.head];this.completedRadius=row.depth;
+  if(row.depth>=this.maxDepth){this.truncatedDepth=true;this.head++;this.moveCursor=0;return;}
+  const localMove=this.moveCursor,inverse=this.inverses[localMove];
+  const tuple=Uint16Array.from(row.tuple,x=>inverse[x]),key=tuple.join(',');
+  this.transitions++;
+  if(!this.seen.has(key)){
+   if(this._goal(tuple)){
+    const word=[this.moveMap[localMove]];
+    for(let at=this.head;this.records[at].parent!==-1;at=this.records[at].parent)word.push(this.records[at].move);
+    this._finish({status:'solved',moveIndices:word,optimal:true,lowerBound:word.length,method:'resumable_preimage_tuple_bfs'});return;
+   }
+   // Conservative JS object/string accounting keeps retained frontiers bounded.
+   // Reserve room for a retried cached constructive attempt when it timed out.
+   const pendingConstructive=this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry);
+   const reserve=Math.max(this._retainedCacheBytes(),pendingConstructive?Math.floor(this.maxBytes/2):0);
+   if(this.records.length>=this.maxStates){this.bfsStopped='state_limit';return;}
+   if(this._bytes()+this.bytesPerState+reserve>this.maxBytes){
+    this.pendingState={tuple,parent:this.head,move:this.moveMap[localMove],depth:row.depth+1,key};
+    this.bfsStopped='storage_limit';return;
+   }
+   this.seen.add(key);this.records.push({tuple,parent:this.head,move:this.moveMap[localMove],depth:row.depth+1});
+  }
+  if(++this.moveCursor===this.inverses.length){this.moveCursor=0;this.head++;}
+ }
+ _resumeReleasedStorage(){
+  if(this.bfsStopped!=='storage_limit'||!this.pendingState||this.cachedRetry||this.result)return;
+  if(this._bytes()+this.bytesPerState+this._retainedCacheBytes()>this.maxBytes)return;
+  const {key,...record}=this.pendingState;
+  this.seen.add(key);this.records.push(record);this.pendingState=null;this.bfsStopped=null;
+  if(++this.moveCursor===this.inverses.length){this.moveCursor=0;this.head++;}
+ }
+ _cachedAttempt(availableMs){
+  const stage=STAGES.findIndex(n=>n>=this.budgetMs),allowances=[800,2500,8000,16000];
+  // If the final click has only the constructive route left, spend the
+  // remaining cumulative allowance on it instead of leaving useful time idle.
+  const allowance=this.budgetMs===MAX_MS&&this.bfsStopped?availableMs:allowances[stage<0?3:stage];
+  const maxMs=Math.min(Math.floor(availableMs),allowance);
+  if(maxMs<1)return;
+  this.cachedLastBudget=this.budgetMs;this.cachedAttempts++;
+  try{
+   this.cachedSolver??=new CachedSwapSolver(this.model,this.options.fullCache);
+   const r=this.cachedSolver.solve({...this.request,holdSemantics:'sticker'},{...this.options,maxMs,maxStorageBytes:Math.max(0,this.maxBytes-this._bytes()),maxOutputMoves:this.maxOutputMoves});
+   this.cachedReason=r.reason??r.status;this.cachedRetry=r.status==='unknown'&&r.reason==='time_limit';
+   if(r.status==='solved')this._finish({...r,optimal:false,method:'manual_cached_stabilizer_transporter'});
+   else if(r.status==='impossible'&&!(this.request.holdSemantics==='color'&&this.request.protected.length))this._finish(r);
+  }catch(error){this.cachedReason='cached_backend_error';this.cachedRetry=false;}
+ }
+ advance({budgetMs=STAGES[0],onProgress}={}){
+  if(!Number.isSafeInteger(budgetMs)||budgetMs<1||budgetMs>MAX_MS)throw Error('budgetMs must be an integer from 1 to 60000');
+  const resumed=this.advances++>0;this.budgetMs=Math.max(this.budgetMs,budgetMs);
+  const started=this.clock(),before=this.elapsedMs;let lastProgress=started;
+  const used=()=>before+Math.max(0,this.clock()-started);
+  const remaining=()=>Math.max(0,this.budgetMs-used());
+  const progress=force=>{
+   const now=this.clock();if(typeof onProgress==='function'&&(force||now-lastProgress>=250)){
+    lastProgress=now;const saved=this.elapsedMs;this.elapsedMs=before+Math.max(0,now-started);
+    try{onProgress(this._metadata(resumed));}catch(_){}this.elapsedMs=saved;
+   }
+  };
+  try{
+   if(!this.result&&remaining()>0){
+    if(!this.initialized)this._initialize();
+    progress(true);
+    while(!this.result&&!this.catalogDone&&remaining()>0){this._catalogStep();progress(false);}
+    if(!this.result&&this.catalogDone&&this.catalogBest)this._finish({status:'solved',moveIndices:this.catalogBest,optimal:this.catalogBest.length===1,lowerBound:1,method:'manual_short_catalog'});
+    // Try short primitive solutions before expanding a potentially long cache
+    // word. This probe uses exactly the same persistent frontier as later work.
+    if(!this.result&&this.catalogDone&&this.cachedPossible&&!this.cachedAttempts&&!this.bfsStopped&&remaining()>0){
+     const probeDeadline=this.clock()+Math.min(150,remaining()/4);
+     while(!this.result&&!this.bfsStopped&&this.clock()<probeDeadline&&remaining()>0){this._bfsStep();progress(false);}
+    }
+    if(!this.result&&this.catalogDone&&this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry)&&this.budgetMs>this.cachedLastBudget&&remaining()>0){
+     this._cachedAttempt(remaining());this._resumeReleasedStorage();progress(true);
+    }
+    while(!this.result&&this.catalogDone&&!this.bfsStopped&&remaining()>0){this._bfsStep();progress(false);}
+   }
+  }catch(error){this._finish({status:'unknown',reason:'manual_session_error',detail:error.message});}
+  finally {this.elapsedMs=before+Math.max(0,this.clock()-started);}
+  let terminalReason;
+  if(this.result)terminalReason=this.result.status==='solved'?'solved':this.result.status==='impossible'?'exhausted':this.result.reason;
+  else if(this.budgetMs>=MAX_MS){terminalReason=this.bfsStopped??'time_limit';this._finish({status:'unknown',reason:terminalReason});}
+  else if(this.bfsStopped&&this.catalogDone&&!(this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry))){terminalReason=this.bfsStopped;this._finish({status:'unknown',reason:terminalReason});}
+  const metadata=this._metadata(resumed,terminalReason);
+  return {...(this.result??{status:'unknown',reason:'manual_search_paused',optimal:false}),lowerBound:this.result?.lowerBound??this.completedRadius+1,stats:{...this.result?.stats,...this._stats(),totalMs:this.elapsedMs},search:metadata};
+ }
+}
+
+module.exports={ManualSwapSession,MANUAL_SEARCH_STAGES:STAGES};
 
 }
 };
@@ -683,26 +1390,35 @@ const loaded={};function require(name){if(!factories[name])throw Error("Unknown 
 const core=require('./index.cjs'),bridge=require('./atlas-adapter.cjs'),autoBridge=require('./auto-adapter.cjs');
 const assetBase=new URL('.',self.location.href);
 
-const fingerprints={"masterpyraminx":"6c7522d478cc352a8a2f7f610cb369e7296cc2eb1d2d80162bf5266aee8d2c68","kilominx":"41bf676dce3df3c1469aa556966fc5ea77dc6118315f25088027d68176d4d1ea","ghost":"ec0ad5b655f8d6fd0f1a851bd68f4018205dd92c90c1bd77c7c87d6f11ddced8","cube2":"c9294e1aafbc5579da4d263273b0c570fd0be19e878407973069da095fbaa05d","cube3":"fce59f40b81d3f832367f0d73e7d217a6a243ce42f98e2a6e440efccad80083b","cube4":"c28b5e652954c93346384e07d9b58b08d8b58699e78eb1e958142fe79a98a188","cube5":"e1d0ec1feacd5192d56f1589dcd84b6d01eb7a4d5c44c9c9e6fd213aaa10d999","cube6":"208a174eaa73c93b620cba75cec72cfcd42f77fb7e80b920937274e5d59d1367","cube7":"15acefd16d801a2e86036f4d5c979e7786d93914790f8966bdf9d556f8d54bde","cube8":"b8f7dce64cf63d5f45c13c5912c7d59d657660dc9aa25f5408a8673d59e03c8d","mirror":"f536816f9014c39ad2766bb9f58a78e0f9c5eb5bea210225d2459f7ef05bf413","homer":"4e3946d849f8706205192d52e3020d54da6fac7894dc3328566245502374f063","pyraminx":"73f352b3d689b9aa9d5ece7965d6edc9e24e8315334e1e5e3206420691262f81","tetraminx":"a63189ba4c9bc24183e54df43a6b4a40a9dd759b5873107fe55e95d92495e3a5","megaminx":"bb5d97b6400529a578c854fdd4ea583e581c5fecc59138d05d4400256bf1920c","jing":"a4fbc69de120cdbedc13aa85a567022add6318dbf595d39bfb33e9f4b7fe5ec2","skewb":"8a771160a0f08e8c96a1884feec40f8867f85b0e92fda32f40d90701d4299506","masterskewb":"0488b2816300e945487932dbb673fbde39041a253043d96a49171d340b6dd534","ultimate":"42688b335b8a58586ec56eb13680754f295975307c3c94898407bfdc24b129a9","diamond":"2101ac0c0ed29829596fde438f0a72e31f0f335c96781aad4a9093da7f6814b8","fto":"002b574c99f21e009a0678657b0d9e92c2fd2fb12a358821ccc5d91a83cafb8a","crystal":"6e59c084ca294b74a1cf1c5f8318333e7198fcb47d36b5fed9bc50613a48e86c","dino":"8386c0d3e048ea3feaadf8354a6afb3b2d043b53846dbbdcff6d9fecde7cfb6b","rainbow":"5552e1ee44281b2e07936225e85e0bf5e9f7bf7f9464280cfd9d30a5685ade16","rhombic":"ae604292304fd35de549500b122ff82c254c507bbd303ae785bab336a242bbf4","flatdiamond":"0fd0f3252475c0af43b7b5e809192acd052ea7e9333f412e7ec07daa3954f88b","cornerocta":"388b74d481ca03322a4902efbf034eaa81b5757bc7b031c668a61383ec8a9772","trajber":"a84fc9a844f3af3fa20bba2a2b69a4a11d17cc338b44c675fc0baefdddfff5b4","jewel":"f7e61ef017b72c7b8da85e67eeb11f6d594547a0b4817c2503c8538507458ea1","pyramorphix":"4a20cb558c7eb548ba495d860ed3d78347392c5da6aca3bbb6950f748fc1f248","mastermorphix":"2a220d49638108df466165e4b1dc8dee74bb05e475ae6a37d64d4d34a03b5039","helicopter":"6afb4d3524aa35778b758bef5b0d1f120459cea05366b90b4d5460a39bcdf1de","diamondstyle":"f82579c8c4ba4b648878a83e50fd0f35a0da213149c637a1a26841ab848fa4c1","diamondcube":"7d8554c6af07b5c63520b3a88bdb685baf27fbb0df13bdb4410d6c141f0e2d30"};
+const assetRelease="fd3b55f4802864f376bf";
+const fingerprints={"masterpyraminx":"d3a63fd98bd5060bf92000e304f4db3f431d4937b87a8769b91f17ddb6b2839d","kilominx":"acfe96e01d7f2d427577ef2e59ebf09db0cf42eae45eda2d62fdd55aabc38f49","ghost":"87dd812f7b68fc4b6e0701aa1bf4ea5262f987530c77a2e58e95c23cfd12bc54","cube2":"bd6300422f4d20a2dd194d73a6316b39a31c8eeba580035c4e6dcfe0615d1835","cube3":"25d166c42a1a4214118235c74ee3a8a24621bb2c9a24c73f8a1f76629820f36f","cube4":"4e277a978c084547292e65cee3f4d41fe087cf06645400faac7424852607bdce","cube5":"287fda505a904724f2ce48f4cbfdf1974aa34f00de76c07011edcd02f517a05b","cube6":"85921581eb10c230283d4b67ce212485f1616d610c8c180be27a34dd901184d8","cube7":"f3e758412c8b4b2635e89d3942f798d5af4df3c0c5de57a780e23f3ea9532fb3","cube8":"e42ad273705ff414744840ad6cae0106e6925855193d4fd0b60796f6f0737c19","mirror":"605272ef0ef9ef50aeb651314936b79d9fbff4356518922edaf4a4961c152c7d","homer":"bff3dc966520d46f933654912282bdc86259910c698a4a8df412d342685b29d2","pyraminx":"3e524378a1b02b44b669dea6379847a8187cbd46ae249d4f2169db2140534a46","tetraminx":"1b570c6119b6413f2f4a5256ab86ec60b97030ac0de42f4e4a2866f9357e8a06","megaminx":"097de06949700d957161a1291a154f4a9cc1ffb5d85d4fed620cd7aa1565598b","jing":"03d4ea9509a1a72b192f1b47daf80b575174c512068487aa986edeee96c26d0c","skewb":"a3653e612115769511a43416165b8f3851e2e4ecd14fe35ded8195651904a293","masterskewb":"381158edb4b9e602bc9648f393ca9387daf5ad69522ab41d0c42a7efb6d641f2","ultimate":"040287ae2057b9058be2f5e55e2819aa506bd962b55dc9367a9527f5a26d8371","diamond":"399d3929c7360a902c58778354e82317695d0e4596b2291655f3300c36b7106e","fto":"8dc5763c64af80e7db332227755febc1fe49b8a8fbab42270152076c7451a1f4","crystal":"0dbd962e9441fc787c0340c10d69161e63433dcfab1f279699b96f3d58e0e6c6","dino":"2a7230bbe7f2e5213018e683b44bcfd0ec6deedfa5955f4926366412cdd8782b","rainbow":"fbb0d9d73a826e741408bb771c3e36cbf32a023ce656f83f61d66da76931d9ea","rhombic":"4a439255f4f0949440a0af7493b1aaf1a27f42a8d53fa6c17f23440262a0ab68","flatdiamond":"b2517a2ec399f56e3f1b2060ad222e867531fb107825a9e284ebf854b58fcdfc","cornerocta":"fcb965d8edf9997db266fd28cbe3531864ecd96265a99c534ac2494999880635","trajber":"f4dfa236869f9da9d813864a3616eb461b1422521e5656fe94dc758442410ce1","jewel":"cc09570517865afd844d571bacadd74473ed39bb966eafbab0a404328863654a","pyramorphix":"5d4d35c4bd3efb49dff96f2388eaa40391466a4687b3786140182f90effba86c","mastermorphix":"299861503a765d14ae3f1f2f5ddfb851e22732906e74b16aba69c5183bfb83a5","helicopter":"400b3ab0ba258044c30c81e995b6c942a1ddafd50fc993c9f56c3b741416ee7e","diamondstyle":"8d70b934930c34f5c581522567daa12eba8880110a6e5ca78d6abf6536f0f67a","diamondcube":"5c5c4509433ab3b1e325da59d954531b7800295bf3f8def1e9a92ff8c8628572"};
 const fullCacheFingerprints={"masterpyraminx":"d88b12fefdb6a47d55669832af4cac98cbd3b125f007d621ef8db5adf792c86f","kilominx":"b30e412cce55ffac0dff53813a12eb6d7279c643a2427e24673d6e44bc606d75","ghost":"b54e9cddde3a3f0ad172d0f8289a2d1275ff211cbc39fda1bf23632d68a0c2cd","cube2":"977a35446c3fa849d1dcb68bb61df7e3b9aa49cf5e80c0954aa4370e97ddff31","cube3":"7515e1dcf06572d1dd9e00ec9e0ffdfc9b245ed50931ed98cb901303f400f9cf","cube4":"8f9c0282338e84cbbeee20545990cdc1cc89e868f1e71f20055e2160cfedc05e","cube5":"6f035a12eb1c68eb0ce7d3f17ce8994d26338a53f488337fd5d0bbc3ff3d7700","cube6":"32e4f9766af8d711f8132a9826f8206068257ffbe0dc79a8c5ed9733446991f2","cube7":"91945aa70ae285b58efd3b3a33cd6746b4d02b468f723e803e49f59032d54150","cube8":"b562db8820e9edc8686e7421a4e91b4d6d821ec3238ec5ef41128a4e24a4c018","mirror":"d44467f7e7c921715134669d6009cf40b658c694e7689814d33174962c95db67","homer":"fd1c506be6c64f76d484449b2fdb726a11ebaf9805d0428266c35d9a798cb1ec","pyraminx":"f60a67d1130ef8de2ccbf63850b137534d6b9f4b5c838bd63c11c81d7c25a9e5","tetraminx":"f917ae48b97fabceebcc56d18f3d51554f5e369ac47decaa7b9f90db784a09dd","megaminx":"2053a94fec1193b320b38e973c2745b228c4c825ffe0a072c0dcadf2d79a140c","jing":"6a7f7b10ae82142126b2eae16eb6a8b9562d739473308a475c4b93c7baeff8c7","skewb":"947e459a820302317fb5d06b426049039537745d58d24db5dc0df27710b2f4dc","masterskewb":"099919d52776a9f50b46bde86e1bde4d7578dcddb425aa92dd2ce09da6304972","ultimate":"474c205d35d96a2aaf79f7a9098b244bee678100f6a2d411859ec462d1e783bd","diamond":"e14bbda3e373f0bfb80f0089d025cae0a114f70a5ba2e85abcb4b84121c64dfd","fto":"9654c4371149252eb2f0a59f632dc66b6e99ef969a869d723345025cdc38a6c2","crystal":"be9018f81efde1d2adc841d2daafe3508dc1379b747af564bd4668fb8419ff6a","dino":"9dd4948295c376d46832b9a7bc78024bf91d106e2fc7f2c883b546fb4c22a591","rainbow":"ebbab89e9ed9c72ab4f0fb04ac04349f65fd7c10879616f64bbaa7b66ad3bf10","rhombic":"01bddce752356192e235ea58591ffa0257e145cace3c89162df39356c8e7666a","flatdiamond":"49d53fa0447601c43552a0203c00bc6d6fd2632cf7164b7e4c653b771d4b3eed","cornerocta":"46c1e3ffced843db805bdac0d094c228f20d162e01410c9056ae345901f47c98","trajber":"89cf86b6037bef38086d96926f2cc434d672d780028272d59bcf5b5a41b51359","jewel":"91d2a4b3982f449eb8a03bdb3e5e4435aa5fa004f0d6678b3abe54a47107da0a","pyramorphix":"e360403344bcf463ba5f21f316a1ad159c9b17e116703c161d9ba8d0b5985ad4","mastermorphix":"0a59d3f11bb191c3ea75e3af0d0c8fdca69d919809234825ffe6e1a2dcc99a19","helicopter":"1bcff6e508493030c7fd8b2dde4ec156423145d7ff04d20f904bbd71ebee3273","diamondstyle":"eb2aaa82ebd9d87601e483d8b2149d3e4a2f9c056e6874d6db20920f8112ede7","diamondcube":"cf6c990cc3f5f919cecb81fa237ff4ce7f13fb938b4e9215ce4a7ebd72d4e60c"};
+const colorCacheFingerprints={"masterpyraminx":"a6e3b9e4c1790cdca6b659c797b4700a529c9701c1271ca2c2caed856ef0e229","kilominx":"7ac44addfdd39664cfea809b2dc4dcad28cfe31d564d735b46cb403dd8fc9c7f","ghost":"af8ae54b6b31b84a7f749a0b9bcd460799f2e1737108cc1f3fd74e12bdb02622","cube2":"663f73bddbf42e339f15a73b819a813632dbe27409197f4792692ca90e5cd1d2","cube3":"d0bccf7c5d9ea458ee35ac419c2dbcfb878c85a069af75ee8307d1734c2995b7","cube4":"c78607124b0ebf34eaaeba40ffaef20e611d66a657dc30effec4e4a3b61649a5","cube5":"ef56d77e0dfd4791b4e7dfd922a72a76b238025ea09f0d8bda9830d2d08ed0a8","cube6":"4ba179b11c7d844fbaba525deec8f4c377b7ccb45f5f35cfc4dc83ac7745a533","cube7":"f34014372ec42a085ba1cf649b99aa02694a824568e19c527330a9b3608a2b06","cube8":"a7bd593b8b256f4c5a487381c97ce6aa9a2fc12d06520b8a27b53bfc266ef7fa","mirror":"26a6564de7d317095f1222979fe2956365220476bf0fbf2255366c0870873a60","homer":"af832db4bd6af68a9343968137d4ef4ddfdb4d99be804cabe1b1f1fcbc9e436f","pyraminx":"58191c5c2e1c803c86c26f08efc4b3d1c4f1e57454c2f364a2df6971182be632","tetraminx":"8008f489849479f52382d9886288ee4fbf7a07085c97cbe7768e861dec708926","megaminx":"adaa8aa42f6e32aa1227d2093f38efbba52fd8bc118ea781b70209adf2e429d0","jing":"4d1702a9bb39824cfa783fbddf42c0c48a54c729c07242129d1aa39ad1b01f28","skewb":"3177d5ff634605379b464166ba44c8b23ef5120563f3b58e708001e044622138","masterskewb":"876fa58b75d4a943d3082caabc8bb417a22f86139c1bba45501ce4df569881b4","ultimate":"36a1069a012658c52636a04f710f13871937f54185a0ebc523557d3c82edd9be","diamond":"e2a5ec6f1ce13b912da7d684d13c6c40c0c7d699bf8c0017466b81846b3936f9","fto":"6aaf6995fe69cbec65ab1e6c919b0a6242ca89c37bf6f49d1d81439a5558912b","crystal":"419c09ba6b58d3e567be3169693e03098ddf1f040fd4a6d7801a33b0254a07f2","dino":"c68b04a106f3221f072953690edffe627a365bb9e1671467f5ebc005e396d38e","rainbow":"710a9cf9174e9d878c7c5fdb7c989d8e6913bc9df859672bddb096b9c8ce4fae","rhombic":"b4dab2cd92a3091bee06b1608e35ecf3f01f2fc6460ec0f3959ae68b8bbdde30","flatdiamond":"ba4044e30050fbe9fb52fbced7853c5af744ee2a1e6022aa88714a87b6fb3876","cornerocta":"3777cb745e7787af85a1c2340fc472a977739cc02e420e433d35c3cfe410854d","trajber":"41d61094c19408d78733b585a06156f851d7b43fb76cf18d06e0b5f1f02b7378","jewel":"c74dc90c144304faeb4cca3d21c0f99a2f89ef41e1cbfed19ddcb75166ccc4f9","pyramorphix":"a4b1ad65c10d966327afefc084a6198752378ea981d167f5d6e632df4c4c6086","mastermorphix":"699e188553ea5e24116b39d33f0dc8b336e8fdf1c04dcdc83716d0970ef6b5a3","helicopter":"89c123da883ec5ccf72371016dc9d9bd2054aaa2ffef0221a87413c66aab2a5e","diamondstyle":"274912ece675031ef72f48eba7d12571681ac9a3eeb6fbebe7f2d7cb41a0a41e","diamondcube":"cde5e8aaa0ff7b644633a2aff553346a1631d010c33d5d6a868b4ac48b739536"};
 const modelCache=new Map();
 function modelFingerprint(modelOrId){return fingerprints[typeof modelOrId==='string'?modelOrId:modelOrId?.id]??null;}
 function assetError(kind,reason,message){const error=new Error(message);error.code=kind+'_'+reason;return error;}
 async function loadAsset(path,expected,kind){
- const label=kind==='model'?'Puzzle move model':'Puzzle stabilizer cache';
+ const label=kind==='model'?'Puzzle move model':kind==='color'?'Puzzle short-move library':'Puzzle stabilizer cache';
+ if(assetBase?.protocol==='file:')throw assetError(kind,'file_protocol','Open this website through a local HTTP server or your hosted site. Browsers block solver data when HTML is opened directly from disk.');
  const controller=typeof AbortController==='function'?new AbortController():null;
  let timer=null,stage='network';
  const operation=(async()=>{
   try{
-   const response=await fetch(new URL(path,assetBase),controller?{signal:controller.signal}:undefined);
-   if(!response.ok)throw assetError(kind,'http_error',label+' download failed (HTTP '+response.status+'). Check your connection and retry.');
-   const text=await response.text();stage='integrity';
-   if(globalThis.crypto?.subtle){
-    const digest=await globalThis.crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
-    const actual=Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
-    if(actual!==expected)throw assetError(kind,'integrity_error',label+' version does not match the solver. Reload the puzzle and retry.');
+   for(let attempt=0;attempt<2;attempt++){
+    stage='network';
+    const response=await fetch(new URL(path,assetBase),{...(controller?{signal:controller.signal}:{}),...(attempt?{cache:'reload'}:{})});
+    if(!response.ok)throw assetError(kind,'http_error',label+' could not be loaded from this website (HTTP '+response.status+'). Check that the complete dist folder was published.');
+    const text=await response.text();stage='integrity';
+    if(globalThis.crypto?.subtle){
+     const digest=await globalThis.crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+     const actual=Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
+     if(actual!==expected){
+      if(attempt===0)continue; // One fresh read repairs a stale cached asset.
+      throw assetError(kind,'integrity_error',label+' does not match this release after a fresh reload. Reload the page; if this persists, publish all dist files from the same ZIP.');
+     }
+    }
+    stage='parse';return JSON.parse(text);
    }
-   stage='parse';return JSON.parse(text);
   }catch(error){
    if(typeof error.code==='string'&&error.code.startsWith(kind+'_'))throw error;
    const reason=stage==='integrity'?'integrity_unavailable':stage==='parse'?'parse_error':'network_error';
@@ -730,10 +1446,17 @@ async function loadModel(id){
 }
 function freeze(value){if(value&&typeof value==='object'&&!Object.isFrozen(value)){for(const v of Object.values(value))freeze(v);Object.freeze(value);}return value;}
 
-const resultCache=new Map();let cacheBytes=0,busy=false;
+const resultCache=new Map();let cacheBytes=0,busy=false,manualSession=null,manualKey=null;
 const fullSolver=require('./full-solve.cjs');
-const {EligibilityAnalyzer}=require('./eligibility.cjs');let eligibilityAnalyzer=null;
+const {ColorEligibilityAnalyzer:EligibilityAnalyzer}=require('./color-eligibility.cjs');let eligibilityAnalyzer=null;
 const fullCache=new Map();
+const colorCaches=new Map();
+async function loadColorCache(id){
+ if(colorCaches.has(id))return colorCaches.get(id);
+ if(!Object.hasOwn(colorCacheFingerprints,id))return null;
+ const value=await loadAsset('color-solver-caches/'+id+'.json?v='+colorCacheFingerprints[id],colorCacheFingerprints[id],'color');
+ colorCaches.clear();colorCaches.set(id,value);return value;
+}
 async function loadFullCache(id){
  if(fullCache.has(id))return fullCache.get(id);
  if(!Object.hasOwn(fullCacheFingerprints,id))return null;
@@ -756,13 +1479,17 @@ function optionsFor(raw={}){
  const o=core.validateOptions(raw);
  return {...o,maxMs:Math.min(o.maxMs??3000,10000),searchMs:Math.min(o.searchMs??450,1500),maxSearchStates:Math.min(o.maxSearchStates??15000,25000),maxSearchDepth:Math.min(o.maxSearchDepth??12,30),maxStrongGenerators:Math.min(o.maxStrongGenerators??2000,2000),maxDagNodes:Math.min(o.maxDagNodes??100000,100000),maxOutputMoves:Math.min(o.maxOutputMoves??5000,5000),maxOrbitStates:Math.min(o.maxOrbitStates??100000,100000),maxSchreierTests:Math.min(o.maxSchreierTests??3000000,3000000),maxStorageBytes:Math.min(o.maxStorageBytes??48*1024*1024,48*1024*1024)};
 }
+function manualOptionsFor(raw={}){
+ const o=core.validateOptions(raw);
+ return {...o,maxMs:Math.min(o.maxMs??3000,60000),maxSearchStates:Math.min(o.maxSearchStates??100000,100000),maxSearchDepth:Math.min(o.maxSearchDepth??30,30),maxOutputMoves:Math.min(o.maxOutputMoves??5000,5000),maxOrbitStates:Math.min(o.maxOrbitStates??100000,100000),maxDagNodes:Math.min(o.maxDagNodes??100000,100000),maxStorageBytes:Math.min(o.maxStorageBytes??48*1024*1024,48*1024*1024)};
+}
 function cacheResult(key,result){if(!['solved','impossible'].includes(result.status))return;const text=JSON.stringify(result),bytes=text.length*2;if(bytes>cacheLimit)return;while(cacheBytes+bytes>cacheLimit&&resultCache.size){const k=resultCache.keys().next().value;cacheBytes-=resultCache.get(k).length*2;resultCache.delete(k);}resultCache.set(key,text);cacheBytes+=bytes;}
 self.onmessage=async event=>{
  const message=event.data||{},id=message.id;
  if(busy){self.postMessage({id,type:'result',result:{status:'unknown',reason:'worker_busy',optimal:false}});return;}
  busy=true;
  try{
-  const progress=stage=>{if(message.task==='full-solve')self.postMessage({id,type:'progress',stage});};
+  const progress=stage=>{if(message.task!=='eligible-swaps')self.postMessage({id,type:'progress',stage});};
   let model;
   progress('loading-model');
   try{model=await loadModel(message.modelId);}catch(e){self.postMessage({id,type:'result',result:{status:'unknown',reason:e.code||'model_unavailable',detail:e.message,optimal:false}});return;}
@@ -770,10 +1497,11 @@ self.onmessage=async event=>{
    const mapping=bridge.mapSnapshot(model,message.snapshot),selection=message.selection??{};
    const ids=selection.protectedStickerIds??[];if(!Array.isArray(ids))throw Error('Protected sticker IDs must be an array');
    const held=ids.map(id=>{const n=mapping.stickerToNode[String(id)];if(n===undefined)throw Error('Unknown current sticker '+id);return n;});
-   const request={protected:held,occupiedNodes:mapping.occupiedNodes,mode:selection.mode??'protected_swap',protection:selection.protection??'endpoint'},options=eligibilityOptionsFor(message.options);
+   const request={protected:held,occupiedNodes:mapping.occupiedNodes,mode:selection.mode??'protected_swap',protection:selection.protection??'endpoint',...(selection.holdSemantics==='color'?{holdSemantics:'color',colorByNode:bridge.colorsFromSnapshot(model,message.snapshot,mapping)}:{})},options=eligibilityOptionsFor(message.options);
    if(!eligibilityAnalyzer||eligibilityAnalyzer.model!==model)eligibilityAnalyzer=new EligibilityAnalyzer(model,null,{cacheBytes:2*1024*1024});
    let cacheError;
    if(held.length&&request.protection==='endpoint'&&!eligibilityAnalyzer.cache){try{eligibilityAnalyzer.setCache(await loadFullCache(model.id));}catch(e){cacheError=e.message;}}
+   if(request.holdSemantics==='color'&&!eligibilityAnalyzer.colorCache){try{eligibilityAnalyzer.setColorCache(await loadColorCache(model.id));}catch(e){cacheError=e.message;}}
    const result=eligibilityAnalyzer.analyze(request,options);
    if(cacheError)result.detail=cacheError;
    self.postMessage({id,type:'result',result,modelFingerprint:modelFingerprint(model.id)});return;
@@ -789,9 +1517,41 @@ self.onmessage=async event=>{
    const engineStages=result.status==='solved'?result.stages.map(stage=>({...stage,engineMoves:stage.moveIndices.map(i=>({...model.moves[i].engineMove}))})):[];
    self.postMessage({id,type:'result',result,engineStages,modelFingerprint:modelFingerprint(model.id)});return;
   }
+  if(message.task==='manual-swap'){
+   const request=bridge.requestFromSnapshot(model,message.snapshot,message.selection),normalized=core.normalize(model,request),options=manualOptionsFor(message.options);
+   const key=JSON.stringify([model.id,normalized]);
+   if(!manualSession||manualKey!==key){
+    manualSession=null;manualKey=null;progress('loading-cache');
+    const caches=await Promise.allSettled([
+     normalized.holdSemantics==='color'?loadColorCache(model.id):Promise.resolve(null),
+     normalized.protection==='endpoint'&&normalized.protected.length?loadFullCache(model.id):Promise.resolve(null)
+    ]);
+    const colorCache=caches[0].status==='fulfilled'?caches[0].value:null,swapCache=caches[1].status==='fulfilled'?caches[1].value:null;
+    const {ManualSwapSession}=require('./manual-session.cjs');
+    manualSession=new ManualSwapSession(model,normalized,{...options,colorCache,fullCache:swapCache});manualKey=key;
+   }
+   progress('planning');
+   let result=manualSession.advance({budgetMs:options.maxMs,onProgress:search=>self.postMessage({id,type:'progress',stage:'searching',search})});
+   if(result.status==='solved'&&(!Array.isArray(result.moveIndices)||result.moveIndices.length>5000||!core.verify(model,normalized,result.moveIndices))){
+    result={status:'unknown',reason:'internal_witness_verification_failed',optimal:false,search:{...result.search,canContinue:false,nextBudgetMs:null,terminalReason:'verification_failed'}};manualSession=null;manualKey=null;
+   }
+   const engineMoves=result.status==='solved'?result.moveIndices.map(i=>({...model.moves[i].engineMove})):[];
+   self.postMessage({id,type:'result',result,request,engineMoves,modelFingerprint:modelFingerprint(model.id)});return;
+  }
   const request=bridge.requestFromSnapshot(model,message.snapshot,message.selection),normalized=core.normalize(model,request),options=optionsFor(message.options);
+  let colorCache,swapCache;
+  if(normalized.holdSemantics==='color'||normalized.protected.length){
+   progress('loading-cache');
+   const caches=await Promise.allSettled([
+    normalized.holdSemantics==='color'?loadColorCache(model.id):Promise.resolve(null),
+    normalized.protection==='endpoint'&&normalized.protected.length?loadFullCache(model.id):Promise.resolve(null)
+   ]);
+   if(caches[0].status==='fulfilled')colorCache=caches[0].value;
+   if(caches[1].status==='fulfilled')swapCache=caches[1].value;
+  }
+  progress('planning');
   const key=JSON.stringify([model.id,normalized,options]);let result;
-  if(resultCache.has(key)){const value=resultCache.get(key);resultCache.delete(key);resultCache.set(key,value);result={...JSON.parse(value),cacheHit:true};}else{result=core.solveSync(model,request,options);cacheResult(key,result);}
+  if(resultCache.has(key)){const value=resultCache.get(key);resultCache.delete(key);resultCache.set(key,value);result={...JSON.parse(value),cacheHit:true};}else{result=core.solveSync(model,request,{...options,colorCache,fullCache:swapCache});cacheResult(key,result);}
   if(result.status==='solved'&&!core.verify(model,normalized,result.moveIndices))result={status:'unknown',reason:'internal_witness_verification_failed',optimal:false};
   const engineMoves=result.status==='solved'?result.moveIndices.map(i=>({...model.moves[i].engineMove})):[];
   self.postMessage({id,type:'result',result,request,engineMoves,modelFingerprint:modelFingerprint(model.id)});

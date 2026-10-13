@@ -1,21 +1,25 @@
-Puzzle Atlas — complete website, version 47
+PUZZLE ATLAS — COMPLETE PORTABLE PROJECT
 
-Includes all 34 puzzles, artwork, guides, solver models and caches,
-plus development source, backend tools, and tests.
-Includes the Megaminx browser-precision fix.
+1. Preserve this folder structure. The website is entirely inside dist/.
+2. For GitHub Pages, use the included .github/workflows/static.yml and choose
+   GitHub Actions as the Pages publishing source. It publishes ./dist.
+3. For a local copy, open a terminal here and run:
+      python3 -m http.server 8000 --directory dist
+   Then visit http://localhost:8000. No external server or internet is needed
+   for local play. Do not double-click an HTML file; file:// blocks the solver.
+4. Before committing/deploying, run:
+      node scripts/verify-release.cjs
+   This checks every website file and all solver fingerprints. No npm install.
+5. Replace your old dist folder as a unit. Include all new files in the commit
+   (git add .), especially games/color-solver-caches/. Do not merge only pieces
+   of different releases. Keep your .git folder; this ZIP contains no history.
+6. After replacing a previously deployed version, hard-refresh once.
 
-To run locally, extract this ZIP, open a terminal in the puzzle-atlas
-folder, then run:
+The app uses only files included in dist. It has no API keys, passwords,
+tracking scripts, remote fonts, CDN libraries, or development-host connection.
+Computation runs locally in the browser; JSON models are read from the same
+server that serves the page. The guide's optional scholarly links go outside
+the site only when you open them.
 
-    python3 -m http.server 8000 --directory dist
-
-On Windows, you may use py instead of python3.
-Open http://localhost:8000 in your browser.
-Serve through HTTP rather than double-clicking index.html: the solver
-loads local data and a Web Worker, which browsers restrict under file://.
-
-To host elsewhere, upload the entire contents of dist/ to a static host.
-No AI API key or model calls are required.
-
-Published source commit: ba42bc5065f11c66c55179777f8cd188b550b8ce
-Site-specific hosting bindings and Git internals are omitted.
+The complete project also includes solver-backend, scripts, tests, research,
+guide-research, license, and documentation.

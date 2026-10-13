@@ -69,8 +69,8 @@ function createHarness(options={}){
   const context={document,console,crypto:webcrypto,Uint32Array,Math,Date,performance:{now:()=>now},devicePixelRatio:options.devicePixelRatio||1,
     matchMedia:()=>({matches:!!options.reducedMotion}),addEventListener(){},requestAnimationFrame:callback=>{frames.push(callback);},
     setTimeout:()=>0,clearTimeout(){},navigator:{clipboard:{writeText:async text=>{context.copiedText=text;}}}};
-  context.window=context;context.globalThis=context;context.parent=context;context.location={search:options.search||'',origin:'https://atlas.test'};context.URLSearchParams=URLSearchParams;vm.createContext(context);
-  if(options.bundled){for(const [i,m]of [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].entries()){const src=/src="([^"]+)"/.exec(m[1]);const code=src?fs.readFileSync(path.resolve(path.dirname(options.htmlPath),src[1]),'utf8'):m[2];vm.runInContext(code,context,{filename:src?src[1]:'bundle-'+i});}}
+  context.window=context;context.globalThis=context;context.parent=context;context.location={search:options.search||'',origin:'https://atlas.test'};context.URLSearchParams=URLSearchParams;context.URL=URL;document.baseURI='https://atlas.test/games/'+path.basename(options.htmlPath||'shell.html');vm.createContext(context);
+  if(options.bundled){for(const [i,m]of [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].entries()){const src=/src="([^"]+)"/.exec(m[1]);document.currentScript=src?{src:new URL(src[1],document.baseURI).href}:null;const code=src?fs.readFileSync(path.resolve(path.dirname(options.htmlPath),src[1].split(/[?#]/)[0]),'utf8'):m[2];vm.runInContext(code,context,{filename:src?src[1]:'bundle-'+i});}}
   else for(const name of ['cube-engine.js','ring-geometry.js','bsp.js','app.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,name),'utf8'),context,{filename:name});
   const app={context,elements,document,
     snapshot:()=>JSON.parse(JSON.stringify(context.PUZZLE_API.snapshot())),
@@ -81,6 +81,8 @@ function createHarness(options={}){
     complete:()=>{for(let i=0;i<1000;i++){const s=app.snapshot();if(!s.animating&&s.mode==='idle')return;app.frame();}throw new Error('Animation did not finish');},
     ringAt:(face,angle)=>{
       const G=context.RingGeometry,r=G.getRing(face),b=elements.get('rings').bounds;
+      const actual=context.PUZZLE_SOLVER_BRIDGE?.viewport();
+      if(actual)return {clientX:b.left+actual.x+actual.scale*(r.cx+r.r*Math.cos(angle)),clientY:b.top+actual.y+actual.scale*(r.cy+r.r*Math.sin(angle))};
       const focused=elements.get('ringFocus').attributes['aria-pressed']==='true',selectedRing=G.getRing(app.snapshot().selected);
       const zoom=focused?180/selectedRing.r:1,scale=Math.min((b.width-34)/G.width,(b.height-36)/G.height)*zoom;
       const ox=b.width/2-(focused?selectedRing.cx:G.width/2)*scale,oy=b.height/2-(focused?selectedRing.cy:G.height/2)*scale-5;

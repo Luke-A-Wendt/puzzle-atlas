@@ -2,6 +2,8 @@
 
 `src/full-solve.cjs` adds a full-state solver to the protected-swap backend. It reads the current positions of labeled stickers and their solved positions. It never reads or reverses the move journal.
 
+The algorithm below is the complete identity-correct baseline. Supported fixed, fully occupied color puzzles now receive a bounded verified post-pass that removes color loops, adds one-move edges along the witnessed route and merges stages with no new secured colors. Shape/picture models keep the strict goal. Color plans declare `goalSemantics: 'colors'`, preserve colors at secured stage endpoints, and may use different sticker identities there. They never increase baseline move or stage count. See [`COLOR_SOLVER.md`](COLOR_SOLVER.md) for the complete second-pass algorithm and verification contract.
+
 ## API
 
 ```js
@@ -23,7 +25,7 @@ The result is `solved`, `impossible`, `unknown`, or `invalid`. A successful resu
 - `finalProtectedNodes`: every actual solved home address.
 - `verified: true`: the complete witness was replayed and all requested conditions checked.
 
-`protectedNodes` are fixed by a stage's **net permutation**. They may move temporarily during its constituent turns. Only nodes explicitly locked by the staged solver are protected; an incidentally correct node outside the prefix may move again. A stage usually places a desired sticker at its home position with collateral motion on unlocked nodes. It need not exchange precisely two stickers: a literal two-node transposition can be illegal even in a solvable state.
+For an identity-baseline plan, `protectedNodes` are fixed by a stage's **net permutation**. In a color plan their **colors** are restored instead, and the net permutation may exchange equal-colored occupants. They may move temporarily during its constituent turns. Only nodes explicitly locked by the staged solver are protected; an incidentally correct node outside the prefix may move again. A stage usually places a desired sticker at its home position with collateral motion on unlocked nodes. It need not exchange precisely two stickers: a literal two-node transposition can be illegal even in a solvable state.
 
 ## Exact algorithm
 

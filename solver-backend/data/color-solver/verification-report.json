@@ -1,0 +1,1989 @@
+{
+  "summary": {
+    "puzzles": 34,
+    "puzzlesWithWitness": 34,
+    "colorWitnesses": 99,
+    "strictImpossible": 30,
+    "strictUnknown": 35,
+    "strictSolved": 34,
+    "shorterThanStrict": 30
+  },
+  "notes": [
+    "Constructed real-puzzle endpoint-color witnesses; not a representative user-request distribution.",
+    "Strict comparison capped at 200 ms per request; unknown is not impossible.",
+    "Color witness replaces one or more held sticker identities with equal-colored stickers; A/B sticker identities exchange exactly."
+  ],
+  "models": [
+    {
+      "id": "masterpyraminx",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            12,
+            63
+          ],
+          "holds": 45,
+          "heldStickersReplaced": 3,
+          "colorMoves": 4,
+          "word": [
+            10,
+            13,
+            11,
+            12
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 152,
+          "strictMs": 62
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            12,
+            56
+          ],
+          "holds": 26,
+          "heldStickersReplaced": 8,
+          "colorMoves": 2,
+          "word": [
+            10,
+            13
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 20,
+          "strictMs": 55
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            12,
+            56
+          ],
+          "holds": 23,
+          "heldStickersReplaced": 5,
+          "colorMoves": 2,
+          "word": [
+            10,
+            13
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 6,
+          "strictMs": 46
+        }
+      ]
+    },
+    {
+      "id": "kilominx",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            9,
+            27
+          ],
+          "holds": 38,
+          "heldStickersReplaced": 2,
+          "colorMoves": 6,
+          "word": [
+            0,
+            10,
+            0,
+            10,
+            0,
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            10,
+            28
+          ],
+          "holds": 39,
+          "heldStickersReplaced": 3,
+          "colorMoves": 6,
+          "word": [
+            0,
+            10,
+            0,
+            10,
+            0,
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 202
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            9,
+            27
+          ],
+          "holds": 37,
+          "heldStickersReplaced": 1,
+          "colorMoves": 6,
+          "word": [
+            0,
+            10,
+            0,
+            10,
+            0,
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 202
+        }
+      ]
+    },
+    {
+      "id": "ghost",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            14,
+            59
+          ],
+          "holds": 41,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 205
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            4,
+            17
+          ],
+          "holds": 45,
+          "heldStickersReplaced": 6,
+          "colorMoves": 1,
+          "word": [
+            13
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            17,
+            57
+          ],
+          "holds": 46,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        }
+      ]
+    },
+    {
+      "id": "cube2",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            9,
+            15
+          ],
+          "holds": 16,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 15
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            0,
+            3
+          ],
+          "holds": 16,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 8
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            0,
+            3
+          ],
+          "holds": 14,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 6
+        }
+      ]
+    },
+    {
+      "id": "cube3",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            20,
+            35
+          ],
+          "holds": 42,
+          "heldStickersReplaced": 8,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 43
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            0,
+            8
+          ],
+          "holds": 36,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 837,
+          "strictMs": 64
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            19,
+            34
+          ],
+          "holds": 44,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            22
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 77
+        }
+      ]
+    },
+    {
+      "id": "cube4",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            35,
+            63
+          ],
+          "holds": 80,
+          "heldStickersReplaced": 16,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            4,
+            23
+          ],
+          "holds": 82,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            16
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 247
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            4,
+            23
+          ],
+          "holds": 82,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            16
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 200
+        }
+      ]
+    },
+    {
+      "id": "cube5",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            0,
+            29
+          ],
+          "holds": 130,
+          "heldStickersReplaced": 24,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 200
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            51,
+            96
+          ],
+          "holds": 136,
+          "heldStickersReplaced": 6,
+          "colorMoves": 1,
+          "word": [
+            19
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            51,
+            96
+          ],
+          "holds": 132,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            19
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 200
+        }
+      ]
+    },
+    {
+      "id": "cube6",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            0,
+            41
+          ],
+          "holds": 192,
+          "heldStickersReplaced": 36,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 200
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            18,
+            59
+          ],
+          "holds": 196,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 200
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            19,
+            58
+          ],
+          "holds": 198,
+          "heldStickersReplaced": 6,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        }
+      ]
+    },
+    {
+      "id": "cube7",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            0,
+            55
+          ],
+          "holds": 266,
+          "heldStickersReplaced": 48,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 200
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            21,
+            76
+          ],
+          "holds": 270,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 200
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            21,
+            76
+          ],
+          "holds": 272,
+          "heldStickersReplaced": 6,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        }
+      ]
+    },
+    {
+      "id": "cube8",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            0,
+            71
+          ],
+          "holds": 352,
+          "heldStickersReplaced": 64,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 200
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            25,
+            94
+          ],
+          "holds": 358,
+          "heldStickersReplaced": 6,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            24,
+            95
+          ],
+          "holds": 356,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        }
+      ]
+    },
+    {
+      "id": "mirror",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            20,
+            35
+          ],
+          "holds": 42,
+          "heldStickersReplaced": 8,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 36
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            0,
+            8
+          ],
+          "holds": 36,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 837,
+          "strictMs": 73
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            19,
+            34
+          ],
+          "holds": 44,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            22
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 54
+        }
+      ]
+    },
+    {
+      "id": "homer",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            9,
+            15
+          ],
+          "holds": 16,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 5
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            0,
+            3
+          ],
+          "holds": 16,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 4
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            0,
+            3
+          ],
+          "holds": 14,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 5
+        }
+      ]
+    },
+    {
+      "id": "pyraminx",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            22,
+            31
+          ],
+          "holds": 7,
+          "heldStickersReplaced": 1,
+          "colorMoves": 3,
+          "word": [
+            0,
+            12,
+            4
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 4,
+          "strictMs": 0
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            22,
+            31
+          ],
+          "holds": 7,
+          "heldStickersReplaced": 1,
+          "colorMoves": 3,
+          "word": [
+            0,
+            12,
+            4
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 4,
+          "strictMs": 0
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            22,
+            31
+          ],
+          "holds": 7,
+          "heldStickersReplaced": 1,
+          "colorMoves": 3,
+          "word": [
+            0,
+            12,
+            4
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 4,
+          "strictMs": 0
+        }
+      ]
+    },
+    {
+      "id": "tetraminx",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            8,
+            19
+          ],
+          "holds": 4,
+          "heldStickersReplaced": 1,
+          "colorMoves": 3,
+          "word": [
+            0,
+            2,
+            4
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 4,
+          "strictMs": 0
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            8,
+            19
+          ],
+          "holds": 4,
+          "heldStickersReplaced": 1,
+          "colorMoves": 3,
+          "word": [
+            0,
+            2,
+            4
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 4,
+          "strictMs": 0
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            8,
+            19
+          ],
+          "holds": 4,
+          "heldStickersReplaced": 1,
+          "colorMoves": 3,
+          "word": [
+            0,
+            2,
+            4
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 4,
+          "strictMs": 0
+        }
+      ]
+    },
+    {
+      "id": "megaminx",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            8,
+            30
+          ],
+          "holds": 96,
+          "heldStickersReplaced": 6,
+          "colorMoves": 6,
+          "word": [
+            0,
+            10,
+            0,
+            10,
+            0,
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 203
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            32,
+            74
+          ],
+          "holds": 97,
+          "heldStickersReplaced": 7,
+          "colorMoves": 6,
+          "word": [
+            0,
+            10,
+            0,
+            10,
+            0,
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 200
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            8,
+            30
+          ],
+          "holds": 92,
+          "heldStickersReplaced": 2,
+          "colorMoves": 6,
+          "word": [
+            0,
+            10,
+            0,
+            10,
+            0,
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 200
+        }
+      ]
+    },
+    {
+      "id": "jing",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            12,
+            13
+          ],
+          "holds": 19,
+          "heldStickersReplaced": 1,
+          "colorMoves": 4,
+          "word": [
+            0,
+            3,
+            1,
+            2
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 22,
+          "strictMs": 14
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            12,
+            14
+          ],
+          "holds": 9,
+          "heldStickersReplaced": 1,
+          "colorMoves": 2,
+          "word": [
+            0,
+            3
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 4,
+          "strictMs": 0
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            12,
+            13
+          ],
+          "holds": 19,
+          "heldStickersReplaced": 1,
+          "colorMoves": 4,
+          "word": [
+            0,
+            3,
+            1,
+            2
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 22,
+          "strictMs": 10
+        }
+      ]
+    },
+    {
+      "id": "skewb",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": false
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            25,
+            26
+          ],
+          "holds": 10,
+          "heldStickersReplaced": 2,
+          "colorMoves": 2,
+          "word": [
+            0,
+            11
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 12,
+          "strictMs": 7
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            25,
+            28
+          ],
+          "holds": 10,
+          "heldStickersReplaced": 2,
+          "colorMoves": 2,
+          "word": [
+            10,
+            5
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 24,
+          "strictMs": 6
+        }
+      ]
+    },
+    {
+      "id": "masterskewb",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            8,
+            69
+          ],
+          "holds": 47,
+          "heldStickersReplaced": 1,
+          "colorMoves": 4,
+          "word": [
+            0,
+            11,
+            1,
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 202
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            8,
+            52
+          ],
+          "holds": 36,
+          "heldStickersReplaced": 4,
+          "colorMoves": 2,
+          "word": [
+            0,
+            11
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 202
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            8,
+            52
+          ],
+          "holds": 35,
+          "heldStickersReplaced": 3,
+          "colorMoves": 2,
+          "word": [
+            0,
+            11
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        }
+      ]
+    },
+    {
+      "id": "ultimate",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            28,
+            31
+          ],
+          "holds": 18,
+          "heldStickersReplaced": 4,
+          "colorMoves": 2,
+          "word": [
+            0,
+            10
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 84,
+          "strictMs": 11
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            28,
+            31
+          ],
+          "holds": 17,
+          "heldStickersReplaced": 3,
+          "colorMoves": 2,
+          "word": [
+            0,
+            10
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 132,
+          "strictMs": 9
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            28,
+            31
+          ],
+          "holds": 18,
+          "heldStickersReplaced": 4,
+          "colorMoves": 2,
+          "word": [
+            0,
+            10
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 116,
+          "strictMs": 8
+        }
+      ]
+    },
+    {
+      "id": "diamond",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            12,
+            15
+          ],
+          "holds": 12,
+          "heldStickersReplaced": 2,
+          "colorMoves": 2,
+          "word": [
+            0,
+            10
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 17,
+          "strictMs": 3
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            12,
+            15
+          ],
+          "holds": 13,
+          "heldStickersReplaced": 3,
+          "colorMoves": 2,
+          "word": [
+            0,
+            10
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 3
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            12,
+            15
+          ],
+          "holds": 12,
+          "heldStickersReplaced": 2,
+          "colorMoves": 2,
+          "word": [
+            0,
+            10
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 15,
+          "strictMs": 2
+        }
+      ]
+    },
+    {
+      "id": "fto",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            14,
+            15
+          ],
+          "holds": 40,
+          "heldStickersReplaced": 8,
+          "colorMoves": 2,
+          "word": [
+            0,
+            10
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 10864,
+          "strictMs": 117
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            14,
+            15
+          ],
+          "holds": 36,
+          "heldStickersReplaced": 4,
+          "colorMoves": 2,
+          "word": [
+            0,
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 218
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            14,
+            15
+          ],
+          "holds": 36,
+          "heldStickersReplaced": 4,
+          "colorMoves": 2,
+          "word": [
+            0,
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 201
+        }
+      ]
+    },
+    {
+      "id": "crystal",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            57,
+            58
+          ],
+          "holds": 76,
+          "heldStickersReplaced": 10,
+          "colorMoves": 2,
+          "word": [
+            0,
+            13
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 208
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            57,
+            58
+          ],
+          "holds": 68,
+          "heldStickersReplaced": 2,
+          "colorMoves": 2,
+          "word": [
+            0,
+            13
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 204
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            57,
+            58
+          ],
+          "holds": 71,
+          "heldStickersReplaced": 5,
+          "colorMoves": 2,
+          "word": [
+            0,
+            13
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 203
+        }
+      ]
+    },
+    {
+      "id": "dino",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            6,
+            23
+          ],
+          "holds": 18,
+          "heldStickersReplaced": 2,
+          "colorMoves": 4,
+          "word": [
+            0,
+            2,
+            0,
+            3
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 13
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            4,
+            6
+          ],
+          "holds": 18,
+          "heldStickersReplaced": 2,
+          "colorMoves": 4,
+          "word": [
+            0,
+            3,
+            1,
+            3
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 8
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            7,
+            22
+          ],
+          "holds": 18,
+          "heldStickersReplaced": 2,
+          "colorMoves": 4,
+          "word": [
+            0,
+            2,
+            0,
+            3
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 10
+        }
+      ]
+    },
+    {
+      "id": "rainbow",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            12,
+            45
+          ],
+          "holds": 44,
+          "heldStickersReplaced": 4,
+          "colorMoves": 4,
+          "word": [
+            0,
+            2,
+            0,
+            3
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 19
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            12,
+            45
+          ],
+          "holds": 42,
+          "heldStickersReplaced": 2,
+          "colorMoves": 4,
+          "word": [
+            0,
+            2,
+            0,
+            3
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 17
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            13,
+            44
+          ],
+          "holds": 42,
+          "heldStickersReplaced": 2,
+          "colorMoves": 4,
+          "word": [
+            0,
+            2,
+            0,
+            3
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 43
+        }
+      ]
+    },
+    {
+      "id": "rhombic",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            13,
+            57
+          ],
+          "holds": 44,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 90
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            0,
+            17
+          ],
+          "holds": 42,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            13
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 53
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            13,
+            57
+          ],
+          "holds": 42,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 347,
+          "strictMs": 187
+        }
+      ]
+    },
+    {
+      "id": "flatdiamond",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            1,
+            40
+          ],
+          "holds": 50,
+          "heldStickersReplaced": 4,
+          "colorMoves": 3,
+          "word": [
+            0,
+            13,
+            2
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 202
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            119,
+            250
+          ],
+          "holds": 48,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 205
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            150,
+            203
+          ],
+          "holds": 31,
+          "heldStickersReplaced": 1,
+          "colorMoves": 2,
+          "word": [
+            10,
+            12
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 1,
+          "strictMs": 1
+        }
+      ]
+    },
+    {
+      "id": "cornerocta",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            0,
+            3
+          ],
+          "holds": 43,
+          "heldStickersReplaced": 1,
+          "colorMoves": 4,
+          "word": [
+            0,
+            12,
+            0,
+            12
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 1,
+          "strictMs": 0
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            56,
+            67
+          ],
+          "holds": 58,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            4
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 18,
+          "strictMs": 51
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            14,
+            67
+          ],
+          "holds": 58,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 50
+        }
+      ]
+    },
+    {
+      "id": "trajber",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            3,
+            55
+          ],
+          "holds": 47,
+          "heldStickersReplaced": 1,
+          "colorMoves": 4,
+          "word": [
+            0,
+            14,
+            2,
+            12
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 3372,
+          "strictMs": 71
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            12,
+            55
+          ],
+          "holds": 42,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 298,
+          "strictMs": 73
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            0,
+            43
+          ],
+          "holds": 42,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 4969,
+          "strictMs": 164
+        }
+      ]
+    },
+    {
+      "id": "jewel",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            4,
+            7
+          ],
+          "holds": 33,
+          "heldStickersReplaced": 1,
+          "colorMoves": 4,
+          "word": [
+            0,
+            12,
+            0,
+            12
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 1,
+          "strictMs": 0
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            11,
+            53
+          ],
+          "holds": 44,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 52,
+          "strictMs": 27
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            0,
+            42
+          ],
+          "holds": 44,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 28
+        }
+      ]
+    },
+    {
+      "id": "pyramorphix",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": false
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            0,
+            10
+          ],
+          "holds": 8,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 7
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            0,
+            14
+          ],
+          "holds": 8,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            16
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 19
+        }
+      ]
+    },
+    {
+      "id": "mastermorphix",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            6,
+            7
+          ],
+          "holds": 19,
+          "heldStickersReplaced": 2,
+          "colorMoves": 4,
+          "word": [
+            0,
+            12,
+            0,
+            12
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 1,
+          "strictMs": 0
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            0,
+            29
+          ],
+          "holds": 26,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 127
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            15,
+            16
+          ],
+          "holds": 28,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "unknown",
+          "strictReason": "time_limit",
+          "strictMs": 203
+        }
+      ]
+    },
+    {
+      "id": "helicopter",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": false
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            10,
+            21
+          ],
+          "holds": 40,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            0
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 158
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            18,
+            22
+          ],
+          "holds": 40,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 132
+        }
+      ]
+    },
+    {
+      "id": "diamondstyle",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            0,
+            8
+          ],
+          "holds": 20,
+          "heldStickersReplaced": 2,
+          "colorMoves": 1,
+          "word": [
+            13
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 6990,
+          "strictMs": 10
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            1,
+            18
+          ],
+          "holds": 24,
+          "heldStickersReplaced": 6,
+          "colorMoves": 1,
+          "word": [
+            10
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 9
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            6,
+            25
+          ],
+          "holds": 22,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "solved",
+          "strictMoves": 104,
+          "strictMs": 11
+        }
+      ]
+    },
+    {
+      "id": "diamondcube",
+      "cases": [
+        {
+          "scrambleSteps": 0,
+          "witness": true,
+          "swap": [
+            22,
+            83
+          ],
+          "holds": 62,
+          "heldStickersReplaced": 8,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 51
+        },
+        {
+          "scrambleSteps": 12,
+          "witness": true,
+          "swap": [
+            22,
+            83
+          ],
+          "holds": 58,
+          "heldStickersReplaced": 4,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 87
+        },
+        {
+          "scrambleSteps": 28,
+          "witness": true,
+          "swap": [
+            21,
+            82
+          ],
+          "holds": 60,
+          "heldStickersReplaced": 6,
+          "colorMoves": 1,
+          "word": [
+            1
+          ],
+          "strictStatus": "impossible",
+          "strictReason": "pair_outside_stabilizer_orbit",
+          "strictMs": 62
+        }
+      ]
+    }
+  ]
+}

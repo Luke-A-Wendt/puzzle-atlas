@@ -99,9 +99,9 @@ function createPage(puzzle='cube2',options={}){
     getComputedStyle:el=>({display:el.hidden?'none':'block',position:'relative'}),...options.globals};
   context.window=context;context.globalThis=context;context.parent=context;vm.createContext(context);
   for(const [i,m]of [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].entries()){
-    const src=/src="([^"]+)"/.exec(m[1]);if(src&&options.skipScripts?.includes(src[1]))continue;
+    const src=/src="([^"]+)"/.exec(m[1]),localName=src?.[1].split(/[?#]/)[0];if(src&&options.skipScripts?.includes(localName))continue;
     document.currentScript=src?{src:new URL(src[1],document.baseURI).href}:null;
-    const code=src?fs.readFileSync(path.resolve(games,src[1]),'utf8'):m[2];vm.runInContext(code,context,{filename:src?src[1]:'page-inline-'+i});
+    const code=src?fs.readFileSync(path.resolve(games,localName),'utf8'):m[2];vm.runInContext(code,context,{filename:src?src[1]:'page-inline-'+i});
   }
   document.currentScript=null;
   const app={context,document,element:id=>document.getElementById(id),snapshot:()=>JSON.parse(JSON.stringify(context.PUZZLE_API.snapshot())),
@@ -109,7 +109,7 @@ function createPage(puzzle='cube2',options={}){
     flush:async(n=5)=>{for(let i=0;i<n;i++)await Promise.resolve();await new Promise(resolve=>setImmediate(resolve));},
     advance:async(ms=200)=>{app.frame(ms);await app.flush();},
     settle:async(max=2000)=>{for(let i=0;i<max;i++){await app.advance(2000);const snap=app.snapshot();if(!snap.animating&&snap.mode==='idle'&&(!context.ConstrainedSolverUI||!['executing','loading'].includes(context.ConstrainedSolverUI.state().phase)))return;}throw Error('Game did not settle');},
-    loadScript:name=>vm.runInContext(fs.readFileSync(path.resolve(games,name),'utf8'),context,{filename:name}),now:()=>now,win};
+    loadScript:name=>vm.runInContext(fs.readFileSync(path.resolve(games,name.split(/[?#]/)[0]),'utf8'),context,{filename:name}),now:()=>now,win};
   app.element('speed').value='5';app.frame(0);return app;
 }
 

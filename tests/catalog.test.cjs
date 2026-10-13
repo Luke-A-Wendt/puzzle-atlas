@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const dist=path.resolve(__dirname,'../dist');
-const read=f=>fs.readFileSync(path.join(dist,f),'utf8');
+const read=f=>fs.readFileSync(path.join(dist,f.split(/[?#]/)[0]),'utf8');
 const index=read('index.html'),play=read('play.html');
 const choices=[...index.matchAll(/class="puzzle-card"[^>]*data-family="([^"]+)"[^>]*href="([^"]+)"/g)].map(m=>({family:m[1],href:m[2].replaceAll('&amp;','&')}));
 assert.equal(choices.length,33);
@@ -12,7 +12,7 @@ assert.equal(choices.filter(c=>new URL(c.href,'https://atlas.test').searchParams
 assert(index.includes('assets/mirror-color.png'));
 assert(!index.includes('assets/mirror.png'));
 const secret=/<a class="secret-puzzle" href="([^"]+)"/.exec(index);
-assert(secret);assert.equal(secret[1],'play.html?p=homer');
+assert(secret);const secretURL=new URL(secret[1].replaceAll('&amp;','&'),'https://atlas.test/');assert.equal(secretURL.pathname,'/play.html');assert.equal(secretURL.searchParams.get('p'),'homer');
 assert(index.indexOf('class="secret-puzzle"')>index.indexOf('data-filter="dodecahedral"'));
 assert(index.includes('🍩</span></a>'));
 assert(!index.includes('🍩</span> Secret puzzle'));
@@ -31,19 +31,19 @@ function element(classes=''){
  const set=new Set(classes.split(' '));return {value:'',textContent:'',innerHTML:'',listeners:{},attributes:{},style:{setProperty(){}},focus(){},addEventListener(k,f){this.listeners[k]=f;},setAttribute(k,v){this.attributes[k]=v;},classList:{contains:k=>set.has(k),remove:k=>set.delete(k),toggle(k,force){const add=force??!set.has(k);add?set.add(k):set.delete(k);return add;}}};
 }
 for(const choice of [...choices,{href:secret[1]}]){
- const url=new URL(choice.href,'https://atlas.test'),key=url.searchParams.get('p');
+ const url=new URL(choice.href.replaceAll('&amp;','&'),'https://atlas.test'),key=url.searchParams.get('p');
  const elements=Object.fromEntries([...play.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],element(m[1]==='play-layout'?'guide-hidden':'')]));
  const algorithm=element(),references=element();let algorithmMoved=false;
  elements['solver-guide'].querySelector=s=>s==='.solver-guide-algorithm'?algorithm:null;
  elements['guide-sources'].closest=s=>s==='details'?references:null;
  elements['guide-scroll'].insertBefore=(node,before)=>{assert.equal(node,algorithm);assert.equal(before,references);algorithmMoved=true;};
- const skip=element(),tabs=element(),document={getElementById:id=>{assert(elements[id],`missing element ${id}`);return elements[id];},querySelector:s=>s==='.skip-link'?skip:tabs,querySelectorAll:()=>[],addEventListener(){}};
+ const skip=element(),tabs=element(),document={getElementById:id=>{assert(elements[id],`missing element ${id}`);return elements[id];},querySelector:s=>s==='meta[name="atlas-release"]'?{getAttribute:name=>name==='content'?(/<meta name="atlas-release" content="([^"]+)"/.exec(play)?.[1]||''):null}:s==='.skip-link'?skip:tabs,querySelectorAll:()=>[],addEventListener(){}};
  const context={document,location:{search:url.search,origin:url.origin},URLSearchParams,console,addEventListener(){}};context.window=context;vm.createContext(context);
  for(const match of play.matchAll(/<script src="([^"]+)"/g))vm.runInContext(read(match[1]),context,{filename:match[1]});
  assert(algorithmMoved,'algorithm chapter appears immediately before references');
  assert(elements['guide-intro'].innerHTML.includes('<h3>'),`missing guide ${key}`);
  assert(elements['guide-steps'].innerHTML.includes('guide-step'),`missing steps ${key}`);
- assert.equal(elements['puzzle-frame'].src,'games/'+key+'.html'+(url.searchParams.get('mirror')==='1'?'?mirror=1':''));
+ const gameURL=new URL(elements['puzzle-frame'].src,'https://atlas.test/');assert.equal(gameURL.pathname,'/games/'+key+'.html');assert.equal(gameURL.searchParams.get('mirror'),url.searchParams.get('mirror')==='1'?'1':null);const release=/<meta name="atlas-release" content="([^"]+)"/.exec(play)?.[1];if(release)assert.equal(gameURL.searchParams.get('v'),release);
  assert.equal(document.title,elements['puzzle-title'].textContent+' — Puzzle Atlas');
  assert(!play.includes('id="puzzle-select"'));
  assert(!elements['puzzle-title'].textContent.includes('axes'));

@@ -7,9 +7,12 @@ const names=['masterpyraminx','kilominx','ghost','cube2','cube3','cube4','cube5'
 let referenceCount=0;
 for(const name of names){
  const htmlPath=path.join(__dirname,'../dist/games',name+'.html'),html=fs.readFileSync(htmlPath,'utf8');
- assert(html.includes('href="constrained-solver.css"'),name+' solver stylesheet');
- assert(html.indexOf('src="constrained-solver-core.js"')>html.indexOf('src="ring-panel.js"'),name+' core follows ordinary panel');
- assert(html.indexOf('src="constrained-solver.js"')>html.indexOf('src="constrained-solver-core.js"'),name+' UI follows core');
+ const scripts=[...html.matchAll(/<script\b[^>]*src="([^"]+)"/g)].map(m=>m[1].split(/[?#]/)[0]);
+ const styles=[...html.matchAll(/<link\b[^>]*href="([^"]+)"/g)].map(m=>m[1].split(/[?#]/)[0]);
+ assert(styles.includes('constrained-solver.css'),name+' solver stylesheet');
+ for(const script of ['ring-panel.js','constrained-solver-core.js','constrained-solver.js'])assert(scripts.includes(script),name+' missing '+script);
+ assert(scripts.indexOf('constrained-solver-core.js')>scripts.indexOf('ring-panel.js'),name+' core follows ordinary panel');
+ assert(scripts.indexOf('constrained-solver.js')>scripts.indexOf('constrained-solver-core.js'),name+' UI follows core');
  const capture=recorder(),dpr=name==='cube7'||name==='mastermorphix'?2:1;
  const app=createHarness({htmlPath,bundled:true,speed:5,devicePixelRatio:dpr,dimensions:{rings:{width:623,height:517}},canvasContexts:{rings:capture.context}});
  const bridge=app.context.PUZZLE_SOLVER_BRIDGE,api=app.context.PUZZLE_API;
