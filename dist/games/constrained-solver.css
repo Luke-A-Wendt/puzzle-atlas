@@ -17,13 +17,7 @@
 .cs-auto-notice[data-state="error"]{border-color:#887d70}
 .cs-auto-notice button{font-size:11px;min-height:32px}
 .cs-search-actions[hidden],#csSwap[hidden]{display:none!important}
-.cs-search-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px}
-.cs-search-actions button{min-height:31px;font-size:10px;white-space:normal}
-.cs-suggest{color:#e0dbe9;border-color:#696174;background:#25252f}
-#csSuggest[hidden],#csSearchProgress[hidden]{display:none!important}
-.cs-search-progress{display:grid;gap:6px;margin:10px 0 5px;font-size:10px;color:#d7d2e4;line-height:1.4;font-variant-numeric:tabular-nums}
-.cs-search-progress progress{width:100%;height:5px;accent-color:#d7d2e4;opacity:.8}
-#csSearchProgressLabel{overflow-wrap:anywhere}
+.cs-search-actions{display:flex;gap:6px;margin-top:6px}
 .cs-auto-active .cs-held-count{color:var(--ink)}
 .cs-auto-progress{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin:9px 0 2px;color:var(--muted);font-size:10px;line-height:1.4}
 .cs-auto-progress progress{display:block;width:100%;height:6px;accent-color:#f4f1fc;border:0;border-radius:8px;overflow:hidden;background:#333846}
@@ -31,7 +25,7 @@
 .cs-auto-progress progress::-webkit-progress-bar{background:#333846}
 .cs-auto-progress progress::-webkit-progress-value{background:#f4f1fc;border-radius:8px}
 .cs-auto-progress progress::-moz-progress-bar{background:#f4f1fc;border-radius:8px}
-.cs-active>.ring-controls,.cs-active .ring-wrap>.canvas-caption{display:none!important}
+.cs-active>.ring-controls,.cs-active .ring-wrap>.canvas-caption,.cs-active .ring-panel-head #ringFocus{display:none!important}
 .cs-controls{padding:10px 12px 9px;flex:0 0 auto;border-top:1px solid #363141;background:linear-gradient(120deg,#202029,#191b25);min-width:0}
 .cs-toolbar,.cs-selection,.cs-bottom{display:flex;align-items:center;gap:7px;min-width:0}
 .cs-toolbar{flex-wrap:wrap;justify-content:space-between;gap:6px}
@@ -57,7 +51,6 @@
 .cs-swap-arrow{align-self:center;flex:0 0 auto;font-size:15px;color:#a9a3b5}
 .cs-go{align-self:stretch;flex:0 0 auto;min-width:48px;padding:6px 12px;font-size:12px;font-weight:700}
 .cs-go:not(:disabled){background:#33303f;border-color:#aaa4b8;color:#fff}
-.cs-go[data-readiness="check"]:not(:disabled){background:#25252f;border-style:dashed}
 .cs-go:disabled{opacity:.4}
 .cs-status{font-size:11px;line-height:1.5;color:#d7d2e4;margin:8px 0 4px;min-height:1.5em;max-width:64em;overflow-wrap:anywhere}
 .cs-eligibility{font-size:10px;line-height:1.45;color:#aaa6b8;margin:4px 0 8px;overflow-wrap:anywhere}
@@ -76,12 +69,6 @@
 [data-solver-phase="executing"] .cs-node-overlay,[data-solver-phase="solving"] .cs-node-overlay{cursor:progress}
 .cs-working #randomize,.cs-working #solve,.cs-working #reset,.cs-working #undo,.cs-working #mirrorMode,.cs-working #advanced,.cs-working .notation-key{opacity:.42;cursor:not-allowed}
 @media(max-width:1100px){.cs-active .ring-panel-head h2{font-size:11px}.cs-controls{padding:8px 10px}.cs-tools button{padding-inline:6px}.cs-hold-label{display:none}.cs-keyboard{font-size:8px}.ring-panel-head .cs-mode-switch button{padding-inline:5px}}
-@media(max-width:850px) and (orientation:portrait),(max-width:680px){.cs-controls{padding:10px 12px}.ring-panel-head .cs-mode-switch button{min-height:32px}.cs-tools button{min-height:38px}.cs-toolbar>.small,.cs-search-actions button{min-height:38px}.cs-pair-chip{min-height:50px}.cs-status{font-size:12px}.cs-keyboard,.cs-bottom{display:none}}
+@media(max-width:850px) and (orientation:portrait),(max-width:680px){.cs-controls{padding:10px 12px}.ring-panel-head .cs-mode-switch button{min-height:32px}.cs-tools button{min-height:38px}.cs-toolbar>.small{min-height:38px}.cs-pair-chip{min-height:50px}.cs-status{font-size:12px}.cs-keyboard,.cs-bottom{display:none}}
 @container ring-map-panel (max-width:420px){.ring-panel-head{flex-wrap:wrap}.ring-panel-head .cs-mode-switch{order:3;flex:1 1 100%}.ring-panel-head .cs-mode-switch button{flex:1}.cs-hold-label{display:none}}
 @media(max-width:420px){.ring-panel-head:has(.cs-mode-switch){flex-wrap:wrap}.ring-panel-head .cs-mode-switch{order:3;flex:1 1 100%}.ring-panel-head .cs-mode-switch button{flex:1}.cs-tools{flex-basis:160px}.cs-selection{gap:4px}.cs-pair-chip{column-gap:5px;padding-inline:6px}.cs-pair-chip .cs-slot-value{font-size:10px}.cs-go{min-width:42px;padding-inline:8px}.cs-swap-arrow{font-size:13px}}
-
-@container ring-map-panel (max-width:330px){.cs-selection{flex-wrap:wrap}.cs-go{flex:1 0 100%;min-height:34px}.cs-pair-chip{min-width:85px}.cs-search-actions button{flex:1 1 auto}}
-
-/* Keep display controls accessible in either ring-map mode. */
-.ring-panel-head{flex-wrap:wrap}
-@container ring-map-panel (max-width:560px){.ring-panel-head .cs-mode-switch{order:3;flex:1 1 100%}.ring-panel-head .cs-mode-switch button{flex:1}}

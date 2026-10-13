@@ -30,25 +30,13 @@ function mapSnapshot(model,snapshot){
  * select exact_swap to protect all other CURRENT physical stickers; empty pose
  * addresses must remain free. The returned request is ready for core swap.
  */
-function colorsFromSnapshot(model,snapshot,mapping=mapSnapshot(model,snapshot)){
- const stickers=Array.isArray(snapshot)?snapshot:snapshot?.stickers||snapshot?.stickerState;
- const colors=new Array(model.degree).fill(null);
- for(const sticker of stickers){
-  const id=String(sticker.id),color=model.colorBySticker?.[id]??sticker.color;
-  if(typeof color!=='string'&&typeof color!=='number')throw Error('Snapshot does not identify every sticker color');
-  colors[mapping.stickerToNode[id]]=String(color);
- }
- return colors;
-}
-function requestFromSnapshot(model,snapshot,{protectedStickerIds=[],swapStickerIds,mode='protected_swap',protection='endpoint',holdSemantics='sticker'}={}){
+function requestFromSnapshot(model,snapshot,{protectedStickerIds=[],swapStickerIds,mode='protected_swap',protection='endpoint'}={}){
  if(!Array.isArray(swapStickerIds)||swapStickerIds.length!==2)throw Error('Choose two sticker IDs');
  if(!['protected_swap','exact_swap'].includes(mode))throw Error('Unknown swap semantics');
- if(!['sticker','color'].includes(holdSemantics))throw Error('Unknown hold semantics');
- if(holdSemantics==='color'&&(mode!=='protected_swap'||protection!=='endpoint'))throw Error('Color holds require protected_swap mode with endpoint protection');
  const mapping=mapSnapshot(model,snapshot),index=id=>{const n=mapping.stickerToNode[String(id)];if(n===undefined)throw Error('Unknown current sticker '+id);return n;};
  const swap=swapStickerIds.map(index);if(swap[0]===swap[1])throw Error('Swap endpoints must be different');
  let protectedNodes=protectedStickerIds.map(index);if(protectedNodes.some(n=>swap.includes(n)))throw Error('A protected node cannot be a swap endpoint');
  if(mode==='exact_swap')protectedNodes=mapping.occupiedNodes.filter(n=>!swap.includes(n));
- return{swap,protected:[...new Set(protectedNodes)],occupiedNodes:mapping.occupiedNodes,mode:'protected_swap',protection,requestedMode:mode,selectionMapping:mapping,...(holdSemantics==='color'?{holdSemantics,colorByNode:colorsFromSnapshot(model,snapshot,mapping)}:{})};
+ return{swap,protected:[...new Set(protectedNodes)],occupiedNodes:mapping.occupiedNodes,mode:'protected_swap',protection,requestedMode:mode,selectionMapping:mapping};
 }
-module.exports={mapSnapshot,requestFromSnapshot,colorsFromSnapshot};
+module.exports={mapSnapshot,requestFromSnapshot};

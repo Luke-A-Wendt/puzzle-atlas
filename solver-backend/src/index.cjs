@@ -33,29 +33,19 @@ function normalize(model,request={}){
  }
  const protection=request.protection??'endpoint';if(!['endpoint','throughout'].includes(protection))throw Error('protection must be endpoint or throughout');
  const mode=request.mode??'protected_swap';if(!['protected_swap','exact_swap'].includes(mode))throw Error('mode must be protected_swap or exact_swap');
- const holdSemantics=request.holdSemantics??'sticker';if(!['sticker','color'].includes(holdSemantics))throw Error('holdSemantics must be sticker or color');
- let colorByNode;
- if(holdSemantics==='color'){
-  if(protection!=='endpoint'||mode!=='protected_swap')throw Error('color holds require protected_swap mode with endpoint protection');
-  if(!Array.isArray(request.colorByNode)||request.colorByNode.length!==d||Array.from(request.colorByNode).some(c=>c!==null&&typeof c!=='string'&&(typeof c!=='number'||!Number.isFinite(c))))throw Error('colorByNode must contain one string, finite number, or null for every model address');
-  colorByNode=request.colorByNode.slice();
-  if([...swap,...(request.protected??[]).map(node)].some(x=>colorByNode[x]===null))throw Error('selected nodes must have an occupied color');
-  if(occupied){const set=new Set(occupied);if(colorByNode.some((c,i)=>(c!==null)!==set.has(i)))throw Error('colorByNode occupancy must match occupiedNodes');}
-  else if(colorByNode.some(c=>c===null))throw Error('fixed-node models require a color at every address');
- }
  let protect=[...new Set((request.protected??[]).map(node))];if(swap.some(x=>protect.includes(x)))throw Error('swap nodes cannot be protected');
  if(mode==='exact_swap')protect=(occupied??Array.from({length:d},(_,i)=>i)).filter(i=>!swap.includes(i));protect.sort((a,b)=>a-b);
- return {protected:protect,swap,mode,protection,...(occupied?{occupiedNodes:occupied}:{}),...(holdSemantics==='color'?{holdSemantics,colorByNode}:{})};
+ return {protected:protect,swap,mode,protection,...(occupied?{occupiedNodes:occupied}:{})};
 }
 function permutation(model,indices){let p=Array.from({length:model.degree},(_,i)=>i);for(const i of indices){if(!Number.isInteger(i)||!model.moves[i])throw Error('invalid witness move');const q=model.moves[i].perm;p=p.map(v=>q[v]);}return p;}
-function verify(model,req,indices){const p=permutation(model,indices);if(p[req.swap[0]]!==req.swap[1]||p[req.swap[1]]!==req.swap[0])return false;if(req.holdSemantics==='color'){const held=new Set(req.protected);for(let source=0;source<model.degree;source++)if(held.has(p[source])&&req.colorByNode[source]!==req.colorByNode[p[source]])return false;return true;}if(!req.protected.every(x=>p[x]===x))return false;if(req.protection==='throughout'&&indices.some(i=>req.protected.some(x=>model.moves[i].perm[x]!==x)))return false;return true;}
+function verify(model,req,indices){const p=permutation(model,indices),ok=p[req.swap[0]]===req.swap[1]&&p[req.swap[1]]===req.swap[0]&&req.protected.every(x=>p[x]===x);if(!ok)return false;if(req.protection==='throughout'&&indices.some(i=>req.protected.some(x=>model.moves[i].perm[x]!==x)))return false;return true;}
 function finish(model,req,result,t,maxOutputMoves=5000){
  // Internal group engines may retain a legacy moves alias. Never publish a
  // second sequence that could be stale after index remapping or shortening.
  const {moves:legacyMoves,...clean}=result;result=clean;
  if(result.status==='solved'&&result.moveIndices.length>maxOutputMoves)result={status:'unknown',reason:'output_limit',optimal:false,requiredMoves:result.moveIndices.length,lowerBound:result.lowerBound,stats:result.stats};
  const stats={...result.stats,totalMs:performance.now()-t};
- const occupancy={...(req.occupiedNodes?{occupiedNodes:req.occupiedNodes}:{}),...(req.holdSemantics==='color'?{holdSemantics:'color'}:{})};
+ const occupancy=req.occupiedNodes?{occupiedNodes:req.occupiedNodes}:{};
  if(result.optimal===undefined)result.optimal=false;
  if(result.status!=='solved')return {...result,protected:req.protected,swap:req.swap,mode:req.mode,protection:req.protection,...occupancy,stats};
  if(!verify(model,req,result.moveIndices))return {status:'unknown',reason:'internal_witness_verification_failed',optimal:false,stats};
@@ -66,10 +56,6 @@ function solveSync(model,request,options={}){
  const t=performance.now();let req;try{options=validateOptions(options);req=normalize(model,request);}catch(e){return {status:'invalid',reason:e.message,optimal:false};}
  const maxMs=options.maxMs??3000,budget={maxMs,maxStrongGenerators:options.maxStrongGenerators??2000,maxDagNodes:options.maxDagNodes??100000,maxOutputMoves:options.maxOutputMoves??5000,maxOrbitStates:options.maxOrbitStates??100000,maxSchreierTests:options.maxSchreierTests??3000000,maxStorageBytes:options.maxStorageBytes??64*1024*1024};
  const done=result=>finish(model,req,result,t,budget.maxOutputMoves);
- if(req.holdSemantics==='color'&&req.protected.length){
-  const {solveColors}=require('./color-solve.cjs');
-  return done(solveColors(model,req,options,remaining=>solveSync(model,{...req,holdSemantics:'sticker'},{...options,maxMs:remaining,colorCache:undefined})));
- }
  let working=model,map=model.moves.map((_,i)=>i);
  if(req.protection==='throughout'){
   map=map.filter(i=>req.protected.every(x=>model.moves[i].perm[x]===x));working={...model,moves:map.map(i=>model.moves[i])};
@@ -78,20 +64,7 @@ function solveSync(model,request,options={}){
  let r=search(working,req.protected,req.swap,{maxMs:Math.min(maxMs,options.searchMs??500),maxStates:Math.min(250000,options.maxSearchStates??25000),maxDepth:options.maxSearchDepth??12,maxBytes:Math.min(32*1024*1024,options.maxStorageBytes??32*1024*1024)});
  if(r.status==='solved')r.moveIndices=r.moveIndices.map(i=>map[i]);
  if(r.status!=='unknown'||options.group===false)return done(r);
- let remaining=Math.floor(maxMs-(performance.now()-t));if(remaining<=0)return done({...r,reason:'request_time_limit'});
- // Retain and rebase words from the already complete cache instead of building
- // the group again. The ordered-pair orbit is at most d(d-1) states. A bounded
- // attempt may remain unknown; it must not become an impossibility claim.
- if(req.protection==='endpoint'&&(options.fullCache||!req.protected.length)){
-  const cached=require('./cached-swap.cjs').solveCachedSwap(model,req,{...budget,cache:options.fullCache,maxMs:Math.min(800,remaining)});
-  if(cached.status==='solved'||cached.status==='impossible'){
-   cached.lowerBound=r.lowerBound;cached.stats={...cached.stats,shortSearch:r.stats};
-   if(cached.status==='solved'&&cached.moveIndices.length===r.lowerBound)cached.optimal=true;
-   return done(cached);
-  }
-  r.stats={...r.stats,cachedSwap:{reason:cached.reason,...cached.stats}};
-  remaining=Math.floor(maxMs-(performance.now()-t));if(remaining<=0)return done({...r,reason:'request_time_limit'});
- }
+ const remaining=maxMs-(performance.now()-t);if(remaining<=0)return done({...r,reason:'request_time_limit'});
  try{
   const {solveGroup}=require('./group.cjs');const g=solveGroup({model:working,protected:req.protected,swap:req.swap,budget:{...budget,maxMs:remaining}});
   if(g.status==='solved'){g.moveIndices=g.moveIndices.map(i=>map[i]);g.optimal=Boolean(g.optimal);g.lowerBound=r.lowerBound;

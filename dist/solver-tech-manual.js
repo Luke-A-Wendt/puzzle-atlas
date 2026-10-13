@@ -1,116 +1,13 @@
 /* Source-aligned documentation only. No solver or puzzle state is changed. */
 window.SOLVER_TECH_MANUAL = function ({section, subsection, code, math, table}) {
-  const colorBody =
-    `<p><strong>The website protects colors at held locations.</strong> The strict routines below remain the constructive fallback; they are sufficient but no longer necessary for a successful manual request. Let Ω={0,…,N−1}, c:Ω→colors∪{empty} be the current color array, F⊆Ω be the held addresses, and a,b∈Ω∖F be distinct occupied addresses. A legal source-to-destination permutation g must exchange the selected stickers and restore every held location's color:</p>`+
-    math('Exact endpoint color and selected-sticker constraints', '<mi>g</mi><mo>(</mo><mi>a</mi><mo>)</mo><mo>=</mo><mi>b</mi><mo>,</mo><mspace width=".5em"/><mi>g</mi><mo>(</mo><mi>b</mi><mo>)</mo><mo>=</mo><mi>a</mi><mo>,</mo><mspace width=".5em"/><mi>c</mi><mo>(</mo><msup><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mo>(</mo><mi>f</mi><mo>)</mo><mo>)</mo><mo>=</mo><mi>c</mi><mo>(</mo><mi>f</mi><mo>)</mo><mspace width=".5em"/><mo>∀</mo><mi>f</mi><mo>∈</mo><mi>F</mi>')+
-    `<p>The backend option is <code>holdSemantics:'color'</code>, with <code>colorByNode</code> containing exactly N strings, finite numbers, or null entries. Equality is exact label equality, not a comparison of displayed RGB brightness. Null denotes an unoccupied geometric pose. The occupied-address set must agree with non-null entries, and holds/A/B must be occupied. Color semantics is supported for <code>protected_swap</code> with <code>endpoint</code> protection. The default backend request without this option retains <code>holdSemantics:'sticker'</code> for compatibility; the website explicitly requests colors.</p>
-    <p>The set of g preserving colors at only F generally fails closure under multiplication: one acceptable transformation can move a same-color donor out of reach of another. Therefore it is not substituted for a subgroup in Schreier–Sims. Instead, use bounded positive-witness methods and keep the strict pointwise subgroup as a safe sufficient route. No labeling of all interchangeable stickers and no global configuration graph is allocated.</p>`+
-    subsection('tech-color-dispatch','One-shot backend dispatch and the limits of each proof',
-      code('Color-aware manual request', `COLOR-SOLVE(model, F, a, b, c, budget):
-  validate model, occupied colors, holds and endpoints
-  if F is empty:
-    return ordinary no-holds pair solver // identical request in both semantics
-  candidate := shortest acceptable operation found in the short-macro catalog
-  if candidate exists:
-    if length(candidate)>2:
-      try bounded color-preimage BFS up to length(candidate)-1, at most 150 ms
-      replace candidate only if a shorter verified word is found
-      if time remains, try strict bidirectional tuple BFS for at most 50 ms
-      again replace only with a shorter independently verified word
-    independently verify candidate; return SOLVED
-  relaxed := COLOR-PREIMAGE-BFS(model,F,a,b,c,short budget)
-  if relaxed is SOLVED or certified IMPOSSIBLE: return relaxed
-  strict := original identity-hold solver with remaining request time
-  if strict is SOLVED:
-    independently verify colors and A/B
-    mark optimal only if its length meets the relaxed search lower bound
-    return strict witness under color semantics
-  return UNKNOWN // strict impossibility cannot exclude relaxed solutions`)+
-      `<p>The catalog is a supply of legal words, not a complete reachability table. Scan candidate operations containing the required A/B two-cycle, test their incoming colors on F, and choose the shortest accepted stored word. A catalog witness proves feasibility; failure proves nothing. A one-move witness is shortest because distinct A/B require a nonidentity action. Longer catalog words have no general minimum-length certificate. One- and two-move catalog witnesses return promptly; a longer one supplies an incumbent for a small attempt to improve it before playback.</p>
-      <p>This describes the retained one-shot <code>solveSync</code> API, not the resumable browser-session protocol below. Catalog inspection is capped at min(100 ms,total budget/8). An incumbent longer than two moves receives at most 150 ms of shorter-depth color search and, when time remains, at most 50 ms of strict bidirectional tuple search to compete with it. Without an incumbent, color search receives at most min(450 ms,configured short-search time,total budget/3,remaining time), with at most 25,000 stored tuples and 16 MiB estimated storage. Remaining time goes to the strict fallback. A successful strict fallback need not be shortest for the relaxed request, even if it was shortest under sticker holds. Only a lower bound proved for the relaxed request can certify that claim.</p>`)+
-    subsection('tech-color-session','Progressive browser search: preserve work across Continue',
-      `<p><code>ManualSwapSession</code> keeps one immutable normalized request and a retained projected search in a browser worker. Its <code>advance({budgetMs,onProgress})</code> operation receives a <em>cumulative</em> planning allowance. The UI uses 3,000, 10,000, 30,000 and 60,000 ms: after spending the full previous allowance, these permit approximately 7,000, 20,000 and 30,000 ms of additional planning. Asset download time and time spent waiting for another click do not consume that allowance. Runtime checks occur at checkpoints, so a slice can overrun slightly.</p>
-      <p>A session retains normalized holds, the full current color/occupancy arrays and A/B; primitive inverse arrays; the catalog scan cursor; and the BFS seen map, record queue, parent indices, incoming moves, depths, queue head, next primitive index and an optional already-tested transition awaiting storage. Retaining only a layer number or restarting BFS with a larger deadline would repeat work. The move cursor also matters: a pause in the middle of expanding a node resumes its next untested outgoing edge.</p>`+
-      code('Resumable exact projected search', `CREATE-SESSION(model, request, limits):
-  validate and copy the normalized request; treat it as immutable
-  precompute primitive inverses
-  root := held addresses followed by [a,b]
-  records := [(root,parent=NONE,move=NONE,depth=0)]
-  seen := {key(root)}; head := 0; nextMove := 0
-  catalogCursor := 0; elapsed := 0; terminal := NONE
-
-ADVANCE(cumulativeBudget):
-  require the same immutable request; never replace it inside this session
-  if terminal exists: return terminal without repeating work
-  deadline := now + max(0,cumulativeBudget-elapsed)
-  continue the retained catalog scan; verify any returned witness
-  before the first cached attempt, advance this same BFS for
-    at most min(150 ms, remaining time / 4)
-  try the bounded cached strict construction when scheduled
-  if construction has stopped permanently and a pending BFS row now fits:
-    enqueue that stored row; advance the move cursor without retesting
-    accept only a witness independently satisfying the original request
-  while head < length(records):
-    if time slice expires:
-      retain every field; return UNKNOWN(canContinue if budget remains)
-    row := records[head]
-    if row.depth >= depthBound:
-      mark truncated; head := head+1; nextMove := 0; continue
-    if nextMove == numberOfPrimitives:
-      head := head+1; nextMove := 0; continue
-    j := nextMove
-    next := componentwise inverse(P[j]) applied to row.tuple
-    if key(next) not in seen:
-      test the exact requested color/identity and A/B endpoint goal
-      if goal holds:
-        reconstruct [j] followed by parent moves toward the root
-        enforce output bound; independently verify; return SOLVED
-      enforce record bound
-      if storage plus constructive reservation is unavailable:
-        retain this computed row as pending; pause BFS
-      append next with parent=head, move=j, depth=row.depth+1
-      add key(next) to seen
-    nextMove := nextMove+1 // edge now completed; never redo it on Continue
-  if depth was truncated: return terminal UNKNOWN(depth/output limit)
-  return IMPOSSIBLE only after the entire projected orbit is exhausted
-  on every return, add only active planning time to elapsed`)+
-      `<p>The cached strict constructor is a separate bounded shortcut. A successful prepared chain can be reused. Before the first cached attempt, the same retained BFS gets a probe of at most min(150 ms,remaining time/4), so an easy short solution need not wait for or expand a long constructive word. Only a constructor result with <code>time_limit</code> schedules another attempt. Its nominal allowances are 800, 2,500, 8,000 and 16,000 ms at the four stages, bounded by the actual time remaining. At the final 60-second stage, if BFS has already stopped at a hard limit, the constructor may use all remaining planning time rather than leaving it unused. The tuple frontier remains intact. Therefore BFS transitions are not replayed across continuations, but not every internal operation of a timed-out group construction is a resumable checkpoint. Strict impossibility never proves a color request impossible. Catalog or cached witnesses can be shorter to compute without being shortest in primitive turns.</p>
-      <p>The session stops offering Continue after the 60-second planning stage, or sooner when all remaining routes have stopped. A BFS memory/state limit can leave one useful continuation when a cached construction is still eligible for a longer attempt; a terminal limit with no such work remaining ends the session. The browser guards are 100,000 retained states, a 48 MiB combined working-storage estimate, depth 30 for projected BFS and 5,000 output moves. The BFS depth limit does not restrict a valid longer word from the constructive route; it limits which primitive paths BFS explores. The standalone session defaults its depth bound to the output bound when no depth is supplied. Each record is charged 256+40q bytes. Inverse arrays, initial metadata and one temporary/pending row are charged 2MN+16N+32q+(256+40q) bytes; retained cached preparation is additionally accounted. Before the first constructive attempt and while a timed-out attempt can be extended, BFS reserves at least half the storage allowance for construction, or the retained prepared-cache size if larger. If that reservation stops BFS, save the already-computed transition as a pending row. When construction stops permanently, release the extra reservation and enqueue that row if it fits; advance the move cursor without repeating the transition. Actual retained preparation remains charged. The constructor receives only the allowance left after current BFS storage. These are safeguards, not exact browser heap measurements. Terminal resource limits return <code>unknown</code> with a reason and leave the puzzle unchanged. Only full projected-orbit exhaustion justifies <code>impossible</code>. No incomplete frontier is treated as an impossibility proof.</p>
-      <p>Progress metadata includes the cumulative budget and planning time, retained-state and attempted-transition counts, whether work was resumed, whether another slice is allowed, the next budget and a terminal reason. Counts describe the bounded projected search, not the percentage of all puzzle configurations searched: the full search size is generally unknown. A newly created session can have a small initialization cost before its first progress update.</p>
-      <p>The main thread retains a paused worker only for that exact request and live sticker-address snapshot. Altering the holds, A, B, colors, occupied poses, puzzle state or mode invalidates the session and its continuation button. Cancel also disposes of it. Selecting a ready pair bypasses construction: retrieve its stored word and independently replay it before playback. If background eligibility later supplies a verified word for a previously unresolved pair, Go can become available without restarting its exhausted search. Neither a suggestion nor a failed check changes the puzzle. <strong>Suggest a swap</strong> selects from retained words that independently verify for the current request. It prefers different colors, compares color-goal improvement on a bounded shortlist, and then favors shorter words. This is a bounded presentation heuristic, not a search proof or a promise that every suggestion improves the puzzle. The UI previews the verified word length and waits for Go.</p>`)+
-    subsection('tech-color-tuple','Backward preimages: a sufficient projected state',
-      `<p>Track q=|F|+2 preimages rather than the identities initially held. For t=(f₀,…,fₜ₋₁,a,b), define v(g)=(g⁻¹(t₀),…,g⁻¹(tq−1)). Start at v(I)=t. The goal test is c[vᵢ]=c[fᵢ] for each hold, vq−2=b and vq−1=a. The last two equations are equivalent to g(b)=a and g(a)=b. This tuple retains exactly the information needed for these endpoint constraints.</p>
-      <p>Let Pⱼ be a source-to-destination primitive. Prepending that move to the chronological word changes g to g∘Pⱼ, hence (g∘Pⱼ)⁻¹=Pⱼ⁻¹∘g⁻¹. The transition is therefore componentwise v′ᵢ=Pⱼ⁻¹[vᵢ]. The tuple transition depends only on v, so deduplicating equal tuples is exact. Reading parent move indices from the found leaf toward the root already gives the chronological forward word; do not reverse that list.</p>`+
-      code('Single-source breadth-first color transporter', `COLOR-PREIMAGE-BFS(P,F,a,b,c,limits):
-  start := F followed by [a,b]
-  inverse[j] := INVERSE(P[j])
-  records := [(tuple=start,parent=NONE,move=NONE,depth=0)]
-  seen := {key(start)}; queueHead := 0
-  while queueHead < length(records):
-    row := records[queueHead]
-    stop UNKNOWN at depth, time, state or storage limit
-    for j from 0 to M-1:
-      next := [inverse[j][x] for x in row.tuple]
-      if key(next) in seen: continue
-      if next[last-1]=b and next[last]=a
-         and every c[next[i]]=c[F[i]]:
-        word := [j]
-        walk row's parents to the root, appending each stored move
-        independently verify word; return SOLVED(word,optimal=true)
-      append (next,parent=queueHead,move=j,depth=row.depth+1)
-      add key(next) to seen
-    queueHead := queueHead+1
-  return IMPOSSIBLE(complete color-preimage tuple orbit exhausted)`)+
-      `<p>FIFO BFS visits tuple depths in increasing order and tests every newly reached state. Its first witness has minimum primitive length for this color-hold request under the supplied unit-cost move alphabet. If interrupted, only completed depth layers justify a lower bound. An exhausted complete tuple orbit can prove impossibility; a depth cap, catalog miss or strict-subgroup exclusion cannot.</p>
-      <p>There are at most N!/(N−q)! injective tuples, which can still be enormous. The implementation never allocates that bound: it stores at most its configured state and byte budgets. For V retained tuples and E attempted transitions, time is O(Eq+MN), storage O(Vq+MN); E≤MV for completed expansions. Inverses occupy MN integer entries. The per-record accounting estimate is 256+40q bytes, covering tuples, strings and map/queue overhead. This is a bounded search improvement, not a polynomial-time solution to shortest factorization.</p>`);
   const searchBody =
-    `<p><strong>Strict fallback specification.</strong> The following bidirectional and group algorithms describe <code>holdSemantics:'sticker'</code>. They ask for a legal permutation <var>g</var> with <var>g(a)=b</var>, <var>g(b)=a</var>, and <var>g(f)=f</var> for every <var>f∈F</var>. Other unheld stickers may move. Every successful strict witness satisfies color holds too; strict failure and optimality claims must be interpreted only within this more restrictive subproblem.</p>
-    <p>The strict route first tries bounded bidirectional search on the projected tuple. The browser can then construct a word from the existing complete cache by reordering its base while retaining move expressions. The original on-demand chain builder remains the uncached backend route. These routes share the same exact endpoint verification but have different construction costs.</p>` +
+    `<p>The manual request specifies held addresses <var>F</var> and two distinct unheld addresses <var>a</var>, <var>b</var>. It asks for a legal permutation <var>g</var> with <var>g(a)=b</var>, <var>g(b)=a</var>, and <var>g(f)=f</var> for every <var>f∈F</var>. Other unheld stickers may move. This is a <strong>protected pair exchange</strong>, not necessarily the isolated transposition (a b). Holds are restored at the end of the complete sequence; intermediate moves may displace them.</p>
+    <p>The website first tries a bounded bidirectional breadth-first search on a projected state. If that search is unresolved, it builds a stabilizer for the requested holds and transports the ordered pair. The precomputed full-solve cache is used for availability and Auto Solve; the manual witness fallback currently constructs its own chain. These are distinct routes with distinct budgets.</p>` +
     subsection('tech-search-contract', 'Request normalization and protection semantics',
       `<p>Let <var>N</var> be the permutation degree, <var>M</var> the number of legal primitive moves, <var>t=|F|</var>, and <var>q=t+2</var>. A move is a length-<var>N</var> bijective array of integers in 0…N−1. All primitive costs must equal 1. Current limits accept 2≤N≤4096 and 1≤M≤512. Move names and address IDs must be unique. Reject state-dependent legality, malformed permutations, duplicate endpoints, or an endpoint in the held set. Deduplicate and sort holds.</p>
       <p>For a model with an expanded pose domain, require the current occupied-address list: its length equals the physical sticker count, its addresses are distinct, and every selected address is occupied. This prevents selecting an empty hypothetical pose. Color equality is not used: protection refers to physical sticker identities at their selected addresses.</p>` +
       table(['Option', 'Exact meaning'], [
-        ['<code>protected_swap</code> / <code>endpoint</code>', 'The strict backend subproblem when holdSemantics is sticker. Fix the explicitly held addresses at the end; exchange a and b; permit other changes. The website uses the color wrapper above.'],
+        ['<code>protected_swap</code> / <code>endpoint</code>', 'The interface default. Fix the explicitly held addresses at the end; exchange a and b; permit other changes.'],
         ['<code>exact_swap</code>', 'Backend option: hold every other occupied address. In a fully occupied model this requests exactly the transposition (a b), which may be illegal. In an expanded model unused pose addresses remain unconstrained.'],
         ['<code>throughout</code>', 'Backend option: keep only primitive moves p with p(f)=f for every f∈F. Run the same algorithms on that reduced generator list. This disallows temporary movement of holds and can reject an exchange possible under endpoint semantics.']
       ]) +
@@ -169,12 +66,6 @@ ADVANCE(cumulativeBudget):
   if r is SOLVED or IMPOSSIBLE, or group fallback is disabled: finish(r)
   remainingTime := total budget - elapsed time
   if remainingTime <= 0: finish(UNKNOWN)
-  if endpoint protection and (full cache exists or holds are empty):
-    c := CACHED-SWAP(model,fullCache,holds,a,b,min(800 ms,remainingTime))
-    if c is SOLVED or IMPOSSIBLE:
-      retain r.lowerBound; certify optimal only if a witness attains it
-      finish(c)
-    recompute remainingTime; finish UNKNOWN if no time remains
   g := GROUP-EXCHANGE(filtered model, holds, a, b, remaining limits)
   if g is SOLVED:
     restore original move indices; retain r.lowerBound
@@ -184,13 +75,15 @@ ADVANCE(cumulativeBudget):
     if length(g.word) == r.lowerBound: g.optimal := true
   finish(g): enforce output length; independently replay and verify
              the endpoint constraints before publishing a witness`)+
-      table(['One-shot solveSync bound', 'Default'], [
-        ['Projected BFS time / stored records / depth', '500 ms / 25,000 / 12'],
-        ['BFS estimated storage ceiling', '32 MiB'],
-        ['Group storage / generators / word-DAG nodes', '64 MiB / 2,000 / 100,000'],
-        ['Orbit records / Schreier tests', '100,000 / 3,000,000']
+      table(['Browser manual solver bound', 'Go', 'Try longer'], [
+        ['Total algorithm time', '3,000 ms', '10,000 ms'],
+        ['Projected BFS time', '450 ms', '1,500 ms'],
+        ['Projected BFS stored records / depth', '15,000 / 12', '15,000 / 12'],
+        ['BFS estimated storage ceiling', '32 MiB', '32 MiB'],
+        ['Group estimate / generators / word-DAG nodes', '48 MiB / 2,000 / 100,000', 'Same'],
+        ['Orbit records / Schreier tests / expanded output moves', '100,000 / 3,000,000 / 5,000', 'Same']
       ])+
-      `<p>The one-shot API remains useful for tools and tests. It does not retain its frontier after returning. The website’s progressive route is specified above and has its own lifetime and limits; it does not restart this one-shot call for each Continue. The standalone threaded API also enforces a worker heap limit and a total time +500 ms timeout.</p>
+      `<p>These are website defaults, not claims that every request fits them. The browser wrapper permits at most 25,000 BFS records and depth 30 when explicitly requested; the normal and longer-search buttons do not increase those two defaults. Its worker response timeout is total time +1,000 ms. Backend <code>solveSync</code> defaults differ: 500 ms/25,000 records for the short search and 64 MiB group storage. The standalone threaded API also enforces a worker heap limit and a total time +500 ms timeout.</p>
       <p>For V stored tuples and E attempted edges, tuple transformations and key construction cost O(Eq), with E≤MV for completed expansions; storage is O(Vq+MN). The implementation estimates 256+40q bytes per record to include keys, maps, frontier references, and allocation overhead. This is an accounting guard, not an exact JavaScript heap measurement. Limits yield <code>unknown</code>, never a fabricated proof of illegality.</p>`);
 
   const holdsBody =
@@ -245,7 +138,7 @@ ADVANCE(cumulativeBudget):
       `<p>There are at most N(N−1) distinct pairs with unequal endpoints. Each transition performs two array lookups, so the complete search costs O(sN²) time and O(N²) parent/queue storage, aside from O(sN) stored generator permutations. The runtime allows at most 100,000 orbit records and estimates 120 bytes per pair record. Early success may be much cheaper.</p>
       <p>This BFS minimizes the number of <em>subgroup generators</em>, each of which can expand to many primitive moves. It therefore does not prove a shortest primitive solution when holds are present. With no holds, the generators are the original primitive moves and that particular BFS is optimal. A later equality between the verified word length and the short-search lower bound is another valid optimality certificate. Otherwise the UI explicitly says shortest length is not proved.</p>`)+
     subsection('tech-holds-cache', 'Getting an arbitrary stabilizer from a certified cached chain',
-      `<p>Mathematical availability needs reachability; executable readiness also needs a primitive word. Both can reuse the precomputed chain and reorder its base so the requested held addresses come first, avoiding a fresh Schreier–Sims closure. The constructive route additionally retains the legal word DAG through every base change. The cached implementation stores a full base of N distinct addresses, even though a shorter mathematical base can suffice. Its certified level sizes d<sub>k</sub>=|H<sub>k</sub>·b<sub>k</sub>| satisfy |H<sub>k</sub>|=d<sub>k</sub>|H<sub>k+1</sub>|.</p>
+      `<p>Availability checks need reachability, not a move word. They reuse the precomputed chain and reorder its base so the requested held addresses come first. This avoids recomputing a Schreier–Sims chain for every selection. The cached implementation stores a full base of N distinct addresses, even though a shorter mathematical base can suffice. Its certified level sizes d<sub>k</sub>=|H<sub>k</sub>·b<sub>k</sub>| satisfy |H<sub>k</sub>|=d<sub>k</sub>|H<sub>k+1</sub>|.</p>
       <p>Before use, require schema version 1, <code>status=ready</code>, <code>complete=true</code>, matching degree and model signature, a base permutation of all N addresses, and N matching levels. Each retained representative must be a bijection, fix the preceding base prefix, and map its level’s base address to the claimed image. The browser additionally checks the downloaded asset hash when its cryptographic API is available.</p>`+
       code('Recover a small strong-generator set from cached representatives', `PREPARE-CACHED-CHAIN(cache):
   B := cache.base; d[k] := 1 + number of nonidentity entries at level k
@@ -288,56 +181,12 @@ ADVANCE(cumulativeBudget):
     assign level k+1 if it fixes b, else level k`)+
       `<p>FixB initially contains the deeper subgroup L. Every added Schreier element fixes b. Reaching the certified target orbit size therefore proves FixB generates K<sub>b</sub>; stop without forming every possible Schreier generator. Levels deeper than k+1 still fix the same set of prefix addresses, and higher levels are unchanged.</p>
       <p>To place the holds first, order them as they appeared in the old base. For each held entry, bubble it left into its next prefix position using adjacent swaps. This preserves the relative order within held and unheld entries and uses at most t(N−t) swaps. Return generators with level≥t. If the generator count grows above max(2s₀,400), where s₀ is the prepared count, compact bottom-up using the same certified-orbit-size test as preparation.</p>
-      <p>This route stores full length-N representatives while reordering; it is not merely sorting labels. A representative orbit of size o requires O(oN) permutation entries. Generator composition costs O(N), and repeated orbit recomputation costs O(o·s) transitions each time. There is no promise that every arbitrary held subset fits the current budget, but its cost depends on points, generators, and base changes—not on explicitly storing every puzzle configuration.</p>`)+
-    subsection('tech-holds-cached-word','Construct a playable word from the existing chain',
-      `<p><code>solveCachedSwap</code> and reusable <code>CachedSwapSolver</code> add move expressions to that same base-change procedure. Restore the cache's signed word DAG without renumbering its persisted nodes; restore omitted primitive leaves afterward. Validate references, primitive indices and DAG size before use. Extract the same compact strong generators as above, now retaining each representative's word reference.</p>
-      <p>During a representative orbit, store W[y]=W[x] followed by the generator word when y is first reached from x. Every new Schreier element carries W[x], the generator word, and −W[y]. Its full permutation and expression must agree. Signed references encode inverses without immediately expanding them. After promoting holds, the retained level≥|F| generators and their inverses give a complete strict subgroup with legal words.</p>`+
-      code('Cached constructive strict transporter', `CACHED-SWAP(model, cache, F, a, b, limits):
-  restore and validate cached word DAG; add any missing primitive leaves
-  if F is empty: use original primitive generators and words
-  else:
-    prepare complete cached chain using certified orbit indices
-    reorder base to place F first, retaining a word with every generator
-    S := generators fixing the held prefix
-  actions := S together with their inverses
-  run Dijkstra on ordered pairs, from (a,b) to (b,a):
-    edge (x,y) -> (s[x],s[y]) has cost expandedLength(s.word)
-    keep smallest distance and parent/action per pair
-    skip stale priority-queue entries
-  if complete pair orbit excludes target:
-    return IMPOSSIBLE for sticker holds, UNKNOWN for color holds
-  concatenate action-word references along the selected parent route
-  flatten once under primitive-output and expansion limits
-  independently replay every primitive; verify holds and A/B
-  return a concrete verified word, optimal=false`)+
-      `<p>Dijkstra minimizes the sum of stored generator-word lengths on this chosen subgroup action graph. Final cancellation may shorten the expanded word, and different generators or color substitutions may do better. It is not a proof of minimum primitive distance. The ordered-pair graph has at most N(N−1) states; for s directed generator actions, its full traversal uses O(sN² log N) priority-queue work, before base reordering and word expansion. It does not enumerate full puzzle configurations.</p>
-      <p>Standalone defaults are 3,000 ms, 5,000 output moves, a 48 MiB working-storage estimate, 100,000 pair states, and 300,000 DAG nodes. The one-shot request dispatcher gives this attempt at most min(800 ms,remaining time), after the strict projected search and before the legacy chain builder. The progressive browser session instead uses the scheduling specified above. A cached solved/impossible answer ends that strict attempt; an unknown or invalid cached attempt leaves any remaining time to the legacy fallback. The color wrapper still downgrades strict impossibility to unknown. No-holds transport uses the same ordered-pair method on primitive actions without loading a chain. No new precomputed table is required.</p>`);
+      <p>This route stores full length-N representatives while reordering; it is not merely sorting labels. A representative orbit of size o requires O(oN) permutation entries. Generator composition costs O(N), and repeated orbit recomputation costs O(o·s) transitions each time. There is no promise that every arbitrary held subset fits the current budget, but its cost depends on points, generators, and base changes—not on explicitly storing every puzzle configuration.</p>`);
 
   const eligibilityBody =
-    `<p>Availability has two separate outputs: <strong>mathematical feasibility</strong> and <strong>executable readiness</strong>. A group-orbit proof can establish that a sequence exists without delivering it within the playback bound. Only a stored, independently verified primitive word makes a pair ready and bright. Feasible-but-not-ready and unchecked pairs remain selectable, moderately dim with a question mark; proved-impossible pairs are strongly dim and disabled.</p>
-    <p>Feasibility combines three sound sources. An exchange impossible in the full legal group remains impossible under any holds. An exchange possible while fixing every held sticker remains possible while preserving their colors. A short operation whose held endpoint colors verify proves an additional positive and can also supply its executable word. A negative from the strict held subgroup is deliberately discarded.</p>`+
-    subsection('tech-color-eligibility','Merge proof bounds without treating unknown as impossible',
-      code('COLOR-ELIGIBILITY', `initialize all candidate pairs UNKNOWN
-exclude held endpoints, empty poses, and equal endpoints
-for each verified primitive or catalog operation g:
-  if every held destination receives its original color:
-    for each actual two-cycle (a b) with candidate endpoints:
-      mark pair (a,b) and (b,a) FEASIBLE
-      retain g's verified legal word if within witness/output byte limits
-      mark only retained witnessed pairs READY
-global := exact ordered-pair analysis with NO holds
-          (up to 750 ms with holds; remaining request time with no holds)
-if F is empty: use all certified global answers
-else:
-  copy only certified global IMPOSSIBLE pairs
-  strict := exact held-point-stabilizer analysis with remaining budget
-  copy only strict FEASIBLE pairs
-compute firstStatus from feasibility and readyFirstStatus from readyPairs
-complete iff every candidate pair is classified; otherwise partial/unknown`)+
-      `<p>The total default allowance is 3 seconds. Concrete primitive/catalog witnesses have priority. With holds present, the subsequent full-group analysis is capped at 750 ms; with no holds it can use remaining time. Sparse catalog supports are accepted only when they match replay of their legal words; a memoized validation must be invalidated if either words or support changes. Missing or mismatched catalog data removes that source of ready sequences, but primitive operations remain usable and no negative proof follows from missing data.</p>
-      <p>A feasibility proof need not supply any explicit word. A ready witness supplies a legal word within the 5,000-move playback limit, but need not be shortest. Retaining the actual word avoids showing a bright choice and then rediscovering that its sequence cannot be constructed within the search budget. Catalog witnesses are collected with no holds too; global no-holds classification alone does not establish readiness. Fixed centers and odd-length cyclic orbits can still be proved impossible.</p>`)+
+    `<p>Availability is a separate bounded calculation. It classifies many exchanges under the same holds at once, without expanding move words. A proved reachable pair may still take longer than the manual witness budget to produce or may require an output longer than 5,000 moves. Conversely, a timeout means unchecked, not impossible. The interface dims only choices proved unavailable.</p>`+
     subsection('tech-eligibility-pairs', 'Point orbits and complete ordered-pair orbit classification',
-      `<p>This is the exact strict subroutine used twice by the wrapper above. First compute point orbits under the selected group generators. Nodes in different point orbits cannot exchange under that group. Use primitive generators for the full-group bound, or obtain held-stabilizer generators using the cached base-change method for strict positives. Under the explicit strict <code>throughout</code> backend option use only individually hold-preserving primitives. A strict held-subgroup negative must never be copied into the relaxed color table.</p>`+
+      `<p>First compute point orbits under the legal primitive generators. Nodes in different point orbits cannot exchange under any subgroup, so record those negatives immediately. Then obtain the held stabilizer generators using the cached base-change method above; with no holds use the primitive generators directly, and under throughout semantics use only individually hold-preserving primitives.</p>`+
       code('Classify every candidate pair under the selected subgroup', `CLASSIFY-PAIRS(S, occupied, held):
   candidates := occupied minus held
   pointOrbits := partition all N addresses into complete S-orbits
@@ -362,9 +211,6 @@ complete iff every candidate pair is classified; otherwise partial/unknown`)+
         ['<code>knownPairs</code>', '⌈N²/8⌉ bytes. Bit aN+b is 1 only after that pair has been classified.'],
         ['<code>feasiblePairs</code>', '⌈N²/8⌉ bytes. A set known bit with this bit 1 means feasible; with 0 means proved infeasible.'],
         ['<code>firstStatus</code>', 'N bytes: 0 unchecked, 1 at least one feasible partner, 2 no possible partner.'],
-        ['<code>readyPairs</code>', '⌈N²/8⌉ additional bytes. Bit aN+b is 1 only when the response also retains a verified, output-bounded primitive word for that pair.'],
-        ['<code>readyFirstStatus</code>', 'N bytes indicating whether each first endpoint has at least one retained ready partner; separate from mathematical firstStatus.'],
-        ['<code>readyWitnesses</code>', 'Bounded records {word,pairs}, where word is a primitive-index list and pairs=[a,b,…] lists unordered endpoint pairs verified for that same word. One word can serve several pairs without being duplicated.'],
         ['Candidate / occupied / protected arrays', 'Lists of current addresses; candidates exclude holds. Empty pose addresses are not selectable.']
       ])+
       code('Reading and finalizing eligibility', `PAIR-STATUS(a,b):
@@ -383,17 +229,16 @@ FINALIZE:
       `<p>Initialize equal-endpoint pairs, held endpoints, and noncandidate endpoints as known infeasible. Initialize other pairs as unchecked. On a resource limit, retain already certified point-orbit exclusions and completed pair orbits, then finalize. <code>complete</code> means the table is fully classified; it does not mean every pair is feasible.</p>
       <p>Browser availability caps are 3,000 ms, 48 MiB estimated storage, 2,000 strong generators, 100,000,000 counted operations, and 50,000 adjacent base swaps. Operations are checked in batches, with time checks at orbit/base boundaries too. Missing complete cache, time, storage, operation, generator, or base-swap limits preserve unknown entries. Invalid models or malformed cache structure give <code>invalid</code>.</p>`)+
     subsection('tech-eligibility-ui', 'Selection updates, cache keys, and stale-result rejection',
-      `<p>Before dispatch, map selected nodes to current addresses and capture the complete color array. Holds designate locations whose endpoint colors must be restored; do not let a hold follow a same-colored replacement sticker to a different location. Choosing A again clears both endpoints and leaves holds; choosing B replaces only B. Changes to holds discard the previous manual solve result and recompute eligibility for the current colors. If A becomes held it is no longer a valid endpoint.</p>`+
+      `<p>Selection is stored as physical sticker IDs. At every idle snapshot, the adapter converts them to current addresses. A and B are independent editable slots; the other selected endpoint stays in place while one is changed. Adding a selected endpoint to the held set clears only that slot. Changes to holds discard the previous manual solve result and recompute eligibility; they do not silently reuse a verdict for a different constraint set.</p>`+
       code('Availability scheduling and safe reuse', `ON-IDLE-SELECTION-CHANGE:
   map := current physical-sticker-ID -> address map
   fixed := sorted addresses of selected held sticker IDs
   occupied := sorted current occupied addresses
-  colorByNode := color at each address, null for empty poses
-  requestKey := (model,holdSemantics,fixed,occupied,colorByNode)
+  requestKey := (fixed,occupied)
   stateToken := complete current sticker-address mapping
   if requestKey and stateToken equal the active request: do nothing
   increment request epoch; cancel obsolete pending work
-  retain compatible prior proofs only when full colors and occupancy agree
+  retain prior proofs only when occupied-address sets agree
   if exact requestKey is cached: process cached result
   else after 80 ms debounce, launch/reuse an eligibility worker
 
@@ -402,34 +247,19 @@ ON-RESULT(response):
   require same current stateToken and matching model fingerprint
   otherwise discard response
   install complete/partial/unknown result; redraw selection states
-  if feasibility status is 2: strongly dim and disable
-  else if retained witness makes endpoint/pair ready: show bright
-  else: moderately dim, show '?', and leave selectable
-  if selected pair is ready: label action Go
-  else if selected pair is not proved impossible: label action Check & solve
-ON-GO:
-  retrieve actual retained word for the selected pair
-  require identical colors/holds/occupancy and independent word verification
-  play the word directly; do not launch a fresh search
-ON-CHECK-AND-SOLVE:
-  create a retained search session for the full immutable request
-  run the initial time slice; play only a verified successful result
-ON-CONTINUE:
-  require unchanged request, live identity snapshot and retained worker
-  extend cumulative budget and resume pending work, without restarting
-  if terminal resource/time limit: remove Continue and explain the limit
-  every non-solved result leaves the puzzle unchanged`)+
-      `<p>While choosing A, use the first-endpoint feasibility and readiness arrays, never a stale B row. While choosing B with A selected, use A's corresponding pair-table rows. Helpers <code>eligibilityReady</code> and <code>eligibilityWitness</code> expose executable readiness and the retained word separately from <code>eligibilityStatus</code>. A 7,000 ms UI timeout for availability leaves choices unchecked rather than blocking interaction. A bright first endpoint means at least one partner is ready, not that every possible B is ready.</p>
-      <p>Two monotonic shortcuts remain sound for an unchanged color state and occupied set: adding color holds can preserve an already-proved negative, and removing holds can preserve an already-proved positive. This follows from constraint inclusion, not subgroup closure. A change in any donor color invalidates that reuse; an arbitrary change both adding and removing holds supports neither inference.</p>
-      <p>The analyzer's normalized cache key includes <code>holdSemantics</code>, the full length-N <code>colorByNode</code>, holds, occupancy, candidates and protection. Its default least-recently-used cache is 2 MiB, capped at 8 MiB, and stores complete tables. Readiness word records have a separate 2 MiB cap and share the working-memory guard; charge each record max(JSON length,128+8·(word length+pair-list length)) bytes. A ready bit must never outlive its retained word. UI table caches and manual witness caches must include the full color state, not only colors on held nodes: an unheld donor can determine reachability. Prepared strict chain data remains model-dependent and reusable independently of colors.</p>
-      <p>Manual witness caches are separate: the page retains up to 1 MiB of verified solved or proved-impossible results; its worker result cache is 2 MiB. An unfinished search session is live working memory, not a result cache and not an impossibility proof. Selection or state changes destroy its frontier. Unknown results are not cached as impossibility. Reused words are independently replayed against the current color request and exact A/B mappings. A changed live identity snapshot during planning is rejected even when the displayed colors happen to match.</p>`);
+  dim/reject only status 2; leave status 0 selectable
+  enable Go when distinct A and B exist and their pair is not status 2`)+
+      `<p>Before A is chosen, use <code>firstStatus</code> to dim nodes having no partner. After either endpoint is chosen, use that endpoint’s pair-table row for the other slot. Clicking an endpoint’s card changes which slot is being edited. Unknown choices stay selectable, and Go performs the bounded witness search. A 7,000 ms UI timeout for availability returns unchecked rather than blocking interaction.</p>
+      <p>There are two sound monotonic shortcuts while replacement results are pending. Adding holds shrinks the stabilizer, so a previously impossible pair remains impossible. Removing holds enlarges it, so a previously feasible pair remains feasible. Apply these only to the same address pair and the same occupied-address set. An arbitrary change that both adds and removes holds supports neither inference. The implementation also uses the corresponding safe first-endpoint statuses with candidates drawn from those compatible sets.</p>
+      <p>The analyzer caches complete tables under the model signature and normalized request (holds, occupancy, candidates, protection semantics). Its default least-recently-used cache is 2 MiB, capped at 8 MiB. The UI separately retains complete or partial tables under holds plus occupancy, capped at 2 MiB and scoped to the loaded model; it preserves only entries whose bits already prove a result. It maps those address results back through the fresh sticker-ID map, so a change in sticker identities does not corrupt address reachability. The prepared chain is invalidated when its cache object changes.</p>
+      <p>Manual witness caches are separate: the page retains up to 1 MiB of verified solved or proved-impossible results keyed by normalized holds, ordered pair, and occupancy. The browser worker has a 2 MiB result cache keyed by model ID, normalized request, and options. Unknown results are not cached as impossibility. Every reused witness is independently verified against the current request before playback, and a state change during search causes rejection rather than execution on a stale configuration.</p>`);
 
   return {
-    search: section('tech-search', 'Manual swaps: color freedom with a strict fallback', colorBody + subsection('tech-strict-search', 'Identity-hold fallback: complete specification', searchBody + searchDetails),
-      'Short legal operations and color-preimage search first; an identity-preserving transporter when needed.'),
+    search: section('tech-search', 'Manual swaps: bounded exact search', searchBody + searchDetails,
+      'A small exact search first; a stabilizer transporter when the short search cannot finish.'),
     holds: section('tech-holds', 'Arbitrary holds and ordered-pair transport', holdsBody,
-      'This exact subgroup solves the strict fallback; its positive answers remain valid for color holds.'),
-    eligibility: section('tech-eligibility', 'Eligibility and readiness: proof versus a sequence ready to run', eligibilityBody,
-      'Bright means an executable witness is stored; dim question marks can still be checked.')
+      'A subgroup fixes the holds; a small pair orbit decides whether both endpoints can exchange.'),
+    eligibility: section('tech-eligibility', 'Eligibility: proved available, proved unavailable, or unchecked', eligibilityBody,
+      'Availability proofs are reusable; unknown choices remain selectable.')
   };
 };

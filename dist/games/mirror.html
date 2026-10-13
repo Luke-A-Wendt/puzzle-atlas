@@ -13,7 +13,7 @@
 
 <section class="panel action-panel" aria-label="Game controls"><div class="action-group"><button id="randomize" class="primary"><span class="icon">⤨</span>Randomize</button><button id="solve"><span class="icon">✦</span>Auto solve</button><button id="pause" hidden>Pause</button><button id="undo" class="outline">↶ Undo</button><button id="reset" class="outline">Reset</button></div><div class="action-meta"><span id="status" class="status" role="status">● Solved</span><div class="seedbox"><span id="seedLabel">Start solved, or try a new scramble.</span><br><code id="seed">NO SEED YET</code></div></div></section>
 <div class="workspace">
-<section class="panel" id="ringPanel"><div class="panel-head ring-panel-head"><h2>Ring map</h2><button id="ringFocus" type="button" class="small outline" aria-pressed="true">Show all rings</button><span class="tag">9 RINGS · 54 STICKERS</span><button id="ringPanelHide" class="small outline" type="button" aria-expanded="true" aria-controls="ringPanel">← Hide ring map</button></div><div class="canvas-wrap ring-wrap"><canvas id="rings" tabindex="0" aria-label="Interactive ring diagram. Select a ring below, then use left and right arrow keys to turn it."></canvas><div class="canvas-caption">Solid color dots · select a ring, then turn</div></div><div class="ring-controls"><div class="selector" id="selector"></div><div class="turn-bar"><button id="ccw" title="Turn the selected ring counterclockwise"><span class="direction">↶</span>Ring left</button><div class="turn-selected"><strong id="selectedName">R</strong><span>Selected</span></div><button id="cw" title="Turn the selected ring clockwise"><span class="direction">↷</span>Ring right</button></div><p id="ringHint" class="ring-hint">Arrows rotate the ring as seen here. Each turn is 90°. Unequal pieces change the silhouette.</p></div></section>
+<section class="panel" id="ringPanel"><div class="panel-head ring-panel-head"><h2>Ring map</h2><span class="tag">9 RINGS · 54 STICKERS</span><button id="ringPanelHide" class="small outline" type="button" aria-expanded="true" aria-controls="ringPanel">← Hide ring map</button></div><div class="canvas-wrap ring-wrap"><canvas id="rings" tabindex="0" aria-label="Interactive ring diagram. Select a ring below, then use left and right arrow keys to turn it."></canvas><div class="canvas-caption">Solid color dots · select a ring, then turn</div></div><div class="ring-controls"><div class="selector" id="selector"></div><div class="turn-bar"><button id="ccw" title="Turn the selected ring counterclockwise"><span class="direction">↶</span>Ring left</button><div class="turn-selected"><strong id="selectedName">R</strong><span>Selected</span></div><button id="cw" title="Turn the selected ring clockwise"><span class="direction">↷</span>Ring right</button></div><p id="ringHint" class="ring-hint">Arrows rotate the ring as seen here. Each turn is 90°. Unequal pieces change the silhouette.</p></div></section>
 <section class="panel"><div class="panel-head view-panel-head"><h2>3D puzzle</h2><span class="tag">LIVE SHAPE CHANGES</span><div class="view-panel-controls" id="ringTab" role="group" aria-label="View panels"><button id="ringPanelToggle" class="small outline" type="button" aria-expanded="false" aria-controls="ringPanel" hidden>Show ring map →</button><button id="guidePanelToggle" class="small outline" type="button" aria-expanded="false" hidden>Show guide ←</button></div></div><div class="canvas-wrap cube-wrap"><canvas id="cube" tabindex="0" aria-label="3D cube. Drag to rotate the view, or focus and use arrow keys. Use plus and minus to zoom."></canvas><div class="cube-top"><button id="mirrorMode" class="small outline" aria-pressed="false" title="Advanced: solve using shape alone">Mirror mode</button><button id="homeView" class="small outline">Reset view</button></div><div class="canvas-caption">Drag to look around · click a face letter to select</div></div><div class="notation-panel" aria-label="Conventional notation moves"><div class="notation-heading"><span>Notation moves</span><div class="view-speed-control"><label for="speed">Animation</label><input id="speed" type="range" min="1" max="5" value="3" aria-label="Animation speed"><span id="speedText">Normal</span></div><label class="inverse-toggle"><input id="notationInverse" type="checkbox" aria-label="Use inverse notation moves"> Inverse (′)</label></div><div class="notation-buttons" id="notationButtons"></div><p>Clockwise looking at the named face. Use these buttons for the guide.</p></div><div class="cube-bottom"><div class="metric"><div><strong id="moveCount">0</strong><span>Your turns</span></div><div><strong id="solvedFaces">Cube</strong><span>Shape</span></div></div><div class="shape-key"><strong>Mirror Blocks</strong><span>Unequal pieces. Optional mirror challenge.</span><span id="guideHint">Match the colors and shape to restore the cube.</span></div></div></section>
 </div>
 
@@ -552,7 +552,6 @@ const modeParams=new URLSearchParams(window.location.search);
 let mirrorMode=modeParams.get('mirror')==='1'||modeParams.get('color')==='0',guideColors=!mirrorMode;
 let mode='idle',queue=[],animation=null,paused=false,pauseAt=0,sequenceTotal=0,sequenceDone=0,stopRequested=false,dirty=true;
 let view={yaw:-.62,pitch:.48,zoom:1},ringDrag=null,cubePointers=new Map(),pinchDistance=0;
-let ringFocused=true;
 let ringViewport={scale:1,ox:0,oy:0},sizes={rings:{w:500,h:500},cube:{w:500,h:400}},lastTimestamp=0;
 const mod=(x,n)=>((x%n)+n)%n;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -566,7 +565,6 @@ function setMirrorMode(enabled){mirrorMode=!!enabled;guideColors=!mirrorMode;doc
 function uniformFaces(){const groups=new Map();stickers.forEach(s=>{const k=s.n.join(',');if(!groups.has(k))groups.set(k,new Set());groups.get(k).add(s.color);});return [...groups.values()].filter(v=>v.size===1).length;}
 let scrambleSpeedActive=false;
 function updateUI(){
- $('ringFocus').textContent=ringFocused?'Show all rings':'Focus selected rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
  if(scrambleSpeedActive&&mode!=='scramble'){scrambleSpeedActive=false;$('speed').value='3';$('speedText').textContent='Normal';}
  const solved=isSolved(),busy=locked();
  document.querySelectorAll('.notation-key').forEach(b=>b.disabled=busy);
@@ -668,7 +666,7 @@ function drawRings(t){
  const{w,h}=sizes.rings;rc.clearRect(0,0,w,h);const scale=Math.min((w-34)/500,(h-30)/500),ring=G.getRing(selected);
  ringViewport={scale,ox:(w-500*scale)/2,oy:(h-500*scale)/2-5};
  rc.save();rc.translate(ringViewport.ox,ringViewport.oy);rc.scale(scale,scale);
- G.drawTracks(rc,selected,scale,{focus:ringFocused});
+ G.drawTracks(rc,selected,scale);
  const active=animation,conf=active?E.configs[active.move.face]:null;
  if(ringDrag&&!ringDrag.r.companion&&Math.abs(ringDrag.total)>.025){rc.beginPath();rc.arc(ring.cx,ring.cy,ring.r,ringDrag.angle-ringDrag.total,ringDrag.angle,ringDrag.total<0);rc.lineWidth=4/scale;rc.strokeStyle='rgba(226,211,255,.7)';rc.stroke();}
  const list=active?active.before:stickers;
@@ -741,7 +739,6 @@ for(const [axis,faces] of [['X · LEFT / RIGHT',['L','M','R']],['Y · UP / DOWN'
  const group=document.createElement('div');group.className='axis-row';const label=document.createElement('span');label.className='axis-label';label.textContent=axis;const buttons=document.createElement('div');buttons.className='axis-buttons';
  faces.forEach(face=>{const b=document.createElement('button');b.type='button';b.className='ring-key';b.dataset.face=face;b.textContent=face;b.title='Select '+G.getRing(face).label+' ring';b.setAttribute('aria-label',b.title);b.addEventListener('click',()=>setSelected(face));buttons.appendChild(b);});group.append(label,buttons);$('selector').appendChild(group);
 }
-$('ringFocus').addEventListener('click',()=>{ringFocused=!ringFocused;ringDrag=null;updateUI();});
 $('ccw').addEventListener('click',()=>turn(-1));$('cw').addEventListener('click',()=>turn(1));$('randomize').addEventListener('click',randomize);$('solve').addEventListener('click',solve);$('pause').addEventListener('click',togglePause);$('reset').addEventListener('click',reset);
 $('undo').addEventListener('click',()=>{if(!locked()&&history.length)beginMove(E.invertMove(history[history.length-1]),'undo');});
 $('mirrorMode').addEventListener('click',()=>setMirrorMode(!mirrorMode));

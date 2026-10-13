@@ -82,7 +82,7 @@ function host(id = 'megaminx', {deferModel = false} = {}) {
     const newlySolvedNodes = progress.remainingStickerIds.map(id => home[id]);
     const targetNode = newlySolvedNodes[0], targetSticker = progress.remainingStickerIds[0];
     const stage = {moveIndices: [inverse], protectedNodes: progress.solvedNodes, newlySolvedNodes, targetNode, sourceNode: before.stickerToNode[targetSticker]};
-    const result = {status: 'solved', goalSemantics: app.model.colorRelaxationSafe ? 'colors' : 'identity', initialProtectedNodes: progress.solvedNodes, stages: [stage], moveIndices: [inverse], finalProtectedNodes: Object.values(home), optimal: true, verified: true};
+    const result = {status: 'solved', initialProtectedNodes: progress.solvedNodes, stages: [stage], moveIndices: [inverse], finalProtectedNodes: Object.values(home), optimal: true, verified: true};
     assert.equal(app.core().verifyAutoPlan(app.model, snap, result), true, 'test reply is an independently legal full solution');
     return {id: worker.request.id, type: 'result', result, modelFingerprint: app.core().modelFingerprint(app.model)};
   };

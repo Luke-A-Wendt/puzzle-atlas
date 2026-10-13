@@ -167,12 +167,12 @@ ${table(['Operation or storage','Cost of this implementation'],[
 `)}
 `, 'Build exact address orbits and legal transporter words until every Schreier residual reduces to identity.');
 
-const full = section('tech-full','Auto Solve: constructive placements with color-route shortening',`
-<p><strong>Auto Solve is constructive placement, not reverse playback.</strong> It first builds the identity-correct baseline specified below. For explicitly supported color-only goals it then shortens that legal route in color space and rebuilds secured stage endpoints. Shape and picture goals retain the exact baseline. A stage is a placement or cycle, not necessarily an isolated two-way swap.</p>
+const full = section('tech-full','Auto Solve: factor the current labeled state into placements',`
+<p><strong>Auto Solve is constructive placement, not reverse playback.</strong> It uses current sticker identities and the full-solve cache to bring the next target sticker home, preserving the completed prefix at each stage endpoint. It shares stabilizer machinery with manual requests, but a stage is one-way placement, not necessarily an isolated two-way swap.</p>
 ${subsection('tech-full-input','Input contract, occupied poses and exact goal',`
 <p>Let <i>S</i> be the number of real sticker identities. The objects <code>homeBySticker[id]</code> and <code>currentBySticker[id]</code> map identical sets of <i>S</i> keys to home and current addresses. They must be nonempty, injective and in range; a declared model <code>stickerCount</code> must equal <i>S</i>. Fixed-slot models usually have <i>S</i> = <i>N</i>; pose-expanded models can have <i>S</i> &lt; <i>N</i>. Empty poses receive no dummy sticker identities.</p>
 <p>Construct <code>atHome[h] = currentBySticker[id]</code> for the identity with <code>homeBySticker[id] = h</code>. Thus the value is the present location of the sticker whose target is <i>h</i>. Occupied home addresses must be exactly the first <i>S</i> cache-base entries. Solve only this prefix, leaving permutations of empty addresses unconstrained.</p>
-<p>The baseline goal restores <em>identity</em>, not just displayed color. Equal-colored stickers can look solved while remaining permuted. The second pass below relaxes this only when <code>colorRelaxationSafe=true</code>, the domain is fully occupied, no expanded-pose requirement applies, and every physical identity has a validated color label. No whole-puzzle-rotation equivalence is introduced. An already-solved supported color goal returns an independently verified zero-move plan; other models retain the identity test.</p>
+<p>The goal restores <em>identity</em>, not just displayed color. Equal-colored stickers can look solved while remaining permuted. The backend does not freely rename them or identify states under whole-puzzle rotation. If every supplied identity is home already, it returns the verified empty solution without loading a cache.</p>
 `)}
 ${subsection('tech-full-stage','The complete placement algorithm',`
 <p>If the locked prefix ends before <i>b</i><sub>i</sub> and its target sticker is at <i>q</i>, transporter <i>T</i><sub>i</sub>[<i>q</i>] sends <i>b</i><sub>i</sub> to <i>q</i>. Execute its inverse to bring the sticker home. It lies in <i>H</i><sub>i</sub>, preserving earlier homes at the stage endpoint. Individual turns inside the stage may disturb them.</p>
@@ -216,7 +216,7 @@ if some occupied home h has atHome[h] ≠ h:
 return solved(stages,allMoves,initialProtectedNodes,locked,
               verified=true,optimal=false)`)}
 <p>Only the solved <em>prefix</em> is locked. A later sticker already at home can move until its level is reached. A stage may also solve several consecutive addresses, locking them together. Returned <code>protectedNodes</code>, <code>newlySolvedNodes</code>, <code>targetNode</code> and <code>sourceNode</code> records drive animation highlights and endpoint checks. Playback must recheck the live engine; a witness planned for one snapshot cannot safely be applied to a changed state.</p>
-<p>Induction proves correctness: the initial prefix is solved; each inverse transporter extends it while fixing previous endpoints; at most <i>S</i> stages restore every occupied home. For a reachable state the residual after earlier corrections lies in <i>H</i><sub>i</sub>, so its required source is in <i>O</i><sub>i</sub>. A missing entry in a complete, validated chain therefore proves the labeled arrangement unreachable under this move model. It does not prove a different color-only target impossible. When the requested goal is color-based, this branch returns <code>unknown</code> with <code>color_goal_identity_baseline_unreachable</code>; the certified impossibility status applies only to the identity goal.</p>
+<p>Induction proves correctness: the initial prefix is solved; each inverse transporter extends it while fixing previous endpoints; at most <i>S</i> stages restore every occupied home. For a reachable state the residual after earlier corrections lies in <i>H</i><sub>i</sub>, so its required source is in <i>O</i><sub>i</sub>. A missing entry in a complete, validated chain therefore proves the labeled arrangement unreachable under this move model. It does not prove a different color-only target impossible.</p>
 `)}
 ${subsection('tech-full-status','Results, cost and solution-length guarantees',`
 ${table(['Result','Meaning'],[
@@ -228,93 +228,10 @@ ${table(['Result','Meaning'],[
 <p>If <i>ℓ</i><sub>i,q</sub> is a representative’s raw primitive-word length, ∑<sub>i</sub> max<sub>q</sub><i>ℓ</i><sub>i,q</sub> bounds the unreduced constructed output over legal states. Skipped levels and cancellation can shorten it. This is neither the puzzle’s diameter nor a guarantee that every solve fits the browser’s output budget.</p>
 <p>With <i>L</i> emitted moves, <i>V</i> DAG expansion visits, <i>R</i> cached orbit entries, <i>W</i> word nodes and <i>S</i> sticker identities, planning once the cache is loaded, excluding precomputation and optional shortening, is O(<i>mN+W+R+V+NL+S</i><sup>2</sup>): compiling primitive arrays, decoding word lengths, linear entry lookups, expansion, full-array replay and identity-position updates. Parsing the serialized cache separately costs its full size, including transporter arrays. No <i>m</i><sup>L</sup> configuration tree is constructed.</p>
 `)}
-${subsection('tech-full-color','Color quotient: remove loops, bridge the witness, rebuild protected progress',`
-<p>For a safe color-only model, encode the full visible state as a length-N string C. A primitive p acts by C′[p[x]]=C[x] for every source x. This action is deterministic on colors: two labeled states with the same C remain color-equal after any common legal suffix. Consequently a segment returning to the same C can be deleted without invalidating the remaining color solution. This never assumes arbitrary equal-colored sticker swaps are independently legal; every retained or inserted turn is an original legal move.</p>
-${code('Bounded witnessed-path simplification',`COLOR-OPTIMIZE(baseline, initialColors, goalColors, budget):
-  if model is not explicitly color-safe: return baseline
-  if initialColors=goalColors: return verified empty color plan
-  record initial state and its index in a state->index map
-  mark the baseline's cumulative stage endpoints
-  for each primitive move in baseline order:
-    advance the current full color string by that move
-    if the string is already retained at index j:
-      erase records after j and remove their map entries
-      retain any stage-end flag at the repeated state
-    else:
-      append (state, incoming move, original-stage-end flag)
-    if goalColors is reached: stop scanning
-    if scan time or state-memory guard expires: return baseline
-  require the last retained string equals goalColors
-
-  start at retained index 0
-  while not at final index:
-    next := following retained index; move := its incoming move
-    while shortcut-check budget permits, test each legal primitive:
-      look up its resulting color string in the retained-state map
-      if it reaches an index later than next: keep that index and move
-    append the chosen legal edge; advance to chosen index
-  retain surviving original stage flags; always flag final state
-  rebuild stages and validate as below; otherwise return baseline`)}
-<p>The bridge pass is greedy: it selects the farthest later retained state reachable by one tested legal move. It does not search arbitrary configurations, and it does not prove an optimal route even within all possible shortcuts. The nominal optimizer budget is 250 ms, at most 12,000 primitive bridge checks, and 16 MiB estimated state-record storage. Bridge checks stop at 70% of the time allowance to reserve time for reconstruction and verification. The existing overall solve deadline also applies. State capacity is floor(bytes/(2N+160)), with a minimum of two records. If the mandatory loop scan cannot finish within its guard, keep the independently valid baseline.</p>
-${code('Rebuild secured colors at surviving boundaries',`boundaries := initial state plus surviving stage-end states
-suffixMask := all N bits set
-for boundary k from last to first:
-  correctMask[n] := (boundary[k].color[n] == goalColor[n])
-  suffixMask := suffixMask AND correctMask
-  secure[k] := copy(suffixMask)
-locked := secure[0]; initialProtectedNodes := nodes(locked)
-from := initial boundary
-for each later boundary k:
-  newly := secure[k] minus locked
-  if newly is empty: continue // merge this interval into a later stage
-  word := all retained legal edges from from through k
-  g := independently compose word
-  target := a newly-secured node incorrect at from, if one exists
-  source := inverse(g)[target]
-  require source's starting color matches target's goal color
-  require every locked and newly-secured location is correct at k
-  emit {word,source,target,protected:locked,newlySolved:newly}
-  locked := locked union newly; from := k
-require final boundary reached and all N locations secured
-require moves <= baseline moves and stages <= baseline stages
-independently replay the full word and verify the color goal`)}
-<p>The suffix intersection means a node becomes secured only when its goal color is correct at this boundary and every future retained boundary. This permits a same-color replacement while guaranteeing every displayed hold at completed stage endpoints. Intermediate turns may still disturb it. Boundaries with no newly secured colors merge into a later stage, removing pauses devoted only to identity distinctions. No promise is made that an accepted stage fixes held sticker identities.</p>
-<p>Color plans carry <code>goalSemantics:'colors'</code> and method <code>color_quotient_witness_shortcuts</code>; legacy plans have the identity interpretation. The independent verifier uses the declared goal, rejects color plans for unsafe models, replays every primitive, checks the source-to-target image, and checks all protected/new colors after each stage. It still tracks complete sticker identities to detect stale execution and wrong engine moves.</p>
-<p>For baseline length L, Q bridge checks and B retained boundaries, the additional work is O(N(L+Q+B)), plus legal-word replay. Stored color records require O(NL) entries in the uncapped case but are bounded by the byte guard here; masks require O(NB). Accepted optimization never increases primitive count or stage count. It adds bounded planning work, so shorter playback is not a claim that every solve uses less CPU. Global shortest length and improvement on every scramble are not guaranteed.</p>
-`)}
 `, 'Apply inverse transporters to extend a verified solved prefix, using the current state rather than the move journal.');
 
 const shorten = section('tech-shorten','Shorter witnesses, serialized caches and independent validation',`
 <p>Correct and shortest factorization are separate tasks. Word rewrites preserve the complete permutation. Cache refinement may instead choose a different permutation with the same required transporter action. Both reduce playback while retaining their stated guarantees; neither certifies globally shortest solutions. Short-word factorization has its own literature; our bounded cache optimizer is an implementation choice, not a claim to reproduce every detail of Minkwitz’s method. ${cite('minkwitz1998')}</p>
-${subsection('tech-color-catalog','Short legal-operation catalog: bounded precomputation for every puzzle',`
-<p>A separate catalog stores short words with at least one actual two-cycle. It supplements, and does not replace, the certified complete stabilizer chain. Each operation stores a primitive-index word and its complete sparse support as alternating source,destination entries; omitted sources are fixed. Color labels are not precomputed because a scramble changes which labels occupy each address.</p>
-${code('COMPILE-COLOR-CATALOG',`require the primitive move alphabet is inverse-closed
-known := map from complete permutation to shortest encountered word
-for each primitive a: CONSIDER([a])
-for each ordered primitive pair a,b:
-  CONSIDER([a,b])
-  CONSIDER([a,b,a^-1])
-  CONSIDER([a,b,a^-1,b^-1])
-  CONSIDER([a,b,a,b])
-  CONSIDER([a,b,a,b,a,b])
-if no two-cycle operation was found and move count <= 16:
-  enumerate words to depth 4, excluding immediate inverse pairs
-  CONSIDER each word of length 3 or 4
-
-CONSIDER(word):
-  g := chronological primitive replay
-  if no a<b satisfies g[a]=b and g[b]=a: discard
-  retain shortest encountered word for exactly this permutation
-
-prioritize one-move words, then increasing 2*wordLength+movedNodeCount
-retain at most 10,000 operations and a 2 MiB per-model JSON budget
-sort retained operations by wordLength, then movedNodeCount
-independently replay every word and compare its entire sparse support
-write signature-bound catalog and verification report`)}
-<p>For N addresses and m primitives, the algebraic word families require O(m²N) array work, before sorting and bounded retention. The optional depth-four enumeration is deliberately limited to m≤16 and does not grow with scramble length. Deduplication is by the complete resulting permutation, not color pattern or support size. Tie-breaking may choose any shortest encountered legal word; the catalog is not exhaustive over all words up to six moves.</p>
-<p>Regenerate with <code>node solver-backend/tools/precompute-color.cjs</code>, verify with <code>node solver-backend/tools/verify-color-precompute.cjs</code>, then rebuild the browser bundle. Schema version 1 uses <code>kind:'color-macros'</code>, <code>modelId</code>, <code>modelSignature</code>, <code>degree</code>, and <code>operations:[{word,support}]</code>. Every model signature must match the primitive permutations. The all-puzzle build imposes a 20 MiB aggregate catalog cap. Only the selected puzzle's catalog is loaded.</p>
-<p>The current 34-model catalog contains 30,955 independently replayed operations, totals 10,495,834 raw JSON bytes, and uses words of at most six moves. These are legal witnesses available for many possible color states, not stored configurations. A missing operation cannot prove impossibility.</p>
-`)}
 ${subsection('tech-shorten-local','Local equal-permutation rewrites',`
 <p>Three reductions are distinct. DAG expansion cancels adjacent inverse primitives. Weighted-chain normalization builds an <i>m</i> × <i>m</i> table and replaces adjacent pairs equal to identity or one available primitive, in a left-to-right stack pass. The runtime shortener examines longer windows using a dictionary of identity, all one-move products and all two-move products.</p>
 ${code('SHORTEN(model,word)',`dictionary ← {key(I): []}

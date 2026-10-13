@@ -1,26 +1,4 @@
-# Exact strict swap eligibility and color proof bounds
-
-The detailed subgroup algorithm below remains the exact strict subroutine. The website now wraps it with `src/color-eligibility.cjs`: full-group no-holds negatives stay negative, held-stabilizer positives stay positive, and replay-verified color-preserving short catalog operations supply additional positives. Strict held-subgroup negatives are discarded; unresolved pairs remain selectable. With no holds, use the complete global classification. Full current colors belong in every relaxed cache key. See [`COLOR_SOLVER.md`](COLOR_SOLVER.md) for the exact contract and merge pseudocode.
-
-## Feasibility is separate from executable readiness
-
-A positive orbit proof means a legal sequence exists; it may not provide a sequence short enough to expand and animate within the current budget. Bright UI choices therefore require a separately retained verified word, not just `feasiblePairs`.
-
-- **Ready:** bright; a full verified sequence of at most 5,000 primitive moves is stored. **Go** rechecks and executes that word directly, without a new witness search.
-- **Feasible but not ready, or unknown:** moderately dim with `?`, selectable. **Check & solve** begins bounded witness construction; **Continue** retains the same projected search while raising the cumulative budget from 3 to 10, 30 and 60 seconds. A terminal resource or final-time limit removes that action and leaves the puzzle unchanged, without claiming impossibility.
-- **Proved impossible:** strongly dim and disabled.
-
-The relaxed result adds `readyPairs` (a packed `N²`-bit table), `readyFirstStatus` (`N` bytes), and `readyWitnesses:[{word,pairs}]`. A record's `pairs` is a flattened list `[a,b,…]` of exchanges performed by its one stored word. `eligibilityReady` and `eligibilityWitness` read readiness and the actual primitive word independently of the three-state `eligibilityStatus` proof result. A ready first endpoint has at least one ready partner. A suggestion selects only a retained verified pair and never starts moves; it is a convenience layer over the same readiness table, not a new reachability proof.
-
-Primitive and catalog operations are scanned before global and held-subgroup proofs, including when no holds are present. Every catalog word is replayed against its complete sparse support and checked against the current held colors before being used. Group proofs without words do not set ready bits. A missing catalog still permits primitive witnesses.
-
-Readiness payloads share the working-storage budget and have a separate 2 MiB cap. Each record is charged `max(JSONLength,128+8*(word.length+pairs.length))`; incomplete or overlong words cannot establish readiness. A proof may remain feasible if its witness cannot be retained. Returned typed arrays, witnesses and cache entries are copied so mutating a returned record cannot poison subsequent cached results. Cache accounting includes all readiness data.
-
-With the three pair bitsets and two status arrays, base result-array payload is `3*ceil(N²/8)+2N` bytes; for the 384-address cube this is 56,064 bytes, plus words and other metadata. `complete` describes mathematical classification, not that all pairs are ready.
-
-For selected pairs requiring further construction, `src/cached-swap.cjs` retains legal word DAG references through the certified adjacent-base-change procedure below and runs weighted ordered-pair transport. It reuses the complete cache instead of rebuilding a full chain. See the detailed constructive pseudocode in `COLOR_SOLVER.md`; no additional precomputed table is needed.
-
-## Strict proof subroutine
+# Exact swap eligibility
 
 The ring-map selector needs two answers: whether a first node has any legal
 partner, and whether a particular pair can be exchanged. Protection is pointwise
@@ -121,12 +99,11 @@ The browser caps each analysis at 3 seconds, 100 million counted operations,
 50,000 adjacent base swaps, 2,000 strong generators, and a 48 MiB working-storage
 estimate. Timing and storage checks are cooperative estimates, not a hard
 process-memory guarantee. Resource limits return unknown for unresolved pairs.
-Only complete results are cached, with a 2 MiB result-cache limit. For `d=384`, the three result arrays use 37,248 bytes. This strict subroutine
-uses the existing complete chain; the new color wrapper additionally uses
-the short-operation catalogs described in `COLOR_SOLVER.md`. No runtime
-dependencies are introduced.
+Only complete results are cached, with a 2 MiB result-cache limit. The largest
+current result (`d=294`) uses about 22 KiB for the three typed arrays. No new
+precomputed puzzle tables or dependencies are shipped.
 
-On the development runner, the original 28 engine models completed with no holds,
+On the development runner, all 28 actual engine models completed with no holds,
 one non-prefix hold, and approximately 20% spread-out holds. The 7×7 cube took
 about 0.52 seconds for 59 held nodes, 0.77 seconds for 147, and 0.41 seconds for
 220; its peak accounted working storage was about 7.6 MB. These are sample
@@ -138,6 +115,6 @@ measurements, not a worst-case or device-speed guarantee.
 pair with exhaustive independent group enumeration for nine tiny groups,
 including cyclic, alternating, symmetric, and coupled-swap cases. It checks
 endpoint versus throughout semantics, physical occupancy, budget cutoffs, and
-cache isolation. `tests/eligibility-worker.test.cjs` originally exercised all 28
+cache isolation. `tests/eligibility-worker.test.cjs` exercises all 28 actual
 engines after moves, held-node mapping, typed arrays, lazy cache loading,
 fingerprints, corruption rejection, invalid input, and resource limits.

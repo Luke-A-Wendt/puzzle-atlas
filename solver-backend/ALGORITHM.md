@@ -1,6 +1,4 @@
-# Exact strict transporter backend
-
-This document specifies the identity-preserving compatibility mode and strict fallback. The website now requests endpoint color holds: a same-color replacement may occupy a held location, while A/B still exchange their exact selected stickers. See [`COLOR_SOLVER.md`](COLOR_SOLVER.md) for that balanced wrapper, exact color-preimage search and proof limits. A successful strict word remains valid for colors; strict impossibility and shortestness do not automatically transfer to the relaxed request.
+# Exact constrained transporter backend
 
 `src/group.cjs` uses source-to-destination permutations. `compose(a,b)[x] = b[a[x]]`: words are chronological move lists. It does not modify the website or puzzle state.
 

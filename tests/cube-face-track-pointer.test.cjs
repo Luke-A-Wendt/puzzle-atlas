@@ -4,8 +4,6 @@ const {createHarness}=require('./game-harness.cjs');
 const TAU=2*Math.PI,mod=(x,n)=>(x%n+n)%n;
 const clean=x=>JSON.parse(JSON.stringify(x));
 function viewport(app){
- const actual=app.context.PUZZLE_SOLVER_BRIDGE?.viewport();
- if(actual)return {scale:actual.scale,ox:actual.x,oy:actual.y};
  const b=app.elements.get('rings').bounds,G=app.context.RingGeometry;
  const focused=app.elements.has('ringFocus')&&app.elements.get('ringFocus').attributes['aria-pressed']==='true';
  const r=G.getRing(app.snapshot().selected),zoom=focused?180/r.r:1;

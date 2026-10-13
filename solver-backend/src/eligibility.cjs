@@ -1,7 +1,6 @@
 'use strict';
-// Exact swap reachability under a pointwise stabilizer. Classification never
-// expands words. Constructive callers may attach ctx.words to retain witnesses
-// while reusing the same certified chain and adjacent-base-swap machinery.
+// Exact swap reachability under a pointwise stabilizer. No move words are
+// expanded: this module classifies reachability, not path length or witnesses.
 const {compileModel,identity,compose,inverse}=require('./group.cjs');
 const {modelSignature}=require('./full-solve.cjs');
 const {eligibilityStatus}=require('./eligibility-status.cjs');
@@ -13,9 +12,9 @@ function context(options={}){
  return {config,stats,started,tick(n=1){stats.operations+=n;if(stats.operations>config.maxOperations)throw new EligibilityLimit('operation_limit');if((stats.operations&1023)<n)this.check();},check(){if(performance.now()-started>=config.maxMs)throw new EligibilityLimit('time_limit');},storage(bytes){stats.storageEstimateBytes=Math.max(stats.storageEstimateBytes,bytes);if(bytes>config.maxStorageBytes)throw new EligibilityLimit('storage_limit');},generators(count,d,extra=0){if(count>config.maxStrongGenerators)throw new EligibilityLimit('strong_generator_limit');this.storage((this.baseStorage??0)+count*(d*4+128)+extra);}};
 }
 function orbit(point,generators,d,ctx,representatives=false){
- const seen=new Uint8Array(d),nodes=[point],reps=representatives?new Array(d):null,wordReps=representatives&&ctx.words?new Array(d):null;seen[point]=1;if(reps)reps[point]=identity(d);if(wordReps)wordReps[point]=0;
- for(let head=0;head<nodes.length;head++){const x=nodes[head];for(const g of generators){ctx.tick();const y=g.perm[x];if(seen[y])continue;seen[y]=1;nodes.push(y);if(reps)reps[y]=compose(reps[x],g.perm);if(wordReps)wordReps[y]=ctx.words.join(wordReps[x],g.word);}}
- return {nodes,seen,reps,wordReps};
+ const seen=new Uint8Array(d),nodes=[point],reps=representatives?new Array(d):null;seen[point]=1;if(reps)reps[point]=identity(d);
+ for(let head=0;head<nodes.length;head++){const x=nodes[head];for(const g of generators){ctx.tick();const y=g.perm[x];if(seen[y])continue;seen[y]=1;nodes.push(y);if(reps)reps[y]=compose(reps[x],g.perm);}}
+ return {nodes,seen,reps};
 }
 function validateStoredPermutation(raw,d,prefix,imageBase,image){if(!Array.isArray(raw)||raw.length!==d)throw Error('Malformed stabilizer cache permutation');const seen=new Uint8Array(d);for(const x of raw){if(!Number.isInteger(x)||x<0||x>=d||seen[x])throw Error('Malformed stabilizer cache permutation');seen[x]=1;}if(raw[imageBase]!==image||prefix.some(x=>raw[x]!==x))throw Error('Malformed stabilizer cache representative');return Uint32Array.from(raw);}
 function prepareChain(model,cache,ctx){
@@ -26,7 +25,7 @@ function prepareChain(model,cache,ctx){
  // A subgroup containing G_(k+1) equals G_k once its orbit of b_k has
  // the certified index [G_k:G_(k+1)]. This keeps a small strong generator set.
  for(let k=d-1;k>=0;k--){ctx.check();const l=cache.levels[k];if(l.base!==base[k])throw Error('Malformed stabilizer cache level');let reached=new Uint8Array(d);reached[base[k]]=1;let size=1;
-  for(const [image,word,raw]of l.entries){if(reached[image])continue;const perm=validateStoredPermutation(raw,d,base.slice(0,k),base[k],image);generators.push({perm,level:k,...(ctx.words?{word}:{})});ctx.generators(generators.length,d);const o=orbit(base[k],generators,d,ctx);reached=o.seen;size=o.nodes.length;if(size>=sizes[k])break;}
+  for(const [image,,raw]of l.entries){if(reached[image])continue;const perm=validateStoredPermutation(raw,d,base.slice(0,k),base[k],image);generators.push({perm,level:k});ctx.generators(generators.length,d);const o=orbit(base[k],generators,d,ctx);reached=o.seen;size=o.nodes.length;if(size>=sizes[k])break;}
   if(size!==sizes[k])throw Error('Stabilizer cache orbit size is inconsistent');
  }
  return {base,sizes,generators,cacheStorage:ctx.baseStorage};
@@ -43,7 +42,7 @@ function adjacentSwap(chain,k,d,ctx){
  ctx.generators(chain.generators.length,d,nextOrbit.nodes.length*d*8+d*16);
  if(reached.nodes.length>target)throw Error('Adjacent stabilizer index exceeded');
  outer:for(const x of nextOrbit.nodes){if(reached.nodes.length===target)break;const rx=nextOrbit.reps[x];for(const g of upper){ctx.tick();const y=g.perm[x],inv=inverses[y]??(inverses[y]=inverse(nextOrbit.reps[y]));const image=inv[g.perm[rx[a]]];if(reached.seen[image])continue;
-   const perm=compose(compose(rx,g.perm),inv);const record={perm,level:k+1,...(ctx.words?{word:ctx.words.list([nextOrbit.wordReps[x],g.word,-nextOrbit.wordReps[y]])}:{})};fixB.push(record);chain.generators.push(record);ctx.stats.generatedStabilizers++;ctx.generators(chain.generators.length,d,nextOrbit.nodes.length*d*8+d*16);reached=orbit(a,fixB,d,ctx);if(reached.nodes.length>target)throw Error('Adjacent stabilizer index exceeded');if(reached.nodes.length===target)break outer;
+   const perm=compose(compose(rx,g.perm),inv);const record={perm,level:k+1};fixB.push(record);chain.generators.push(record);ctx.stats.generatedStabilizers++;ctx.generators(chain.generators.length,d,nextOrbit.nodes.length*d*8+d*16);reached=orbit(a,fixB,d,ctx);if(reached.nodes.length>target)throw Error('Adjacent stabilizer index exceeded');if(reached.nodes.length===target)break outer;
   }}
  if(reached.nodes.length!==target)throw Error('Adjacent stabilizer Schreier generation did not complete');
  chain.base[k]=b;chain.base[k+1]=a;chain.sizes[k]=nextOrbit.nodes.length;chain.sizes[k+1]=target;
@@ -98,4 +97,4 @@ class EligibilityAnalyzer{
  }
 }
 function eligibleSwaps(model,request,options={}){try{return new EligibilityAnalyzer(model,options.cache,{cacheBytes:0}).analyze(request,options);}catch(error){return {status:'invalid',reason:error.message};}}
-module.exports={EligibilityAnalyzer,eligibleSwaps,eligibilityStatus,prepareChain,stabilizer,eligibilityContext:context,EligibilityLimit};
+module.exports={EligibilityAnalyzer,eligibleSwaps,eligibilityStatus,prepareChain,stabilizer};

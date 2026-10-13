@@ -81,8 +81,6 @@ function createHarness(options={}){
     complete:()=>{for(let i=0;i<1000;i++){const s=app.snapshot();if(!s.animating&&s.mode==='idle')return;app.frame();}throw new Error('Animation did not finish');},
     ringAt:(face,angle)=>{
       const G=context.RingGeometry,r=G.getRing(face),b=elements.get('rings').bounds;
-      const actual=context.PUZZLE_SOLVER_BRIDGE?.viewport();
-      if(actual)return {clientX:b.left+actual.x+actual.scale*(r.cx+r.r*Math.cos(angle)),clientY:b.top+actual.y+actual.scale*(r.cy+r.r*Math.sin(angle))};
       const focused=elements.get('ringFocus').attributes['aria-pressed']==='true',selectedRing=G.getRing(app.snapshot().selected);
       const zoom=focused?180/selectedRing.r:1,scale=Math.min((b.width-34)/G.width,(b.height-36)/G.height)*zoom;
       const ox=b.width/2-(focused?selectedRing.cx:G.width/2)*scale,oy=b.height/2-(focused?selectedRing.cy:G.height/2)*scale-5;

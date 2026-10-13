@@ -127,36 +127,14 @@ test('zero-size hidden ring canvas does not throw negative-radius errors or stop
   }
 });
 
-test('a mixed lasso flips enclosed holds once, preserves outside holds, and cancellation makes no changes',async()=>{
+test('Select and Deselect lasso tools update enclosed holds, and cancellation performs no turns',async()=>{
   const app=host();await app.ready();const overlay=app.element('csNodeOverlay'),nodes=Array.from(app.context.PUZZLE_SOLVER_BRIDGE.nodes());
   const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y),left=Math.min(...xs)-15,right=(Math.min(...xs)+Math.max(...xs))/2+3.14,top=Math.min(...ys)-15,bottom=Math.max(...ys)+15;
   const polygon=[[left,top],[right,top],[right,bottom],[left,bottom],[left,top]];
   const expected=nodes.filter(n=>n.x>left&&n.x<right&&n.y>top&&n.y<bottom).map(n=>n.stickerId).sort();assert(expected.length>1&&expected.length<nodes.length);
   const drag=async(altKey=false,cancel=false)=>{const event=([x,y])=>({clientX:x,clientY:y,pointerId:89,altKey});overlay.dispatch('pointerdown',event(polygon[0]));for(const p of polygon.slice(1)){overlay.dispatch('pointermove',event(p));await app.advance(0);}overlay.dispatch(cancel?'pointercancel':'pointerup',event(polygon.at(-1)));await app.advance(0);};
-  const outside=nodes.find(n=>!expected.includes(n.stickerId)).stickerId;
-  app.ui().selectNode(expected[0]);app.ui().selectNode(outside);
-  const initial=[expected[0],outside].sort();
-  await drag();assert.deepEqual(Array.from(app.ui().state().held).sort(),[...expected.slice(1),outside].sort());assert.equal(app.snapshot().history.length,0);
-  await drag();assert.deepEqual(Array.from(app.ui().state().held).sort(),initial,'repeating the selection restores the original holds');
-  await drag(false,true);assert.deepEqual(Array.from(app.ui().state().held).sort(),initial,'cancelled lasso has no effect');assert.equal(app.snapshot().history.length,0);
-  await drag(true);assert.deepEqual(Array.from(app.ui().state().held).sort(),[...expected.slice(1),outside].sort(),'modifier keys do not switch to a hidden removal tool');
-});
-
-test('Select held flips pointer and keyboard selections and A/B switch out of hold mode',async()=>{
-  const app=host();await app.ready();const overlay=app.element('csNodeOverlay'),hold=app.element('csHold'),node=app.context.PUZZLE_SOLVER_BRIDGE.nodes()[0];
-  assert.equal(hold.textContent,'Select held');assert.equal(app.element('csRelease'),null);assert.equal(hold.getAttribute('aria-pressed'),'true');
-  const point={clientX:node.x,clientY:node.y,pointerId:17};
-  overlay.dispatch('pointerdown',point);overlay.dispatch('pointerup',point);
-  assert.deepEqual(Array.from(app.ui().state().held),[node.stickerId]);assert.match(overlay.getAttribute('aria-label'),/Enter to release/);
-  overlay.dispatch('pointerdown',point);overlay.dispatch('pointerup',point);
-  assert.deepEqual(Array.from(app.ui().state().held),[]);assert.match(overlay.getAttribute('aria-label'),/Enter to hold/);
-  overlay.dispatch('keydown',{key:'Enter'});assert.deepEqual(Array.from(app.ui().state().held),[node.stickerId]);
-  overlay.dispatch('keydown',{key:' '});assert.deepEqual(Array.from(app.ui().state().held),[]);
-  app.click('csPairA');assert.equal(hold.getAttribute('aria-pressed'),'false');assert.equal(app.ui().state().tool,'swap');
-  app.ui().selectNode(node.stickerId);app.click('csHold');assert.equal(hold.getAttribute('aria-pressed'),'true');assert.deepEqual(Array.from(app.ui().state().pair),[node.stickerId]);
-  app.click('csPairB');assert.equal(hold.getAttribute('aria-pressed'),'false');assert.equal(app.ui().state().pairTarget,1);assert.deepEqual(Array.from(app.ui().state().pair),[node.stickerId]);
-  app.click('csHold');app.click('csPairA');assert.equal(hold.getAttribute('aria-pressed'),'false');assert.deepEqual(Array.from(app.ui().state().pair),[]);
-  assert.equal(app.snapshot().history.length,0);
+  await drag();assert.deepEqual(Array.from(app.ui().state().held).sort(),expected);assert.equal(app.snapshot().history.length,0);
+  app.click('csRelease');await drag();assert.deepEqual(Array.from(app.ui().state().held),[]);app.click('csHold');await drag(false,true);assert.deepEqual(Array.from(app.ui().state().held),[]);assert.equal(app.snapshot().history.length,0);
 });
 
 test('both progress bars fill the same width while reporting cumulative nodes and current-stage moves independently',async()=>{
@@ -190,24 +168,24 @@ function eligibilityReply(app,worker,{blockedFirst=[],blockedPairs=[],feasible=[
 }
 async function eligibilityWorker(app){app.ui().setTool('swap');await app.advance(181);const worker=app.workers.findLast(w=>w.request?.task==='eligible-swaps');assert(worker,'background eligibility query started');return worker;}
 
-test('only proved-impossible swap choices reject selection; visibly uncertain choices can start the full solver',async()=>{
+test('only proved-impossible swap choices dim and reject selection; unresolved choices can start the full solver',async()=>{
   const app=host();await app.ready();const worker=await eligibilityWorker(app),map=app.core().mapSnapshot(app.model,app.snapshot());
   const [blocked,a,b,unknown]=map.occupiedNodes.slice(0,4),id=n=>map.nodeToSticker[n];
   const fills=[],ctx=app.element('csNodeOverlay').drawing;let circle=null;ctx.clearRect=()=>{fills.length=0;};ctx.beginPath=()=>{circle=null;};ctx.arc=(x,y,r)=>{circle={x,y,r};};ctx.fill=()=>{if(circle)fills.push({...circle,color:ctx.fillStyle});};
   worker.reply(eligibilityReply(app,worker,{blockedFirst:[blocked],blockedPairs:[[a,b]]}));await app.advance(0);
   const drawn=app.context.PUZZLE_SOLVER_BRIDGE.nodes(),blockedDot=drawn.find(n=>n.stickerId===id(blocked)),unknownDot=drawn.find(n=>n.stickerId===id(unknown));
-  assert(fills.some(f=>Math.hypot(f.x-blockedDot.x,f.y-blockedDot.y)<.001&&/^rgba\(/.test(f.color)),'proved-impossible node is visibly dimmed on the overlay');assert(fills.some(f=>Math.hypot(f.x-unknownDot.x,f.y-unknownDot.y)<.001),'unknown node receives a distinct uncertain overlay');assert(app.ui().state().eligibility.uncertain.includes(id(unknown)));
-  assert.equal(app.ui().state().eligibility.status,'partial');assert.deepEqual(Array.from(app.ui().state().eligibility.blocked),[id(blocked)]);
+  assert(fills.some(f=>Math.hypot(f.x-blockedDot.x,f.y-blockedDot.y)<.001&&/^rgba\(/.test(f.color)),'proved-impossible node is visibly dimmed on the overlay');assert(!fills.some(f=>Math.hypot(f.x-unknownDot.x,f.y-unknownDot.y)<.001),'unknown node receives no dimming overlay');
+  assert.equal(app.ui().state().eligibility.status,'partial');assert.deepEqual(Array.from(app.ui().state().eligibility.dimmed),[id(blocked)]);
   assert.equal(app.ui().selectNode(id(blocked)),false);assert.equal(app.ui().state().pair.length,0);assert.equal(app.snapshot().history.length,0);
-  assert.equal(app.ui().selectNode(id(a)),true);assert(app.ui().state().eligibility.blocked.includes(id(b)));
+  assert.equal(app.ui().selectNode(id(a)),true);assert(app.ui().state().eligibility.dimmed.includes(id(b)));
   assert.equal(app.ui().selectNode(id(b)),false);assert.deepEqual(Array.from(app.ui().state().pair),[id(a)]);
   assert.equal(app.ui().selectNode(id(unknown)),true);assert.equal(app.ui().state().phase,'selecting');app.click('csGo');assert.equal(app.ui().state().phase,'solving');
-  assert.equal(app.workers.filter(w=>w.request.task==='manual-swap').length,1,'unknown partner launches the full exact swap search');
+  assert.equal(app.workers.filter(w=>!w.request.task).length,1,'unknown partner launches the full exact swap search');
 });
 
 test('eligibility timeouts leave every unresolved node selectable and never imply impossibility',async()=>{
   const app=host();await app.ready();const worker=await eligibilityWorker(app);worker.reply(eligibilityReply(app,worker,{status:'unknown'}));await app.advance(0);
-  assert.equal(app.ui().state().eligibility.status,'unknown');assert.deepEqual(Array.from(app.ui().state().eligibility.blocked),[]);
+  assert.equal(app.ui().state().eligibility.status,'unknown');assert.deepEqual(Array.from(app.ui().state().eligibility.dimmed),[]);
   const ids=app.context.PUZZLE_SOLVER_BRIDGE.nodes().slice(0,2).map(n=>n.stickerId);
   for(const id of ids)assert.equal(app.ui().selectNode(id),true);app.click('csGo');assert.equal(app.ui().state().phase,'solving');assert.equal(app.snapshot().history.length,0);
 });
@@ -217,17 +195,17 @@ test('changing held nodes invalidates old eligibility results before accepting a
   const [blocked,held]=map.occupiedNodes.slice(0,2),id=n=>map.nodeToSticker[n];
   const stale=eligibilityReply(app,first,{blockedFirst:[blocked]});app.ui().setTool('hold');app.ui().selectNode(id(held));const second=await eligibilityWorker(app);
   assert.notEqual(second,first);assert.deepEqual(second.request.selection.protectedStickerIds,[id(held)]);assert.equal(first.terminated,true);
-  first.reply(stale,true);await app.advance(0);assert.equal(app.ui().state().eligibility.status,'pending');assert.deepEqual(Array.from(app.ui().state().eligibility.blocked),[]);
-  second.reply(eligibilityReply(app,second,{blockedFirst:[blocked]}));await app.advance(0);assert.equal(app.ui().state().eligibility.status,'partial');assert.deepEqual(Array.from(app.ui().state().eligibility.blocked),[id(blocked)]);
+  first.reply(stale,true);await app.advance(0);assert.equal(app.ui().state().eligibility.status,'pending');assert.deepEqual(Array.from(app.ui().state().eligibility.dimmed),[]);
+  second.reply(eligibilityReply(app,second,{blockedFirst:[blocked]}));await app.advance(0);assert.equal(app.ui().state().eligibility.status,'partial');assert.deepEqual(Array.from(app.ui().state().eligibility.dimmed),[id(blocked)]);
   app.click('ringPanelHide');assert.equal(app.ui().state().active,false);assert.equal(app.ui().state().eligibility.status,'idle');
 });
 
 test('changing A after an unresolved request clears both endpoints and the stale result',async()=>{
   const app=host();await app.ready();const worker=await eligibilityWorker(app),map=app.core().mapSnapshot(app.model,app.snapshot()),[a,b,c,d]=map.occupiedNodes.slice(0,4),id=n=>map.nodeToSticker[n];
   worker.reply(eligibilityReply(app,worker,{blockedPairs:[[a,c]],feasible:[[c,d]]}));await app.advance(0);
-  assert.equal(app.ui().selectNode(id(a)),true);assert.equal(app.ui().selectNode(id(b)),true);app.click('csGo');const search=app.workers.findLast(w=>w.request.task==='manual-swap');assert(search);
+  assert.equal(app.ui().selectNode(id(a)),true);assert.equal(app.ui().selectNode(id(b)),true);app.click('csGo');const search=app.workers.findLast(w=>!w.request.task);assert(search);
   search.reply({id:search.request.id,type:'result',result:{status:'unknown',reason:'time_limit'}});await app.advance(0);
-  assert.equal(app.ui().state().phase,'selecting');assert.equal(app.ui().state().pair.length,2);app.click('csPairA');assert(!app.ui().state().eligibility.blocked.includes(id(c)));
+  assert.equal(app.ui().state().phase,'selecting');assert.equal(app.ui().state().pair.length,2);app.click('csPairA');assert(!app.ui().state().eligibility.dimmed.includes(id(c)));
   assert.equal(app.ui().selectNode(id(c)),true,'C can replace A even though exchanging it with old A is impossible');assert.deepEqual(Array.from(app.ui().state().pair),[id(c)]);assert.equal(app.ui().state().result,null);assert.equal(app.element('csGo').disabled,true);
 });
 
