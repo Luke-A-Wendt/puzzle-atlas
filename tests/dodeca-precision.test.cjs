@@ -46,7 +46,7 @@ for(const id of ['crystal','kilominx'])test(id+' keeps canonical identities and 
    for(const sticker of Object.keys(expected))expected[sticker]=move.perm[expected[sticker]];
    assert.deepEqual({...mapping()},expected,label+' legal permutation differs at move '+step);
   }
-  const result=solveFull(model,{currentBySticker:mapping(),homeBySticker:model.homeBySticker},{cache});
+  const result=solveFull(model,{currentBySticker:mapping(),homeBySticker:model.homeBySticker},{cache,colorOptimize:false});
   assert.equal(result.status,'solved',label+': '+result.reason);
   assert.equal(result.verified,true,label+' unverified solution');
  }

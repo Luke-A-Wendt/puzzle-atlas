@@ -35,7 +35,9 @@ for(const [method,ulps] of [[null,0],...['sin','cos'].flatMap(method=>[-4,-1,1,4
     let state=solved;
     for(const move of E.scramble('S9 repro',40))state=E.applyMove(state,move);
     const snapshot={stickers:plain(state),history:[]};
-    const plan=solveFull(model,autoRequestFromSnapshot(model,snapshot),{cache,maxMs:10000,maxOutputMoves:20000});
+    // This regression deliberately requires exact identities: it detects the
+    // old S9 slot-numbering fault independently of the optional color shortcut.
+    const plan=solveFull(model,autoRequestFromSnapshot(model,snapshot),{cache,colorOptimize:false,maxMs:10000,maxOutputMoves:20000});
     assert.equal(plan.status,'solved',JSON.stringify(plan));
     assert(verifyAutoPlan(model,snapshot,plan));
     const protectedIds=new Map();

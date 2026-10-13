@@ -66,13 +66,13 @@ test('eligibility is prepared during hold selection and A/B edits reuse the exis
   assert.deepEqual(entry.request.selection.protectedStickerIds,[app.id(f.hold)]);
   const impossible=result.candidateNodes.filter(node=>eligibilityStatus(result,node)===2).map(app.id);
   assert(impossible.length,'real held corner excludes some first nodes');
-  for(const id of impossible)assert(app.ui().state().eligibility.dimmed.includes(id),'first-node restriction is visible before changing tools');
+  for(const id of impossible)assert(app.ui().state().eligibility.blocked.includes(id),'first-node restriction is visible before changing tools');
   app.ui().setTool('swap');const count=app.requests.length;
   assert.equal(app.ui().selectNode(impossible[0]),false,'proved-impossible first node rejects immediately');
   const a=result.candidateNodes.find(node=>eligibilityStatus(result,node)===1);assert.notEqual(a,undefined);
   app.ui().selectNode(app.id(a));assert.equal(app.ui().state().pairTarget,1);
   const blocked=result.candidateNodes.filter(node=>node!==a&&eligibilityStatus(result,a,node)===2).map(app.id);
-  assert(blocked.length);for(const id of blocked)assert(app.ui().state().eligibility.dimmed.includes(id),'B filtering updates synchronously');
+  assert(blocked.length);for(const id of blocked)assert(app.ui().state().eligibility.blocked.includes(id),'B filtering updates synchronously');
   assert.equal(app.ui().selectNode(blocked[0]),false);assert.equal(app.requests.length,count,'choosing A reuses the pair table');
   const b=result.candidateNodes.find(node=>node!==a&&eligibilityStatus(result,a,node)===1);
   assert.equal(app.ui().selectNode(app.id(b)),true);await app.advance(0);
@@ -80,7 +80,7 @@ test('eligibility is prepared during hold selection and A/B edits reuse the exis
   assert.deepEqual(clean(app.ui().state().pair),[]);
   assert.deepEqual(clean(app.ui().state().held),[app.id(f.hold)],'restarting the pair preserves holds');
   assert(app.ui().state().anchors.every(anchor=>anchor.id===app.id(f.hold)),'old A/B background markers are cleared');
-  for(const id of impossible)assert(app.ui().state().eligibility.dimmed.includes(id),'hold-based restrictions still apply');
+  for(const id of impossible)assert(app.ui().state().eligibility.blocked.includes(id),'hold-based restrictions still apply');
   assert.equal(app.snapshot().history.length,0);
 });
 
@@ -90,7 +90,7 @@ test('choosing A again clears both endpoints and immediately releases the old B 
   const newA=f.open.candidateNodes.find(node=>![f.a,f.b].includes(node)&&eligibilityStatus(f.open,node,f.b)===2&&eligibilityStatus(f.open,node)===1);
   assert.notEqual(newA,undefined);
   app.click('csPairA');assert.equal(app.ui().state().pairTarget,0);assert.deepEqual(clean(app.ui().state().pair),[]);
-  assert(!app.ui().state().eligibility.dimmed.includes(app.id(newA)),'old B no longer excludes a valid first choice');
+  assert(!app.ui().state().eligibility.blocked.includes(app.id(newA)),'old B no longer excludes a valid first choice');
   assert.equal(app.element('csGo').disabled,true);
   assert.equal(app.ui().selectNode(app.id(newA)),true);assert.deepEqual(clean(app.ui().state().pair),[app.id(newA)]);
   assert.equal(app.ui().state().pairTarget,1);assert.equal(app.element('csGo').disabled,true);
@@ -107,7 +107,7 @@ test('holding A clears both endpoints and returns to choosing A with only hold r
   assert.deepEqual(clean(app.ui().state().pair),[]);assert(app.ui().state().held.includes(app.id(f.a)));
   assert.match(app.element('csPairB').textContent,/Choose a node/);
   assert.equal(app.element('csGo').disabled,true);app.ui().setTool('swap');assert.equal(app.ui().state().pairTarget,0);
-  app.ui().setTool('release');app.ui().selectNode(app.id(f.a));app.ui().setTool('swap');app.ui().selectNode(app.id(f.a));
+  app.ui().setTool('hold');app.ui().selectNode(app.id(f.a));app.ui().setTool('swap');app.ui().selectNode(app.id(f.a));
   assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a)],'refilling A starts a fresh pair');
 });
 
@@ -119,7 +119,7 @@ test('changed holds revalidate the retained pair and both disabled Go and public
   assert.equal(app.element('csGo').disabled,true,'a retained pair is rechecked when its holds change');
   const before=app.requests.length;app.ui().go();assert.equal(app.ui().state().phase,'selecting');assert.equal(app.requests.length,before,'public Go does not bypass proved impossibility');
   assert.equal(app.snapshot().history.length,0);
-  app.ui().setTool('release');app.ui().selectNode(app.id(f.hold));await app.advance(200);
+  app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));await app.advance(200);
   const latest=app.requests.findLast(x=>x.request.task==='eligible-swaps');if(latest!==entry)await app.answer(latest);
   assert.equal(app.element('csGo').disabled,false,'removing the hold restores the already selected pair');
   assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a),app.id(f.b)]);
@@ -129,12 +129,12 @@ test('Clear all immediately drops hold and endpoint restrictions and rejects lat
   const app=host();await app.ready();const open=await app.eligibilityRequest();await app.answer(open);
   app.selectPair(f.a,f.b);app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));
   const pending=await app.eligibilityRequest(),stale=app.resultFor(pending);await app.answer(pending);
-  assert(app.ui().state().eligibility.dimmed.length);
+  assert(app.ui().state().eligibility.blocked.length);
   app.click('csClear');
   assert.deepEqual(clean(app.ui().state().held),[]);assert.deepEqual(clean(app.ui().state().pair),[]);
-  assert.equal(app.ui().state().pairTarget,0);assert.deepEqual(clean(app.ui().state().eligibility.dimmed),[]);
+  assert.equal(app.ui().state().pairTarget,0);assert.deepEqual(clean(app.ui().state().eligibility.blocked),[]);
   pending.worker.reply(stale,true);await app.advance(0);
-  assert.deepEqual(clean(app.ui().state().eligibility.dimmed),[]);
+  assert.deepEqual(clean(app.ui().state().eligibility.blocked),[]);
   app.ui().setTool('swap');assert.equal(app.ui().selectNode(app.id(f.a)),true);
 });
 
@@ -142,7 +142,7 @@ test('a late table for removed holds cannot dim or disable the current pair',asy
   const app=host();await app.ready();await app.answer(await app.eligibilityRequest());app.selectPair(f.a,f.b);
   app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));const stale=await app.eligibilityRequest(),payload=app.resultFor(stale);
   assert.equal(eligibilityStatus(payload.result,f.a,f.b),2);
-  app.ui().setTool('release');app.ui().selectNode(app.id(f.hold));await app.advance(200);
+  app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));await app.advance(200);
   const current=app.requests.findLast(x=>x.request.task==='eligible-swaps');if(current!==stale)await app.answer(current);
   const before=clean(app.ui().state().eligibility);assert.equal(app.element('csGo').disabled,false);
   stale.worker.reply(payload,true);await app.advance(0);
@@ -150,11 +150,11 @@ test('a late table for removed holds cannot dim or disable the current pair',asy
   assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a),app.id(f.b)]);assert.equal(app.snapshot().history.length,0);
 });
 
-test('unknown feasibility does not block full checking or falsely dim candidates',async()=>{
+test('unknown feasibility does not block full checking or falsely reject candidates',async()=>{
   const app=host();await app.ready();const entry=await app.eligibilityRequest();
   entry.worker.reply({id:entry.request.id,type:'result',result:{status:'unknown',reason:'time_limit'},modelFingerprint:app.core().modelFingerprint(model)});await app.advance(0);
-  assert.deepEqual(clean(app.ui().state().eligibility.dimmed),[]);app.selectPair(f.a,f.b);assert.equal(app.element('csGo').disabled,false);
-  app.click('csGo');assert.equal(app.ui().state().phase,'solving');assert(app.requests.some(x=>!x.request.task),'unknown feasibility delegates to the full solver');
+  assert.deepEqual(clean(app.ui().state().eligibility.blocked),[]);app.selectPair(f.a,f.b);assert.equal(app.element('csGo').disabled,false);
+  app.click('csGo');assert.equal(app.ui().state().phase,'solving');assert(app.requests.some(x=>x.request.task==='manual-swap'),'unknown feasibility delegates to the full solver');
 });
 
 test('the visible mode switch is explicit, solver selection is idempotent, and normal mode clears solver state',async()=>{
@@ -171,7 +171,7 @@ test('normal mode requested during a manual sequence waits for restored holds an
   const app=host();await app.ready();let one;
   for(let move=0;move<model.moves.length&&!one;move++){const p=model.moves[move].perm;for(let a=0;a<model.degree;a++){const b=p[a],held=p.findIndex((v,i)=>v===i);if(a!==b&&p[b]===a&&held>=0){one={move,a,b,held};break;}}}
   assert(one);app.ui().selectNode(app.id(one.held));app.selectPair(one.a,one.b);app.click('csGo');
-  const entry=app.requests.findLast(x=>!x.request.task);assert(entry);const indices=[0,model.moves[0].inverse,one.move],before=app.mapping();
+  const entry=app.requests.findLast(x=>x.request.task==='manual-swap');assert(entry);const indices=[0,model.moves[0].inverse,one.move],before=app.mapping();
   entry.worker.reply({id:entry.request.id,type:'result',result:{status:'solved',moveIndices:indices,optimal:false},modelFingerprint:app.core().modelFingerprint(model)});await app.advance(0);
   assert.equal(app.ui().state().phase,'executing');app.click('ringModeDefault');assert.equal(app.ui().state().active,true,'a manual step finishes before leaving');
   await app.settleSolver();assert.equal(app.ui().state().active,false);assert.equal(app.snapshot().history.length,indices.length,'the full verified sequence executes');

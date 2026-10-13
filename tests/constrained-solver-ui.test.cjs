@@ -29,7 +29,7 @@ function host(id='cube2'){
   app.choose=async({held=[],pair})=>{app.ui().setTool('hold');for(const id of app.nodeIds(held))app.ui().selectNode(id);app.ui().setTool('swap');for(const id of app.nodeIds(pair))app.ui().selectNode(id);assert.equal(app.ui().state().phase,'selecting');app.click('csGo');await app.flush();};
   app.payload=async(override={})=>{
     const q=app.workers.at(-1).request,responses=[];
-    const ctx={URL,performance,TextEncoder,console,fetch:async url=>({ok:true,text:async()=>fs.readFileSync(path.join(games,'constrained-solver-models',path.basename(new URL(url).pathname)),'utf8')}),location:{href:'https://atlas.test/games/constrained-solver-worker.js'},postMessage:result=>responses.push(clean(result))};
+    const ctx={URL,performance,TextEncoder,console,fetch:async url=>({ok:true,text:async()=>fs.readFileSync(path.join(games,new URL(url).pathname.replace(/^\/games\//,'')),'utf8')}),location:{href:'https://atlas.test/games/constrained-solver-worker.js'},postMessage:result=>responses.push(clean(result))};
     ctx.self=ctx;ctx.globalThis=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync(path.join(games,'constrained-solver-worker.js'),'utf8'),ctx);
     await ctx.onmessage({data:clean(q)});return {...responses.at(-1),...override};
   };
@@ -93,7 +93,9 @@ test('impossible and unknown responses do not execute any moves and remain disti
 });
 
 test('hard worker time limit terminates computation and leaves the puzzle unchanged',async()=>{
-  const app=host(),c=oneMoveCase(app.model);await app.ready();await app.choose(c);const worker=app.workers[0];await app.advance(4001);
+  const app=host(),c=oneMoveCase(app.model);await app.ready();await app.choose(c);const worker=app.workers[0];
+  worker.reply({id:worker.request.id,type:'progress',stage:'planning'});
+  await app.advance(6001); // initial 3s compute slice plus the worker watchdog grace
   assert.equal(worker.terminated,true);assert.equal(app.ui().state().result.status,'unknown');assert.equal(app.snapshot().history.length,0);assert.equal(app.ui().state().phase,'selecting');
 });
 
@@ -119,7 +121,11 @@ test('long legal solutions execute all moves across the 300-move game API bounda
 });
 
 test('pause and resume remain usable during constrained-solver execution',async()=>{
-  const app=host();await app.ready();await app.choose({held:[1],pair:[0,3]});const payload=await app.payload();assert.equal(payload.result.status,'solved');assert(payload.result.moveIndices.length>1);
+  const app=host();await app.ready();await app.choose({held:[1],pair:[0,3]});const payload=await app.payload();assert.equal(payload.result.status,'solved');
+  // Pad the independently verified witness with cancelling turns so this tests
+  // pause timing even when the color solver finds a single-move solution.
+  const padding=Array.from({length:3},()=>[0,app.model.moves[0].inverse]).flat(),indices=[...padding,...payload.result.moveIndices];
+  payload.result={...payload.result,moveIndices:indices,sequence:indices.map(i=>app.model.moves[i].name),permutation:app.core().permutation(app.model,indices),optimal:false};payload.engineMoves=indices.map(i=>app.model.moves[i].engineMove);
   app.element('speed').value='1';app.element('speed').dispatch('input');app.workers[0].reply(payload);await app.advance(0);await app.advance(200);app.click('pause');assert.equal(app.snapshot().paused,true);
   const atPause=app.snapshot().history.length;await app.advance(5000);assert.equal(app.snapshot().history.length,atPause);assert.equal(app.ui().state().phase,'executing');
   app.click('pause');assert.equal(app.snapshot().paused,false);await app.settle();assert.equal(app.snapshot().history.length,payload.result.moveIndices.length);
@@ -144,10 +150,10 @@ test('all 34 game pages expose an optional solver and enter selection mode witho
   for(const id of ids){const app=host(id),before=JSON.stringify(app.snapshot().stickers);assert(app.element('constrainedSolverToggle'),id);await app.ready();assert.equal(JSON.stringify(app.snapshot().stickers),before,id+' activation preserves state');assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,app.model.stickerCount,id+' all physical nodes selectable');app.ui().setActive(false);assert.equal(app.element('csReadme'),null,id);}
 });
 
-test('explicit hold tools and Go preserve stationary references during playback and only holds afterward',async()=>{
+test('toggle holds and Go preserve stationary references during playback and only holds afterward',async()=>{
   const app=host(),c=oneMoveCase(app.model);await app.ready();const before=app.snapshot(),[fixed]=app.nodeIds(c.held),pairIds=app.nodeIds(c.pair);
-  app.ui().selectNode(fixed);app.ui().selectNode(fixed);assert.deepEqual(Array.from(app.ui().state().held),[fixed],'Select is idempotent');
-  app.click('csRelease');app.ui().selectNode(fixed);app.ui().selectNode(fixed);assert.equal(app.ui().state().held.length,0,'Deselect is idempotent');
+  app.ui().selectNode(fixed);assert.deepEqual(Array.from(app.ui().state().held),[fixed]);
+  app.ui().selectNode(fixed);assert.equal(app.ui().state().held.length,0,'Selecting the same node releases it');
   app.click('csHold');app.ui().selectNode(fixed);app.click('csSwap');for(const id of pairIds)app.ui().selectNode(id);
   assert.equal(app.ui().state().phase,'selecting');assert.equal(app.snapshot().history.length,0);assert.equal(app.workers.length,0,'choosing B does not plan or move');
   await app.advance(0);const anchors=clean(app.ui().state().anchors);assert.equal(anchors.length,3);assert.deepEqual(anchors.filter(a=>a.label).map(a=>a.label),['A','B']);

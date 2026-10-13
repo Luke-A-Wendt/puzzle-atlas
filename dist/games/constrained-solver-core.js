@@ -38,19 +38,29 @@ function normalize(model,request={}){
  }
  const protection=request.protection??'endpoint';if(!['endpoint','throughout'].includes(protection))throw Error('protection must be endpoint or throughout');
  const mode=request.mode??'protected_swap';if(!['protected_swap','exact_swap'].includes(mode))throw Error('mode must be protected_swap or exact_swap');
+ const holdSemantics=request.holdSemantics??'sticker';if(!['sticker','color'].includes(holdSemantics))throw Error('holdSemantics must be sticker or color');
+ let colorByNode;
+ if(holdSemantics==='color'){
+  if(protection!=='endpoint'||mode!=='protected_swap')throw Error('color holds require protected_swap mode with endpoint protection');
+  if(!Array.isArray(request.colorByNode)||request.colorByNode.length!==d||Array.from(request.colorByNode).some(c=>c!==null&&typeof c!=='string'&&(typeof c!=='number'||!Number.isFinite(c))))throw Error('colorByNode must contain one string, finite number, or null for every model address');
+  colorByNode=request.colorByNode.slice();
+  if([...swap,...(request.protected??[]).map(node)].some(x=>colorByNode[x]===null))throw Error('selected nodes must have an occupied color');
+  if(occupied){const set=new Set(occupied);if(colorByNode.some((c,i)=>(c!==null)!==set.has(i)))throw Error('colorByNode occupancy must match occupiedNodes');}
+  else if(colorByNode.some(c=>c===null))throw Error('fixed-node models require a color at every address');
+ }
  let protect=[...new Set((request.protected??[]).map(node))];if(swap.some(x=>protect.includes(x)))throw Error('swap nodes cannot be protected');
  if(mode==='exact_swap')protect=(occupied??Array.from({length:d},(_,i)=>i)).filter(i=>!swap.includes(i));protect.sort((a,b)=>a-b);
- return {protected:protect,swap,mode,protection,...(occupied?{occupiedNodes:occupied}:{})};
+ return {protected:protect,swap,mode,protection,...(occupied?{occupiedNodes:occupied}:{}),...(holdSemantics==='color'?{holdSemantics,colorByNode}:{})};
 }
 function permutation(model,indices){let p=Array.from({length:model.degree},(_,i)=>i);for(const i of indices){if(!Number.isInteger(i)||!model.moves[i])throw Error('invalid witness move');const q=model.moves[i].perm;p=p.map(v=>q[v]);}return p;}
-function verify(model,req,indices){const p=permutation(model,indices),ok=p[req.swap[0]]===req.swap[1]&&p[req.swap[1]]===req.swap[0]&&req.protected.every(x=>p[x]===x);if(!ok)return false;if(req.protection==='throughout'&&indices.some(i=>req.protected.some(x=>model.moves[i].perm[x]!==x)))return false;return true;}
+function verify(model,req,indices){const p=permutation(model,indices);if(p[req.swap[0]]!==req.swap[1]||p[req.swap[1]]!==req.swap[0])return false;if(req.holdSemantics==='color'){const held=new Set(req.protected);for(let source=0;source<model.degree;source++)if(held.has(p[source])&&req.colorByNode[source]!==req.colorByNode[p[source]])return false;return true;}if(!req.protected.every(x=>p[x]===x))return false;if(req.protection==='throughout'&&indices.some(i=>req.protected.some(x=>model.moves[i].perm[x]!==x)))return false;return true;}
 function finish(model,req,result,t,maxOutputMoves=5000){
  // Internal group engines may retain a legacy moves alias. Never publish a
  // second sequence that could be stale after index remapping or shortening.
  const {moves:legacyMoves,...clean}=result;result=clean;
  if(result.status==='solved'&&result.moveIndices.length>maxOutputMoves)result={status:'unknown',reason:'output_limit',optimal:false,requiredMoves:result.moveIndices.length,lowerBound:result.lowerBound,stats:result.stats};
  const stats={...result.stats,totalMs:performance.now()-t};
- const occupancy=req.occupiedNodes?{occupiedNodes:req.occupiedNodes}:{};
+ const occupancy={...(req.occupiedNodes?{occupiedNodes:req.occupiedNodes}:{}),...(req.holdSemantics==='color'?{holdSemantics:'color'}:{})};
  if(result.optimal===undefined)result.optimal=false;
  if(result.status!=='solved')return {...result,protected:req.protected,swap:req.swap,mode:req.mode,protection:req.protection,...occupancy,stats};
  if(!verify(model,req,result.moveIndices))return {status:'unknown',reason:'internal_witness_verification_failed',optimal:false,stats};
@@ -94,16 +104,28 @@ function mapSnapshot(model,snapshot){
  * select exact_swap to protect all other CURRENT physical stickers; empty pose
  * addresses must remain free. The returned request is ready for core swap.
  */
-function requestFromSnapshot(model,snapshot,{protectedStickerIds=[],swapStickerIds,mode='protected_swap',protection='endpoint'}={}){
+function colorsFromSnapshot(model,snapshot,mapping=mapSnapshot(model,snapshot)){
+ const stickers=Array.isArray(snapshot)?snapshot:snapshot?.stickers||snapshot?.stickerState;
+ const colors=new Array(model.degree).fill(null);
+ for(const sticker of stickers){
+  const id=String(sticker.id),color=model.colorBySticker?.[id]??sticker.color;
+  if(typeof color!=='string'&&typeof color!=='number')throw Error('Snapshot does not identify every sticker color');
+  colors[mapping.stickerToNode[id]]=String(color);
+ }
+ return colors;
+}
+function requestFromSnapshot(model,snapshot,{protectedStickerIds=[],swapStickerIds,mode='protected_swap',protection='endpoint',holdSemantics='sticker'}={}){
  if(!Array.isArray(swapStickerIds)||swapStickerIds.length!==2)throw Error('Choose two sticker IDs');
  if(!['protected_swap','exact_swap'].includes(mode))throw Error('Unknown swap semantics');
+ if(!['sticker','color'].includes(holdSemantics))throw Error('Unknown hold semantics');
+ if(holdSemantics==='color'&&(mode!=='protected_swap'||protection!=='endpoint'))throw Error('Color holds require protected_swap mode with endpoint protection');
  const mapping=mapSnapshot(model,snapshot),index=id=>{const n=mapping.stickerToNode[String(id)];if(n===undefined)throw Error('Unknown current sticker '+id);return n;};
  const swap=swapStickerIds.map(index);if(swap[0]===swap[1])throw Error('Swap endpoints must be different');
  let protectedNodes=protectedStickerIds.map(index);if(protectedNodes.some(n=>swap.includes(n)))throw Error('A protected node cannot be a swap endpoint');
  if(mode==='exact_swap')protectedNodes=mapping.occupiedNodes.filter(n=>!swap.includes(n));
- return{swap,protected:[...new Set(protectedNodes)],occupiedNodes:mapping.occupiedNodes,mode:'protected_swap',protection,requestedMode:mode,selectionMapping:mapping};
+ return{swap,protected:[...new Set(protectedNodes)],occupiedNodes:mapping.occupiedNodes,mode:'protected_swap',protection,requestedMode:mode,selectionMapping:mapping,...(holdSemantics==='color'?{holdSemantics,colorByNode:colorsFromSnapshot(model,snapshot,mapping)}:{})};
 }
-module.exports={mapSnapshot,requestFromSnapshot};
+module.exports={mapSnapshot,requestFromSnapshot,colorsFromSnapshot};
 
 },
 "./auto-adapter.cjs":function(module,exports,require){
@@ -122,37 +144,44 @@ function targetMapping(model){
 function autoRequestFromSnapshot(model,snapshot){
  const mapping=mapSnapshot(model,snapshot),homeBySticker=targetMapping(model),currentBySticker=mapping.stickerToNode;
  if(Object.keys(currentBySticker).length!==Object.keys(homeBySticker).length||Object.keys(homeBySticker).some(id=>!Object.hasOwn(currentBySticker,id)))throw Error('Snapshot contains a different set of sticker identities');
- return{currentBySticker:{...currentBySticker},homeBySticker:{...homeBySticker},occupiedNodes:mapping.occupiedNodes.slice()};
+ return{currentBySticker:{...currentBySticker},homeBySticker:{...homeBySticker},occupiedNodes:mapping.occupiedNodes.slice(),...(model.colorBySticker?{colorBySticker:{...model.colorBySticker}}:{})};
 }
+function colorGoalEnabled(model,home){return model.colorRelaxationSafe===true&&!model.requiresOccupiedState&&Object.keys(home).length===model.degree&&model.colorBySticker&&Object.keys(home).every(id=>typeof model.colorBySticker[id]==='string'&&model.colorBySticker[id].length>0);}
 function solvedProgress(model,snapshot){
  const {currentBySticker,homeBySticker}=autoRequestFromSnapshot(model,snapshot),solvedStickerIds=[],solvedNodes=[],remainingStickerIds=[];
- for(const [id,home]of Object.entries(homeBySticker)){if(currentBySticker[id]===home){solvedStickerIds.push(id);solvedNodes.push(home);}else remainingStickerIds.push(id);}
+ const colorGoal=colorGoalEnabled(model,homeBySticker),homeIdByNode=new Map(Object.entries(homeBySticker).map(([id,node])=>[node,id]));
+ for(const [id,home]of Object.entries(homeBySticker)){const at=currentBySticker[id],solved=colorGoal?model.colorBySticker[id]===model.colorBySticker[homeIdByNode.get(at)]:at===home;if(solved){solvedStickerIds.push(id);solvedNodes.push(at);}else remainingStickerIds.push(id);}
  return{solvedStickerIds,solvedNodes,remainingStickerIds,solvedCount:solvedNodes.length,totalCount:model.stickerCount};
 }
 function verifyAutoPlan(model,snapshot,plan){
  try{
   if(plan?.status!=='solved'||!Array.isArray(plan.stages))return false;
   const {currentBySticker:current,homeBySticker:home}=autoRequestFromSnapshot(model,snapshot),byHome=new Map(Object.entries(home).map(([id,node])=>[node,id]));
+  const colors=plan.goalSemantics==='colors';if(colors&&!colorGoalEnabled(model,home))return false;
+  let currentByNode=new Map(Object.entries(current).map(([id,node])=>[node,id]));
+  const currentIdAt=n=>currentByNode.get(n),correct=n=>colors?model.colorBySticker[currentIdAt(n)]===model.colorBySticker[byHome.get(n)]:current[byHome.get(n)]===n;
   const locked=new Set(),flat=[],validNodes=nodes=>Array.isArray(nodes)&&new Set(nodes).size===nodes.length&&nodes.every(n=>Number.isInteger(n)&&byHome.has(n));
-  if(plan.initialProtectedNodes!==undefined){if(!validNodes(plan.initialProtectedNodes)||plan.initialProtectedNodes.some(n=>current[byHome.get(n)]!==n))return false;for(const n of plan.initialProtectedNodes)locked.add(n);}
+  if(plan.initialProtectedNodes!==undefined){if(!validNodes(plan.initialProtectedNodes)||plan.initialProtectedNodes.some(n=>!correct(n)))return false;for(const n of plan.initialProtectedNodes)locked.add(n);}
   for(const stage of plan.stages){
    if(!stage||!Array.isArray(stage.moveIndices)||!validNodes(stage.protectedNodes)||!validNodes(stage.newlySolvedNodes))return false;
-   if(!Number.isInteger(stage.targetNode)||!byHome.has(stage.targetNode)||stage.sourceNode!==current[byHome.get(stage.targetNode)])return false;
+   if(!Number.isInteger(stage.targetNode)||!byHome.has(stage.targetNode)||!Number.isInteger(stage.sourceNode)||!currentByNode.has(stage.sourceNode))return false;
+   if(colors?model.colorBySticker[currentIdAt(stage.sourceNode)]!==model.colorBySticker[byHome.get(stage.targetNode)]:stage.sourceNode!==current[byHome.get(stage.targetNode)])return false;
    const held=new Set(stage.protectedNodes);
-   if([...locked].some(n=>!held.has(n))||[...held].some(n=>current[byHome.get(n)]!==n))return false;
+   if([...locked].some(n=>!held.has(n))||[...held].some(n=>!correct(n)))return false;
    const perm=Array.from({length:model.degree},(_,i)=>i);
    for(const i of stage.moveIndices){
     if(!Number.isInteger(i)||i<0||i>=model.moves.length||flat.length>=20000)return false;
     const move=model.moves[i].perm;for(let node=0;node<perm.length;node++)perm[node]=move[perm[node]];flat.push(i);
    }
-   if([...held].some(n=>perm[n]!==n)||perm[stage.sourceNode]!==stage.targetNode)return false;
+   if((!colors&&[...held].some(n=>perm[n]!==n))||perm[stage.sourceNode]!==stage.targetNode)return false;
    for(const id of Object.keys(current))current[id]=perm[current[id]];
-   if(!stage.newlySolvedNodes.includes(stage.targetNode)||stage.newlySolvedNodes.some(n=>current[byHome.get(n)]!==n))return false;
+   currentByNode=new Map(Object.entries(current).map(([id,node])=>[node,id]));
+   if([...held].some(n=>!correct(n))||!stage.newlySolvedNodes.includes(stage.targetNode)||stage.newlySolvedNodes.some(n=>!correct(n)))return false;
    for(const n of held)locked.add(n);for(const n of stage.newlySolvedNodes)locked.add(n);
   }
   if(!Array.isArray(plan.moveIndices)||flat.length!==plan.moveIndices.length||flat.some((v,i)=>v!==plan.moveIndices[i]))return false;
-  if(Object.entries(home).some(([id,node])=>current[id]!==node))return false;
-  if(plan.finalProtectedNodes!==undefined&&(!validNodes(plan.finalProtectedNodes)||plan.finalProtectedNodes.length!==byHome.size||plan.finalProtectedNodes.some(n=>current[byHome.get(n)]!==n)))return false;
+  if([...byHome.keys()].some(n=>!correct(n)))return false;
+  if(plan.finalProtectedNodes!==undefined&&(!validNodes(plan.finalProtectedNodes)||plan.finalProtectedNodes.length!==byHome.size||plan.finalProtectedNodes.some(n=>!correct(n))))return false;
   return true;
  }catch{return false;}
 }
@@ -161,7 +190,8 @@ module.exports={targetMapping,autoRequestFromSnapshot,solvedProgress,verifyAutoP
 },
 "./eligibility-status.cjs":function(module,exports,require){
 'use strict';
-// 0 unknown, 1 feasible, 2 proved infeasible. Unknown must stay selectable.
+// Mathematical classification: 0 unknown, 1 feasible, 2 proved infeasible.
+// Feasibility is distinct from having a bounded, executable move sequence.
 function eligibilityStatus(result,a,b){
  if(!result||!Number.isInteger(result.degree)||!Number.isInteger(a)||a<0||a>=result.degree)return 0;
  if(b===undefined){const value=result.firstStatus?.[a];return value===1||value===2?value:0;}
@@ -170,7 +200,22 @@ function eligibilityStatus(result,a,b){
  if(!result.knownPairs||!(result.knownPairs[byte]&mask))return 0;
  return result.feasiblePairs?.[byte]&mask?1:2;
 }
-module.exports={eligibilityStatus};
+function eligibilityReady(result,a,b){
+ if(!result||!Number.isInteger(result.degree)||!Number.isInteger(a)||a<0||a>=result.degree)return false;
+ if(b===undefined)return result.readyFirstStatus?.[a]===1;
+ if(!Number.isInteger(b)||b<0||b>=result.degree||a===b)return false;
+ const index=a*result.degree+b;
+ return !!(result.readyPairs?.[index>>>3]&(1<<(index&7)));
+}
+function eligibilityWitness(result,a,b){
+ if(!eligibilityReady(result,a,b))return null;
+ for(const entry of result.readyWitnesses??[]){
+  if(!Array.isArray(entry.word)||!entry.word.length||entry.word.length>5000||!Array.isArray(entry.pairs))continue;
+  for(let i=0;i<entry.pairs.length;i+=2){const x=entry.pairs[i],y=entry.pairs[i+1];if((a===x&&b===y)||(a===y&&b===x))return entry.word.slice();}
+ }
+ return null;
+}
+module.exports={eligibilityStatus,eligibilityReady,eligibilityWitness};
 
 }
 };
@@ -180,13 +225,14 @@ const core=require('./index.cjs'),bridge=require('./atlas-adapter.cjs'),autoBrid
 const scriptURL=typeof document==='object'?(document.currentScript?.src||document.baseURI):null;
 const assetBase=scriptURL&&typeof URL==='function'?new URL('.',scriptURL):null;
 
-const fingerprints={"masterpyraminx":"6c7522d478cc352a8a2f7f610cb369e7296cc2eb1d2d80162bf5266aee8d2c68","kilominx":"41bf676dce3df3c1469aa556966fc5ea77dc6118315f25088027d68176d4d1ea","ghost":"ec0ad5b655f8d6fd0f1a851bd68f4018205dd92c90c1bd77c7c87d6f11ddced8","cube2":"c9294e1aafbc5579da4d263273b0c570fd0be19e878407973069da095fbaa05d","cube3":"fce59f40b81d3f832367f0d73e7d217a6a243ce42f98e2a6e440efccad80083b","cube4":"c28b5e652954c93346384e07d9b58b08d8b58699e78eb1e958142fe79a98a188","cube5":"e1d0ec1feacd5192d56f1589dcd84b6d01eb7a4d5c44c9c9e6fd213aaa10d999","cube6":"208a174eaa73c93b620cba75cec72cfcd42f77fb7e80b920937274e5d59d1367","cube7":"15acefd16d801a2e86036f4d5c979e7786d93914790f8966bdf9d556f8d54bde","cube8":"b8f7dce64cf63d5f45c13c5912c7d59d657660dc9aa25f5408a8673d59e03c8d","mirror":"f536816f9014c39ad2766bb9f58a78e0f9c5eb5bea210225d2459f7ef05bf413","homer":"4e3946d849f8706205192d52e3020d54da6fac7894dc3328566245502374f063","pyraminx":"73f352b3d689b9aa9d5ece7965d6edc9e24e8315334e1e5e3206420691262f81","tetraminx":"a63189ba4c9bc24183e54df43a6b4a40a9dd759b5873107fe55e95d92495e3a5","megaminx":"bb5d97b6400529a578c854fdd4ea583e581c5fecc59138d05d4400256bf1920c","jing":"a4fbc69de120cdbedc13aa85a567022add6318dbf595d39bfb33e9f4b7fe5ec2","skewb":"8a771160a0f08e8c96a1884feec40f8867f85b0e92fda32f40d90701d4299506","masterskewb":"0488b2816300e945487932dbb673fbde39041a253043d96a49171d340b6dd534","ultimate":"42688b335b8a58586ec56eb13680754f295975307c3c94898407bfdc24b129a9","diamond":"2101ac0c0ed29829596fde438f0a72e31f0f335c96781aad4a9093da7f6814b8","fto":"002b574c99f21e009a0678657b0d9e92c2fd2fb12a358821ccc5d91a83cafb8a","crystal":"6e59c084ca294b74a1cf1c5f8318333e7198fcb47d36b5fed9bc50613a48e86c","dino":"8386c0d3e048ea3feaadf8354a6afb3b2d043b53846dbbdcff6d9fecde7cfb6b","rainbow":"5552e1ee44281b2e07936225e85e0bf5e9f7bf7f9464280cfd9d30a5685ade16","rhombic":"ae604292304fd35de549500b122ff82c254c507bbd303ae785bab336a242bbf4","flatdiamond":"0fd0f3252475c0af43b7b5e809192acd052ea7e9333f412e7ec07daa3954f88b","cornerocta":"388b74d481ca03322a4902efbf034eaa81b5757bc7b031c668a61383ec8a9772","trajber":"a84fc9a844f3af3fa20bba2a2b69a4a11d17cc338b44c675fc0baefdddfff5b4","jewel":"f7e61ef017b72c7b8da85e67eeb11f6d594547a0b4817c2503c8538507458ea1","pyramorphix":"4a20cb558c7eb548ba495d860ed3d78347392c5da6aca3bbb6950f748fc1f248","mastermorphix":"2a220d49638108df466165e4b1dc8dee74bb05e475ae6a37d64d4d34a03b5039","helicopter":"6afb4d3524aa35778b758bef5b0d1f120459cea05366b90b4d5460a39bcdf1de","diamondstyle":"f82579c8c4ba4b648878a83e50fd0f35a0da213149c637a1a26841ab848fa4c1","diamondcube":"7d8554c6af07b5c63520b3a88bdb685baf27fbb0df13bdb4410d6c141f0e2d30"};
+const fingerprints={"masterpyraminx":"d3a63fd98bd5060bf92000e304f4db3f431d4937b87a8769b91f17ddb6b2839d","kilominx":"acfe96e01d7f2d427577ef2e59ebf09db0cf42eae45eda2d62fdd55aabc38f49","ghost":"87dd812f7b68fc4b6e0701aa1bf4ea5262f987530c77a2e58e95c23cfd12bc54","cube2":"bd6300422f4d20a2dd194d73a6316b39a31c8eeba580035c4e6dcfe0615d1835","cube3":"25d166c42a1a4214118235c74ee3a8a24621bb2c9a24c73f8a1f76629820f36f","cube4":"4e277a978c084547292e65cee3f4d41fe087cf06645400faac7424852607bdce","cube5":"287fda505a904724f2ce48f4cbfdf1974aa34f00de76c07011edcd02f517a05b","cube6":"85921581eb10c230283d4b67ce212485f1616d610c8c180be27a34dd901184d8","cube7":"f3e758412c8b4b2635e89d3942f798d5af4df3c0c5de57a780e23f3ea9532fb3","cube8":"e42ad273705ff414744840ad6cae0106e6925855193d4fd0b60796f6f0737c19","mirror":"605272ef0ef9ef50aeb651314936b79d9fbff4356518922edaf4a4961c152c7d","homer":"bff3dc966520d46f933654912282bdc86259910c698a4a8df412d342685b29d2","pyraminx":"3e524378a1b02b44b669dea6379847a8187cbd46ae249d4f2169db2140534a46","tetraminx":"1b570c6119b6413f2f4a5256ab86ec60b97030ac0de42f4e4a2866f9357e8a06","megaminx":"097de06949700d957161a1291a154f4a9cc1ffb5d85d4fed620cd7aa1565598b","jing":"03d4ea9509a1a72b192f1b47daf80b575174c512068487aa986edeee96c26d0c","skewb":"a3653e612115769511a43416165b8f3851e2e4ecd14fe35ded8195651904a293","masterskewb":"381158edb4b9e602bc9648f393ca9387daf5ad69522ab41d0c42a7efb6d641f2","ultimate":"040287ae2057b9058be2f5e55e2819aa506bd962b55dc9367a9527f5a26d8371","diamond":"399d3929c7360a902c58778354e82317695d0e4596b2291655f3300c36b7106e","fto":"8dc5763c64af80e7db332227755febc1fe49b8a8fbab42270152076c7451a1f4","crystal":"0dbd962e9441fc787c0340c10d69161e63433dcfab1f279699b96f3d58e0e6c6","dino":"2a7230bbe7f2e5213018e683b44bcfd0ec6deedfa5955f4926366412cdd8782b","rainbow":"fbb0d9d73a826e741408bb771c3e36cbf32a023ce656f83f61d66da76931d9ea","rhombic":"4a439255f4f0949440a0af7493b1aaf1a27f42a8d53fa6c17f23440262a0ab68","flatdiamond":"b2517a2ec399f56e3f1b2060ad222e867531fb107825a9e284ebf854b58fcdfc","cornerocta":"fcb965d8edf9997db266fd28cbe3531864ecd96265a99c534ac2494999880635","trajber":"f4dfa236869f9da9d813864a3616eb461b1422521e5656fe94dc758442410ce1","jewel":"cc09570517865afd844d571bacadd74473ed39bb966eafbab0a404328863654a","pyramorphix":"5d4d35c4bd3efb49dff96f2388eaa40391466a4687b3786140182f90effba86c","mastermorphix":"299861503a765d14ae3f1f2f5ddfb851e22732906e74b16aba69c5183bfb83a5","helicopter":"400b3ab0ba258044c30c81e995b6c942a1ddafd50fc993c9f56c3b741416ee7e","diamondstyle":"8d70b934930c34f5c581522567daa12eba8880110a6e5ca78d6abf6536f0f67a","diamondcube":"5c5c4509433ab3b1e325da59d954531b7800295bf3f8def1e9a92ff8c8628572"};
 const fullCacheFingerprints={"masterpyraminx":"d88b12fefdb6a47d55669832af4cac98cbd3b125f007d621ef8db5adf792c86f","kilominx":"b30e412cce55ffac0dff53813a12eb6d7279c643a2427e24673d6e44bc606d75","ghost":"b54e9cddde3a3f0ad172d0f8289a2d1275ff211cbc39fda1bf23632d68a0c2cd","cube2":"977a35446c3fa849d1dcb68bb61df7e3b9aa49cf5e80c0954aa4370e97ddff31","cube3":"7515e1dcf06572d1dd9e00ec9e0ffdfc9b245ed50931ed98cb901303f400f9cf","cube4":"8f9c0282338e84cbbeee20545990cdc1cc89e868f1e71f20055e2160cfedc05e","cube5":"6f035a12eb1c68eb0ce7d3f17ce8994d26338a53f488337fd5d0bbc3ff3d7700","cube6":"32e4f9766af8d711f8132a9826f8206068257ffbe0dc79a8c5ed9733446991f2","cube7":"91945aa70ae285b58efd3b3a33cd6746b4d02b468f723e803e49f59032d54150","cube8":"b562db8820e9edc8686e7421a4e91b4d6d821ec3238ec5ef41128a4e24a4c018","mirror":"d44467f7e7c921715134669d6009cf40b658c694e7689814d33174962c95db67","homer":"fd1c506be6c64f76d484449b2fdb726a11ebaf9805d0428266c35d9a798cb1ec","pyraminx":"f60a67d1130ef8de2ccbf63850b137534d6b9f4b5c838bd63c11c81d7c25a9e5","tetraminx":"f917ae48b97fabceebcc56d18f3d51554f5e369ac47decaa7b9f90db784a09dd","megaminx":"2053a94fec1193b320b38e973c2745b228c4c825ffe0a072c0dcadf2d79a140c","jing":"6a7f7b10ae82142126b2eae16eb6a8b9562d739473308a475c4b93c7baeff8c7","skewb":"947e459a820302317fb5d06b426049039537745d58d24db5dc0df27710b2f4dc","masterskewb":"099919d52776a9f50b46bde86e1bde4d7578dcddb425aa92dd2ce09da6304972","ultimate":"474c205d35d96a2aaf79f7a9098b244bee678100f6a2d411859ec462d1e783bd","diamond":"e14bbda3e373f0bfb80f0089d025cae0a114f70a5ba2e85abcb4b84121c64dfd","fto":"9654c4371149252eb2f0a59f632dc66b6e99ef969a869d723345025cdc38a6c2","crystal":"be9018f81efde1d2adc841d2daafe3508dc1379b747af564bd4668fb8419ff6a","dino":"9dd4948295c376d46832b9a7bc78024bf91d106e2fc7f2c883b546fb4c22a591","rainbow":"ebbab89e9ed9c72ab4f0fb04ac04349f65fd7c10879616f64bbaa7b66ad3bf10","rhombic":"01bddce752356192e235ea58591ffa0257e145cace3c89162df39356c8e7666a","flatdiamond":"49d53fa0447601c43552a0203c00bc6d6fd2632cf7164b7e4c653b771d4b3eed","cornerocta":"46c1e3ffced843db805bdac0d094c228f20d162e01410c9056ae345901f47c98","trajber":"89cf86b6037bef38086d96926f2cc434d672d780028272d59bcf5b5a41b51359","jewel":"91d2a4b3982f449eb8a03bdb3e5e4435aa5fa004f0d6678b3abe54a47107da0a","pyramorphix":"e360403344bcf463ba5f21f316a1ad159c9b17e116703c161d9ba8d0b5985ad4","mastermorphix":"0a59d3f11bb191c3ea75e3af0d0c8fdca69d919809234825ffe6e1a2dcc99a19","helicopter":"1bcff6e508493030c7fd8b2dde4ec156423145d7ff04d20f904bbd71ebee3273","diamondstyle":"eb2aaa82ebd9d87601e483d8b2149d3e4a2f9c056e6874d6db20920f8112ede7","diamondcube":"cf6c990cc3f5f919cecb81fa237ff4ce7f13fb938b4e9215ce4a7ebd72d4e60c"};
+const colorCacheFingerprints={"masterpyraminx":"a6e3b9e4c1790cdca6b659c797b4700a529c9701c1271ca2c2caed856ef0e229","kilominx":"7ac44addfdd39664cfea809b2dc4dcad28cfe31d564d735b46cb403dd8fc9c7f","ghost":"af8ae54b6b31b84a7f749a0b9bcd460799f2e1737108cc1f3fd74e12bdb02622","cube2":"663f73bddbf42e339f15a73b819a813632dbe27409197f4792692ca90e5cd1d2","cube3":"d0bccf7c5d9ea458ee35ac419c2dbcfb878c85a069af75ee8307d1734c2995b7","cube4":"c78607124b0ebf34eaaeba40ffaef20e611d66a657dc30effec4e4a3b61649a5","cube5":"ef56d77e0dfd4791b4e7dfd922a72a76b238025ea09f0d8bda9830d2d08ed0a8","cube6":"4ba179b11c7d844fbaba525deec8f4c377b7ccb45f5f35cfc4dc83ac7745a533","cube7":"f34014372ec42a085ba1cf649b99aa02694a824568e19c527330a9b3608a2b06","cube8":"a7bd593b8b256f4c5a487381c97ce6aa9a2fc12d06520b8a27b53bfc266ef7fa","mirror":"26a6564de7d317095f1222979fe2956365220476bf0fbf2255366c0870873a60","homer":"af832db4bd6af68a9343968137d4ef4ddfdb4d99be804cabe1b1f1fcbc9e436f","pyraminx":"58191c5c2e1c803c86c26f08efc4b3d1c4f1e57454c2f364a2df6971182be632","tetraminx":"8008f489849479f52382d9886288ee4fbf7a07085c97cbe7768e861dec708926","megaminx":"adaa8aa42f6e32aa1227d2093f38efbba52fd8bc118ea781b70209adf2e429d0","jing":"4d1702a9bb39824cfa783fbddf42c0c48a54c729c07242129d1aa39ad1b01f28","skewb":"3177d5ff634605379b464166ba44c8b23ef5120563f3b58e708001e044622138","masterskewb":"876fa58b75d4a943d3082caabc8bb417a22f86139c1bba45501ce4df569881b4","ultimate":"36a1069a012658c52636a04f710f13871937f54185a0ebc523557d3c82edd9be","diamond":"e2a5ec6f1ce13b912da7d684d13c6c40c0c7d699bf8c0017466b81846b3936f9","fto":"6aaf6995fe69cbec65ab1e6c919b0a6242ca89c37bf6f49d1d81439a5558912b","crystal":"419c09ba6b58d3e567be3169693e03098ddf1f040fd4a6d7801a33b0254a07f2","dino":"c68b04a106f3221f072953690edffe627a365bb9e1671467f5ebc005e396d38e","rainbow":"710a9cf9174e9d878c7c5fdb7c989d8e6913bc9df859672bddb096b9c8ce4fae","rhombic":"b4dab2cd92a3091bee06b1608e35ecf3f01f2fc6460ec0f3959ae68b8bbdde30","flatdiamond":"ba4044e30050fbe9fb52fbced7853c5af744ee2a1e6022aa88714a87b6fb3876","cornerocta":"3777cb745e7787af85a1c2340fc472a977739cc02e420e433d35c3cfe410854d","trajber":"41d61094c19408d78733b585a06156f851d7b43fb76cf18d06e0b5f1f02b7378","jewel":"c74dc90c144304faeb4cca3d21c0f99a2f89ef41e1cbfed19ddcb75166ccc4f9","pyramorphix":"a4b1ad65c10d966327afefc084a6198752378ea981d167f5d6e632df4c4c6086","mastermorphix":"699e188553ea5e24116b39d33f0dc8b336e8fdf1c04dcdc83716d0970ef6b5a3","helicopter":"89c123da883ec5ccf72371016dc9d9bd2054aaa2ffef0221a87413c66aab2a5e","diamondstyle":"274912ece675031ef72f48eba7d12571681ac9a3eeb6fbebe7f2d7cb41a0a41e","diamondcube":"cde5e8aaa0ff7b644633a2aff553346a1631d010c33d5d6a868b4ac48b739536"};
 const modelCache=new Map();
 function modelFingerprint(modelOrId){return fingerprints[typeof modelOrId==='string'?modelOrId:modelOrId?.id]??null;}
 function assetError(kind,reason,message){const error=new Error(message);error.code=kind+'_'+reason;return error;}
 async function loadAsset(path,expected,kind){
- const label=kind==='model'?'Puzzle move model':'Puzzle stabilizer cache';
+ const label=kind==='model'?'Puzzle move model':kind==='color'?'Puzzle short-move library':'Puzzle stabilizer cache';
  const controller=typeof AbortController==='function'?new AbortController():null;
  let timer=null,stage='network';
  const operation=(async()=>{

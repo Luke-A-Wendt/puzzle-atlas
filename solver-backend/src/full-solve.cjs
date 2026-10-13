@@ -77,6 +77,77 @@ function precomputeFull(model,options={}){
  try{const compiled=compileModel(model);ctx.moveCount=compiled.moves.length;words=new Words(compiled.moves,ctx);const base=options.base??chooseBase(model,compiled);if(base.length!==compiled.degree||new Set(base).size!==compiled.degree||base.some(x=>!Number.isInteger(x)||x<0||x>=compiled.degree))throw Error('Invalid full stabilizer base');const chain=options.algorithm==='unweighted'?buildChain(compiled,base,ctx,words):weightedChain(compiled,base,ctx,words);return serializeChain(model,chain,{...ctx.stats,elapsedMs:now()-started});}
  catch(e){if(e instanceof Limit)return {status:'unknown',reason:e.message,stats:{...ctx.stats,dagNodes:words?.nodes.length??0,elapsedMs:now()-started}};throw e;}
 }
+// A color quotient is sound only when colors describe the entire goal. The
+// build explicitly excludes shape-changing / pose-expanded and picture goals.
+// Nothing here invents a sticker permutation or assumes that equal-colored
+// stickers can be swapped in isolation: every candidate remains a legal word.
+function colorGoal(model,request,home,current){
+ if(model.colorRelaxationSafe!==true||model.requiresOccupiedState)return null;
+ const colors=request?.colorBySticker??model.colorBySticker,ids=Object.keys(home);
+ if(!colors||ids.length!==model.degree)return null;
+ const palette=new Map(),initial=new Array(model.degree),goal=new Array(model.degree);
+ for(const id of ids){const color=colors[id];if(typeof color!=='string'||!color)return null;
+  if(!palette.has(color))palette.set(color,String.fromCharCode(palette.size+1));
+  const token=palette.get(color);initial[current[id]]=token;goal[home[id]]=token;
+ }
+ return{initial:initial.join(''),goal:goal.join('')};
+}
+function permuteColors(state,perm){const out=new Array(perm.length);for(let i=0;i<perm.length;i++)out[perm[i]]=state[i];return out.join('');}
+function colorSolvedPlan(model,goal,elapsedMs=0){const nodes=Array.from({length:model.degree},(_,i)=>i);return{status:'solved',stages:[],moveIndices:[],initialProtectedNodes:nodes,finalProtectedNodes:nodes,optimal:true,verified:true,goalSemantics:'colors',method:'already_color_solved',stats:{elapsedMs,moves:0,stages:0}};}
+function optimizeColorPlan(model,request,baseline,options={},overallDeadline=Infinity){
+ const started=now(),goal=colorGoal(model,request,request.homeBySticker??model.homeBySticker,request.currentBySticker);
+ if(!goal||options.colorOptimize===false||baseline.status!=='solved')return baseline;
+ if(goal.initial===goal.goal)return colorSolvedPlan(model,goal,baseline.stats.elapsedMs);
+ const deadline=Math.min(overallDeadline,started+(options.maxColorMs??250)),maxBytes=options.maxColorBytes??16*1024*1024;
+ const maxRecords=Math.max(2,Math.floor(maxBytes/(model.degree*2+160)));
+ const ends=new Set();let end=0;for(const stage of baseline.stages){end+=stage.moveIndices.length;ends.add(end);}
+ const records=[{state:goal.initial,boundary:true,moveIndex:null}],seen=new Map([[goal.initial,0]]);
+ let state=goal.initial,loopsRemoved=0,bridgeChecks=0,bridges=0;
+ for(let i=0;i<baseline.moveIndices.length;i++){
+  if((i&31)===0&&now()>deadline)return baseline;
+  const moveIndex=baseline.moveIndices[i];state=permuteColors(state,model.moves[moveIndex].perm);
+  const previous=seen.get(state);
+  if(previous!==undefined){while(records.length>previous+1)seen.delete(records.pop().state);records[previous].boundary ||= ends.has(i+1);loopsRemoved++;}
+  else{if(records.length>=maxRecords)return baseline;seen.set(state,records.length);records.push({state,boundary:ends.has(i+1),moveIndex});}
+  if(state===goal.goal)break;
+ }
+ if(records.at(-1).state!==goal.goal)return baseline;
+ // Add bounded, legal one-move edges between states already present in this
+ // witness. A shortcut only replaces a strictly longer interval; it never
+ // enumerates puzzle configurations or depends on a guessed assignment.
+ const compact=[records[0]],maxChecks=options.maxColorBridgeChecks??12000,bridgeDeadline=Math.min(deadline,started+(options.maxColorMs??250)*0.7);
+ let at=0;
+ while(at<records.length-1){let next=at+1,moveIndex=records[next].moveIndex;
+  if(bridgeChecks<maxChecks&&now()<bridgeDeadline){for(let j=0;j<model.moves.length;j++){
+   if(bridgeChecks>=maxChecks||(bridgeChecks&15)===0&&now()>bridgeDeadline)break;
+   bridgeChecks++;const candidate=seen.get(permuteColors(records[at].state,model.moves[j].perm));
+   if(candidate!==undefined&&candidate>next){next=candidate;moveIndex=j;}
+  }}
+  if(next>at+1)bridges++;compact.push({...records[next],moveIndex});at=next;
+ }
+ compact.at(-1).boundary=true;
+ // Retain surviving exact-plan endpoints. The suffix intersection determines
+ // which correct colors will stay correct at EVERY remaining stage endpoint.
+ // This can secure a color earlier and removes identity-only placement stages.
+ const boundaries=[0];for(let i=1;i<compact.length;i++)if(compact[i].boundary)boundaries.push(i);
+ const masks=new Array(boundaries.length);let suffix=new Uint8Array(model.degree).fill(1);
+ for(let k=boundaries.length-1;k>=0;k--){if((k&31)===0&&now()>deadline)return baseline;const mask=suffix.slice(),s=compact[boundaries[k]].state;for(let n=0;n<mask.length;n++)mask[n]&=+(s[n]===goal.goal[n]);masks[k]=mask;suffix=mask;}
+ const nodes=mask=>Array.from(mask,(v,i)=>v?i:-1).filter(i=>i>=0),initialProtectedNodes=nodes(masks[0]),locked=new Set(initialProtectedNodes),stages=[],moveIndices=[];
+ let from=0;
+ for(let k=1;k<boundaries.length;k++){
+  if((k&15)===0&&now()>deadline)return baseline;
+  const newlySolvedNodes=nodes(masks[k]).filter(n=>!locked.has(n));if(!newlySolvedNodes.length)continue;
+  const to=boundaries[k],sequence=compact.slice(from+1,to+1).map(r=>r.moveIndex),targetNode=newlySolvedNodes.find(n=>compact[from].state[n]!==goal.goal[n])??newlySolvedNodes[0];
+  let p=identity(model.degree);for(const index of sequence)p=compose(p,model.moves[index].perm);
+  const sourceNode=Array.from(p).indexOf(targetNode);
+  if(compact[from].state[sourceNode]!==goal.goal[targetNode]||[...locked,...newlySolvedNodes].some(n=>compact[to].state[n]!==goal.goal[n]))return baseline;
+  stages.push({moveIndices:sequence,protectedNodes:[...locked],newlySolvedNodes,targetNode,sourceNode});moveIndices.push(...sequence);for(const n of newlySolvedNodes)locked.add(n);from=to;
+ }
+ if(from!==compact.length-1||locked.size!==model.degree||moveIndices.length>baseline.moveIndices.length||stages.length>baseline.stages.length)return baseline;
+ // Independently replay the proposed flat witness from the original colors.
+ state=goal.initial;for(let k=0;k<moveIndices.length;k++){if((k&63)===0&&now()>deadline)return baseline;state=permuteColors(state,model.moves[moveIndices[k]].perm);}if(state!==goal.goal)return baseline;
+ return{...baseline,stages,moveIndices,initialProtectedNodes,finalProtectedNodes:[...locked],goalSemantics:'colors',method:'color_quotient_witness_shortcuts',optimal:false,stats:{...baseline.stats,moves:moveIndices.length,stages:stages.length,elapsedMs:baseline.stats.elapsedMs+now()-started,colorOptimizationMs:now()-started,baselineMoves:baseline.moveIndices.length,baselineStages:baseline.stages.length,colorLoopsRemoved:loopsRemoved,colorBridges:bridges,colorBridgeChecks:bridgeChecks,colorStateBytesEstimate:records.length*(model.degree*2+160)}};
+}
 function solveFull(model,request,options={}){
  const started=now(),deadline=started+(options.maxMs??30000),maxOutput=options.maxOutputMoves??20000;
  const fail=(status,reason,extra={})=>({status,reason,...extra,stats:{elapsedMs:now()-started}});
@@ -87,6 +158,8 @@ function solveFull(model,request,options={}){
   const valid=x=>Number.isInteger(x)&&x>=0&&x<model.degree;
   if(ids.some(id=>!valid(home[id])||!valid(current[id]))||new Set(ids.map(id=>home[id])).size!==ids.length||new Set(ids.map(id=>current[id])).size!==ids.length)return fail('invalid','non_bijective_sticker_mapping');
   if(model.stickerCount!==undefined&&ids.length!==model.stickerCount)return fail('invalid','sticker_count_mismatch');
+  const colorTarget=options.colorOptimize===false?null:colorGoal(model,request,home,current);
+  if(colorTarget&&colorTarget.initial===colorTarget.goal)return colorSolvedPlan(model,colorTarget,now()-started);
   if(ids.every(id=>current[id]===home[id]))return {status:'solved',stages:[],moveIndices:[],initialProtectedNodes:ids.map(id=>home[id]),finalProtectedNodes:ids.map(id=>home[id]),optimal:true,verified:true,method:'already_solved',stats:{elapsedMs:now()-started,moves:0,stages:0}};
   const cache=options.cache??precomputeFull(model,{...options,maxMs:Math.max(1,deadline-now())});if(cache.status!=='ready')return fail('unknown',cache.reason??'full_solver_cache_unavailable');
   if(cache.schemaVersion!==1||cache.degree!==model.degree||cache.modelSignature!==modelSignature(model)||!cache.complete)return fail('invalid','full_solver_cache_mismatch');
@@ -100,7 +173,13 @@ function solveFull(model,request,options={}){
   while(at<base.length){
    if(now()>deadline)return fail('unknown','time_limit');const target=base[at],source=byHome.get(target),level=cache.levels[at];
    if(level.base!==target)return fail('invalid','cache_base_level_mismatch');const entry=level.entries.find(e=>e[0]===source);
-   if(!entry)return fail('impossible','state_outside_legal_stabilizer_orbit',{proof:'complete_stabilizer_chain',failedTargetNode:target});
+   if(!entry){
+    // Failure to restore these exact identities does not prove that no legal
+    // word reaches their color-equivalence class. Normal engine states have a
+    // legal identity witness, but imported or relabeled inputs need this limit.
+    if(colorTarget)return fail('unknown','color_goal_identity_baseline_unreachable',{identityBaselineReason:'state_outside_legal_stabilizer_orbit',failedTargetNode:target});
+    return fail('impossible','state_outside_legal_stabilizer_orbit',{proof:'complete_stabilizer_chain',failedTargetNode:target});
+   }
    let sequence=words.flatten(-entry[1]);if(allMoves.length+sequence.length>maxOutput)return fail('unknown','output_move_limit',{requiredAtLeastMoves:allMoves.length+sequence.length});
    if(options.shorten===true&&sequence.length>10&&deadline-now()>10)sequence=shorten(model,sequence,{maxMs:Math.min(80,deadline-now()),maxBytes:4*1024*1024}).moveIndices;
    let p=identity(model.degree);for(const index of sequence){if(now()>deadline)return fail('unknown','time_limit');p=compose(p,compiled.moves[index].perm);}
@@ -110,7 +189,8 @@ function solveFull(model,request,options={}){
    stages.push({moveIndices:sequence,protectedNodes,newlySolvedNodes,targetNode:target,sourceNode:source});allMoves.push(...sequence);
   }
   if([...byHome].some(([h,x])=>h!==x))return fail('unknown','internal_final_verification_failed');
-  return {status:'solved',stages,moveIndices:allMoves,initialProtectedNodes,finalProtectedNodes:locked,optimal:false,verified:true,method:'weighted_stabilizer_placements',stats:{elapsedMs:now()-started,moves:allMoves.length,stages:stages.length}};
+  const baseline={status:'solved',stages,moveIndices:allMoves,initialProtectedNodes,finalProtectedNodes:locked,optimal:false,verified:true,method:'weighted_stabilizer_placements',stats:{elapsedMs:now()-started,moves:allMoves.length,stages:stages.length}};
+  return optimizeColorPlan(model,request,baseline,options,deadline);
  }catch(e){if(e instanceof Limit)return fail('unknown',e.message);return fail('invalid',e.message);}
 }
-module.exports={precomputeFull,solveFull,modelSignature,chooseBase,weightedChain};
+module.exports={precomputeFull,solveFull,modelSignature,chooseBase,weightedChain,optimizeColorPlan};

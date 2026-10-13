@@ -1,0 +1,498 @@
+{
+  "notes": [
+    "Constructed solved-state color-preserving requests, not representative user request sampling.",
+    "Strict comparison: 200ms cap,30ms short search,2000states; color:500ms including <=150ms relaxed search and50ms strict competitor.",
+    "Witness replay verified every production color result."
+  ],
+  "cases": [
+    {
+      "id": "masterpyraminx",
+      "swap": [
+        12,
+        63
+      ],
+      "held": 45,
+      "replacedHeldIdentities": 3,
+      "colorStatus": "solved",
+      "colorMoves": 4,
+      "colorMs": 31,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 152,
+      "strictMs": 54.65
+    },
+    {
+      "id": "kilominx",
+      "swap": [
+        9,
+        27
+      ],
+      "held": 38,
+      "replacedHeldIdentities": 2,
+      "colorStatus": "solved",
+      "colorMoves": 6,
+      "colorMs": 49.74,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 201.23
+    },
+    {
+      "id": "ghost",
+      "swap": [
+        14,
+        59
+      ],
+      "held": 41,
+      "replacedHeldIdentities": 2,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.74,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 201.11
+    },
+    {
+      "id": "cube2",
+      "swap": [
+        9,
+        15
+      ],
+      "held": 16,
+      "replacedHeldIdentities": 4,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.18,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "impossible",
+      "strictMs": 6.3
+    },
+    {
+      "id": "cube3",
+      "swap": [
+        20,
+        35
+      ],
+      "held": 42,
+      "replacedHeldIdentities": 8,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.17,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "impossible",
+      "strictMs": 81.02
+    },
+    {
+      "id": "cube4",
+      "swap": [
+        35,
+        63
+      ],
+      "held": 80,
+      "replacedHeldIdentities": 16,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 1.03,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 203.49
+    },
+    {
+      "id": "cube5",
+      "swap": [
+        0,
+        29
+      ],
+      "held": 130,
+      "replacedHeldIdentities": 24,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 1.01,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 202.26
+    },
+    {
+      "id": "cube6",
+      "swap": [
+        0,
+        41
+      ],
+      "held": 192,
+      "replacedHeldIdentities": 36,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 1.21,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 201.09
+    },
+    {
+      "id": "cube7",
+      "swap": [
+        0,
+        55
+      ],
+      "held": 266,
+      "replacedHeldIdentities": 48,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 1.55,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 204.72
+    },
+    {
+      "id": "cube8",
+      "swap": [
+        0,
+        71
+      ],
+      "held": 352,
+      "replacedHeldIdentities": 64,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 1.88,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 204.9
+    },
+    {
+      "id": "mirror",
+      "swap": [
+        20,
+        35
+      ],
+      "held": 42,
+      "replacedHeldIdentities": 8,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.17,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "impossible",
+      "strictMs": 36.11
+    },
+    {
+      "id": "homer",
+      "swap": [
+        9,
+        15
+      ],
+      "held": 16,
+      "replacedHeldIdentities": 4,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.14,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "impossible",
+      "strictMs": 7.52
+    },
+    {
+      "id": "pyraminx",
+      "swap": [
+        22,
+        31
+      ],
+      "held": 7,
+      "replacedHeldIdentities": 1,
+      "colorStatus": "solved",
+      "colorMoves": 3,
+      "colorMs": 0.56,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 4,
+      "strictMs": 0.4
+    },
+    {
+      "id": "tetraminx",
+      "swap": [
+        8,
+        19
+      ],
+      "held": 4,
+      "replacedHeldIdentities": 1,
+      "colorStatus": "solved",
+      "colorMoves": 3,
+      "colorMs": 0.28,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 4,
+      "strictMs": 0.09
+    },
+    {
+      "id": "megaminx",
+      "swap": [
+        8,
+        30
+      ],
+      "held": 96,
+      "replacedHeldIdentities": 6,
+      "colorStatus": "solved",
+      "colorMoves": 6,
+      "colorMs": 51.24,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 201
+    },
+    {
+      "id": "jing",
+      "swap": [
+        12,
+        13
+      ],
+      "held": 19,
+      "replacedHeldIdentities": 1,
+      "colorStatus": "solved",
+      "colorMoves": 4,
+      "colorMs": 1.3,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 22,
+      "strictMs": 5.75
+    },
+    {
+      "id": "skewb",
+      "case": "no solved-state example"
+    },
+    {
+      "id": "masterskewb",
+      "swap": [
+        8,
+        69
+      ],
+      "held": 47,
+      "replacedHeldIdentities": 1,
+      "colorStatus": "solved",
+      "colorMoves": 4,
+      "colorMs": 10.08,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 201.8
+    },
+    {
+      "id": "ultimate",
+      "swap": [
+        28,
+        31
+      ],
+      "held": 18,
+      "replacedHeldIdentities": 4,
+      "colorStatus": "solved",
+      "colorMoves": 2,
+      "colorMs": 0.18,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 84,
+      "strictMs": 22.46
+    },
+    {
+      "id": "diamond",
+      "swap": [
+        12,
+        15
+      ],
+      "held": 12,
+      "replacedHeldIdentities": 2,
+      "colorStatus": "solved",
+      "colorMoves": 2,
+      "colorMs": 0.18,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 17,
+      "strictMs": 7.95
+    },
+    {
+      "id": "fto",
+      "swap": [
+        14,
+        15
+      ],
+      "held": 40,
+      "replacedHeldIdentities": 8,
+      "colorStatus": "solved",
+      "colorMoves": 2,
+      "colorMs": 0.25,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 10864,
+      "strictMs": 171.2
+    },
+    {
+      "id": "crystal",
+      "swap": [
+        57,
+        58
+      ],
+      "held": 76,
+      "replacedHeldIdentities": 10,
+      "colorStatus": "solved",
+      "colorMoves": 2,
+      "colorMs": 0.72,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 204.09
+    },
+    {
+      "id": "dino",
+      "swap": [
+        6,
+        23
+      ],
+      "held": 18,
+      "replacedHeldIdentities": 2,
+      "colorStatus": "solved",
+      "colorMoves": 4,
+      "colorMs": 3.15,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "impossible",
+      "strictMs": 6.92
+    },
+    {
+      "id": "rainbow",
+      "swap": [
+        12,
+        45
+      ],
+      "held": 44,
+      "replacedHeldIdentities": 4,
+      "colorStatus": "solved",
+      "colorMoves": 4,
+      "colorMs": 5.4,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "impossible",
+      "strictMs": 10.24
+    },
+    {
+      "id": "rhombic",
+      "swap": [
+        13,
+        57
+      ],
+      "held": 44,
+      "replacedHeldIdentities": 4,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.14,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "impossible",
+      "strictMs": 102.02
+    },
+    {
+      "id": "flatdiamond",
+      "swap": [
+        1,
+        40
+      ],
+      "held": 50,
+      "replacedHeldIdentities": 4,
+      "colorStatus": "solved",
+      "colorMoves": 3,
+      "colorMs": 1.78,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "unknown",
+      "strictMs": 203.02
+    },
+    {
+      "id": "cornerocta",
+      "swap": [
+        0,
+        3
+      ],
+      "held": 43,
+      "replacedHeldIdentities": 1,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.56,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 1,
+      "strictMs": 0.33
+    },
+    {
+      "id": "trajber",
+      "swap": [
+        3,
+        55
+      ],
+      "held": 47,
+      "replacedHeldIdentities": 1,
+      "colorStatus": "solved",
+      "colorMoves": 4,
+      "colorMs": 11.33,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 3372,
+      "strictMs": 102.55
+    },
+    {
+      "id": "jewel",
+      "swap": [
+        4,
+        7
+      ],
+      "held": 33,
+      "replacedHeldIdentities": 1,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.16,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 1,
+      "strictMs": 0.1
+    },
+    {
+      "id": "pyramorphix",
+      "case": "no solved-state example"
+    },
+    {
+      "id": "mastermorphix",
+      "swap": [
+        6,
+        7
+      ],
+      "held": 19,
+      "replacedHeldIdentities": 2,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.27,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 1,
+      "strictMs": 0.12
+    },
+    {
+      "id": "helicopter",
+      "case": "no solved-state example"
+    },
+    {
+      "id": "diamondstyle",
+      "swap": [
+        0,
+        8
+      ],
+      "held": 20,
+      "replacedHeldIdentities": 2,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.11,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "solved",
+      "strictMoves": 6990,
+      "strictMs": 12.67
+    },
+    {
+      "id": "diamondcube",
+      "swap": [
+        22,
+        83
+      ],
+      "held": 62,
+      "replacedHeldIdentities": 8,
+      "colorStatus": "solved",
+      "colorMoves": 1,
+      "colorMs": 0.18,
+      "colorMethod": "color_hold_short_catalog",
+      "strictStatus": "impossible",
+      "strictMs": 66.62
+    }
+  ]
+}
