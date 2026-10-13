@@ -2,7 +2,7 @@
 
 An interactive atlas of **34 twisty puzzles**, with 3D views, ring maps, detailed solution guides, and browser-based solvers powered by permutation groups and stabilizer chains.
 
-**[Play Puzzle Atlas](https://puzzle-atlas.woodsyshore16.chatgpt.site)**
+**[Play Puzzle Atlas](https://luke-a-wendt.github.io/puzzle-atlas/)**
 
 Explore a puzzle in three dimensions, follow its moves on a ring map, or experiment with solving selected pieces while preserving others.
 
