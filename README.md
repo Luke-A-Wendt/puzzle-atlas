@@ -1,6 +1,6 @@
 # Puzzle Atlas
 
-An interactive atlas of **34 twisty puzzles**, with 3D views, ring maps, detailed solution guides, and browser-based solvers powered by permutation groups and stabilizer chains.
+An interactive atlas of puzzles, with 3D views, ring maps, detailed solution guides, and browser-based solvers powered by permutation groups and stabilizer chains.
 
 **[Play Puzzle Atlas](https://luke-a-wendt.github.io/puzzle-atlas/)**
 
