@@ -8,8 +8,6 @@ Explore a puzzle in three dimensions, follow its moves on a ring map, or experim
 
 <img width="1849" height="932" alt="image" src="https://github.com/user-attachments/assets/dd286ac8-ccd9-47a9-b6db-304ef4bc52e1" />
 
-<img width="1849" height="932" alt="image" src="https://github.com/user-attachments/assets/3bee7ebd-d454-4912-9fd2-8ef3b3b1d70b" />
-
 ## Features
 
 - **34 playable puzzles:** cubes from 2×2×2 through 8×8×8, tetrahedral puzzles, corner-turning puzzles, dodecahedral puzzles, shape-changing variants, and a hidden bonus puzzle.
