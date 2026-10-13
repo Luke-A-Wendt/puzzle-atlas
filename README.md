@@ -66,40 +66,6 @@ Every proposed sequence is checked before playback. Solver computation runs in a
 
 The in-game guide contains the detailed mathematics, pseudocode, implementation conventions, and references.
 
-## Run locally
-
-The website is static and requires no build step. Serve it over HTTP so the browser can load solver data and workers.
-
-If `index.html` is in the repository root:
-
-```sh
-python3 -m http.server 8000
-```
-
-If you extracted the full project ZIP and the website is inside `dist/`:
-
-```sh
-python3 -m http.server 8000 --directory dist
-```
-
-Then open **http://localhost:8000**. On Windows, `py` can be used in place of `python3`.
-
-Opening `index.html` directly with a `file://` URL may prevent the solver from loading its data or worker.
-
-## Deploy on GitHub Pages
-
-For a repository containing the contents of `dist/` at its root:
-
-1. Keep `index.html`, `games/`, `assets/`, and the supporting JavaScript and CSS files together.
-2. Add an empty `.nojekyll` file at the root.
-3. Open **Settings → Pages**.
-4. Choose **Deploy from a branch**, then **main** and **/ (root)**.
-5. Save and wait for GitHub to publish the site.
-
-If you keep the full development project layout, publish `dist/` using a GitHub Actions workflow, or copy its contents into a `docs/` directory and publish that directory. Keep the solver model and cache folders in the published output.
-
-See [GitHub’s publishing-source documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
-
 ## Project layout
 
 Paths below are relative to the website root, or to `dist/` in the full project:
