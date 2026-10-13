@@ -85,14 +85,3 @@ The full project also includes `solver-backend/`, `scripts/`, and `tests/` for d
 Puzzle guides include specific references and scholarly citations. [Jaap’s Puzzle Page](https://www.jaapsch.net/puzzles/indxgraf.htm) is a valuable reference for puzzle descriptions and solving methods.
 
 When reporting an issue, include the puzzle name, browser and device, steps to reproduce it, and any displayed solver diagnostic. A screenshot or move journal can help reproduce the problem.
-
-
-## Portable release — October 13, 2026
-
-The full website is in `dist/`. Keep the repository layout and publish that entire directory. JavaScript, styles, puzzle geometry, images, guides, workers, all 34 move models, and all full/color solver caches are included. The website has no external runtime services, CDN assets, API keys, login, or connection to a development host. Solver calculations run in the visitor's browser. Guide reference links are optional outbound reading, not dependencies.
-
-For local use, run `python3 -m http.server 8000 --directory dist` from this repository and open http://localhost:8000. No internet connection or package installation is needed for local play once the files are extracted. Opening HTML directly with `file://` is unsupported because browsers restrict worker and JSON access.
-
-Before publishing, run `node scripts/verify-release.cjs`. The supplied GitHub Pages workflow runs this check and the portability/solver checks before uploading `dist`. There is no application build step required for the included release. If you intentionally edit runtime files, regenerate the release manifest with `node scripts/prepare-release.cjs`; if backend or solver data changed, first run `node scripts/build-constrained-solver.cjs`. Then verify and test again.
-
-The release manifest records exact SHA-256 checksums for every deployed file. Page assets and solver workers use release-specific URLs; an integrity mismatch gets one fresh fetch before reporting a failure. Replace the whole `dist/` directory when updating. After a previous failed deployment, reload the page with the browser cache bypassed once.
