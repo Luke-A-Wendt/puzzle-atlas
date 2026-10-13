@@ -1,0 +1,1352 @@
+{
+  "models": 28,
+  "totalBytes": 7767847,
+  "totalRepresentatives": 11920,
+  "scramblesVerified": 84,
+  "results": [
+    {
+      "id": "cube2",
+      "compile": {
+        "schreierTests": 1928,
+        "compositions": 8410,
+        "rebuilds": 7,
+        "pairStates": 0,
+        "strongGenerators": 24,
+        "dagNodes": 604,
+        "estimatedPeakBytes": 152704,
+        "elapsedMs": 11.853481999999993,
+        "optimization": {
+          "elapsedMs": 40.773013,
+          "changes": 0,
+          "candidates": 6717,
+          "passes": 1,
+          "generators": 310,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 40
+        }
+      },
+      "validation": {
+        "id": "cube2",
+        "status": "verified",
+        "representatives": 98,
+        "wordNodes": 212,
+        "solutionLengthUpperBound": 40,
+        "samples": [
+          {
+            "moves": 32,
+            "stages": 7,
+            "planningMs": 2.9360739999999907
+          },
+          {
+            "moves": 29,
+            "stages": 7,
+            "planningMs": 0.49627499999999714
+          },
+          {
+            "moves": 36,
+            "stages": 7,
+            "planningMs": 0.36970700000000534
+          }
+        ],
+        "bytes": 9764,
+        "validationMs": 7.8794440000000066
+      }
+    },
+    {
+      "id": "cube3",
+      "compile": {
+        "schreierTests": 14423,
+        "compositions": 87133,
+        "rebuilds": 27,
+        "pairStates": 0,
+        "strongGenerators": 53,
+        "dagNodes": 4954,
+        "estimatedPeakBytes": 1098496,
+        "elapsedMs": 121.14334900000001,
+        "optimization": {
+          "elapsedMs": 421.40605400000004,
+          "changes": 1,
+          "candidates": 25371,
+          "passes": 2,
+          "generators": 626,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 139
+        }
+      },
+      "validation": {
+        "id": "cube3",
+        "status": "verified",
+        "representatives": 247,
+        "wordNodes": 745,
+        "solutionLengthUpperBound": 139,
+        "samples": [
+          {
+            "moves": 106,
+            "stages": 19,
+            "planningMs": 1.3046700000000016
+          },
+          {
+            "moves": 93,
+            "stages": 16,
+            "planningMs": 2.1836509999999976
+          },
+          {
+            "moves": 78,
+            "stages": 16,
+            "planningMs": 1.093539000000007
+          }
+        ],
+        "bytes": 48222,
+        "validationMs": 12.543696000000011
+      }
+    },
+    {
+      "id": "cube4",
+      "compile": {
+        "schreierTests": 73210,
+        "compositions": 901177,
+        "rebuilds": 63,
+        "pairStates": 0,
+        "strongGenerators": 98,
+        "dagNodes": 24499,
+        "estimatedPeakBytes": 5214688,
+        "elapsedMs": 1341.9278649999999,
+        "optimization": {
+          "elapsedMs": 3008.410718,
+          "changes": 143,
+          "candidates": 40610,
+          "passes": 2,
+          "generators": 1509,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 658
+        }
+      },
+      "validation": {
+        "id": "cube4",
+        "status": "verified",
+        "representatives": 649,
+        "wordNodes": 3612,
+        "solutionLengthUpperBound": 658,
+        "samples": [
+          {
+            "moves": 437,
+            "stages": 48,
+            "planningMs": 4.383776999999995
+          },
+          {
+            "moves": 398,
+            "stages": 45,
+            "planningMs": 3.485917999999998
+          },
+          {
+            "moves": 410,
+            "stages": 45,
+            "planningMs": 4.072324999999992
+          }
+        ],
+        "bytes": 224049,
+        "validationMs": 32.43909500000001
+      }
+    },
+    {
+      "id": "cube5",
+      "compile": {
+        "schreierTests": 378057,
+        "compositions": 3390593,
+        "rebuilds": 136,
+        "pairStates": 0,
+        "strongGenerators": 180,
+        "dagNodes": 70310,
+        "estimatedPeakBytes": 14616800,
+        "elapsedMs": 5015.638364,
+        "optimization": {
+          "elapsedMs": 10015.916346,
+          "changes": 3731,
+          "candidates": 100570,
+          "passes": 2,
+          "generators": 4460,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 1551
+        }
+      },
+      "validation": {
+        "id": "cube5",
+        "status": "verified",
+        "representatives": 1073,
+        "wordNodes": 7931,
+        "solutionLengthUpperBound": 1551,
+        "samples": [
+          {
+            "moves": 977,
+            "stages": 79,
+            "planningMs": 5.055369999999982
+          },
+          {
+            "moves": 1086,
+            "stages": 80,
+            "planningMs": 7.274694000000011
+          },
+          {
+            "moves": 1071,
+            "stages": 79,
+            "planningMs": 8.321372999999994
+          }
+        ],
+        "bytes": 618551,
+        "validationMs": 59.98222200000001
+      }
+    },
+    {
+      "id": "cube6",
+      "compile": {
+        "schreierTests": 1150776,
+        "compositions": 7960721,
+        "rebuilds": 229,
+        "pairStates": 0,
+        "strongGenerators": 282,
+        "dagNodes": 407015,
+        "estimatedPeakBytes": 72891488,
+        "elapsedMs": 23952.83866,
+        "optimization": {
+          "elapsedMs": 10072.972404000002,
+          "changes": 5616,
+          "candidates": 75568,
+          "passes": 1,
+          "generators": 6275,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 3906
+        }
+      },
+      "validation": {
+        "id": "cube6",
+        "status": "verified",
+        "representatives": 1750,
+        "wordNodes": 21153,
+        "solutionLengthUpperBound": 3906,
+        "samples": [
+          {
+            "moves": 2337,
+            "stages": 129,
+            "planningMs": 12.795363000000009
+          },
+          {
+            "moves": 1944,
+            "stages": 121,
+            "planningMs": 8.248455999999976
+          },
+          {
+            "moves": 2369,
+            "stages": 122,
+            "planningMs": 18.12208499999997
+          }
+        ],
+        "bytes": 1564417,
+        "validationMs": 192.64685699999998
+      }
+    },
+    {
+      "id": "cube7",
+      "compile": {
+        "schreierTests": 3069171,
+        "compositions": 17939129,
+        "rebuilds": 316,
+        "pairStates": 0,
+        "strongGenerators": 378,
+        "dagNodes": 108160,
+        "estimatedPeakBytes": 20034176,
+        "elapsedMs": 56774.276225,
+        "optimization": {
+          "elapsedMs": 10074.138294999999,
+          "changes": 7695,
+          "candidates": 76873,
+          "passes": 1,
+          "generators": 7949,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 9496
+        }
+      },
+      "validation": {
+        "id": "cube7",
+        "status": "verified",
+        "representatives": 2449,
+        "wordNodes": 42289,
+        "solutionLengthUpperBound": 9496,
+        "samples": [
+          {
+            "moves": 4813,
+            "stages": 186,
+            "planningMs": 22.549657000000025
+          },
+          {
+            "moves": 4616,
+            "stages": 178,
+            "planningMs": 24.44131100000004
+          },
+          {
+            "moves": 4688,
+            "stages": 176,
+            "planningMs": 17.020554999999945
+          }
+        ],
+        "bytes": 3095158,
+        "validationMs": 219.152828
+      }
+    },
+    {
+      "id": "mirror",
+      "compile": {
+        "schreierTests": 14423,
+        "compositions": 87133,
+        "rebuilds": 27,
+        "pairStates": 0,
+        "strongGenerators": 53,
+        "dagNodes": 4954,
+        "estimatedPeakBytes": 1098496,
+        "elapsedMs": 44.89134799999738,
+        "optimization": {
+          "elapsedMs": 771.1525070000002,
+          "changes": 568,
+          "candidates": 38519,
+          "passes": 2,
+          "generators": 1077,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 143
+        }
+      },
+      "validation": {
+        "id": "mirror",
+        "status": "verified",
+        "representatives": 247,
+        "wordNodes": 750,
+        "solutionLengthUpperBound": 143,
+        "samples": [
+          {
+            "moves": 104,
+            "stages": 19,
+            "planningMs": 0.6854040000000623
+          },
+          {
+            "moves": 104,
+            "stages": 16,
+            "planningMs": 0.847735000000057
+          },
+          {
+            "moves": 78,
+            "stages": 16,
+            "planningMs": 0.4625540000000683
+          }
+        ],
+        "bytes": 48283,
+        "validationMs": 4.393476000000078
+      }
+    },
+    {
+      "id": "homer",
+      "compile": {
+        "schreierTests": 1928,
+        "compositions": 8410,
+        "rebuilds": 7,
+        "pairStates": 0,
+        "strongGenerators": 24,
+        "dagNodes": 604,
+        "estimatedPeakBytes": 152704,
+        "elapsedMs": 15.02457300000242,
+        "optimization": {
+          "elapsedMs": 118.00534599999992,
+          "changes": 92,
+          "candidates": 21249,
+          "passes": 3,
+          "generators": 358,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 41
+        }
+      },
+      "validation": {
+        "id": "homer",
+        "status": "verified",
+        "representatives": 98,
+        "wordNodes": 214,
+        "solutionLengthUpperBound": 41,
+        "samples": [
+          {
+            "moves": 33,
+            "stages": 7,
+            "planningMs": 0.15536900000006426
+          },
+          {
+            "moves": 29,
+            "stages": 7,
+            "planningMs": 0.12109899999995832
+          },
+          {
+            "moves": 36,
+            "stages": 7,
+            "planningMs": 0.12092900000004647
+          }
+        ],
+        "bytes": 9793,
+        "validationMs": 0.8730719999999792
+      }
+    },
+    {
+      "id": "pyraminx",
+      "compile": {
+        "schreierTests": 2168,
+        "compositions": 7363,
+        "rebuilds": 7,
+        "pairStates": 0,
+        "strongGenerators": 22,
+        "dagNodes": 238,
+        "estimatedPeakBytes": 99712,
+        "elapsedMs": 15.933898000002955,
+        "optimization": {
+          "elapsedMs": 26.25430899999992,
+          "changes": 50,
+          "candidates": 2410,
+          "passes": 2,
+          "generators": 132,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 65
+        }
+      },
+      "validation": {
+        "id": "pyraminx",
+        "status": "verified",
+        "representatives": 49,
+        "wordNodes": 129,
+        "solutionLengthUpperBound": 65,
+        "samples": [
+          {
+            "moves": 37,
+            "stages": 9,
+            "planningMs": 0.1623700000000099
+          },
+          {
+            "moves": 32,
+            "stages": 8,
+            "planningMs": 0.18888899999990372
+          },
+          {
+            "moves": 45,
+            "stages": 10,
+            "planningMs": 0.2995730000000094
+          }
+        ],
+        "bytes": 7657,
+        "validationMs": 1.3772580000000971
+      }
+    },
+    {
+      "id": "tetraminx",
+      "compile": {
+        "schreierTests": 1132,
+        "compositions": 4249,
+        "rebuilds": 9,
+        "pairStates": 0,
+        "strongGenerators": 16,
+        "dagNodes": 249,
+        "estimatedPeakBytes": 70944,
+        "elapsedMs": 5.242974000000686,
+        "optimization": {
+          "elapsedMs": 12.641571000000113,
+          "changes": 44,
+          "candidates": 2086,
+          "passes": 2,
+          "generators": 120,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 56
+        }
+      },
+      "validation": {
+        "id": "tetraminx",
+        "status": "verified",
+        "representatives": 41,
+        "wordNodes": 107,
+        "solutionLengthUpperBound": 56,
+        "samples": [
+          {
+            "moves": 44,
+            "stages": 8,
+            "planningMs": 0.11064399999997931
+          },
+          {
+            "moves": 29,
+            "stages": 6,
+            "planningMs": 0.09601199999997334
+          },
+          {
+            "moves": 47,
+            "stages": 9,
+            "planningMs": 0.09971799999993891
+          }
+        ],
+        "bytes": 4764,
+        "validationMs": 0.6677279999998973
+      }
+    },
+    {
+      "id": "megaminx",
+      "compile": {
+        "schreierTests": 311337,
+        "compositions": 3952987,
+        "rebuilds": 52,
+        "pairStates": 0,
+        "strongGenerators": 99,
+        "dagNodes": 25605,
+        "estimatedPeakBytes": 7756896,
+        "elapsedMs": 8105.453916999999,
+        "optimization": {
+          "elapsedMs": 3016.7406409999994,
+          "changes": 3201,
+          "candidates": 26831,
+          "passes": 1,
+          "generators": 4389,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 1365
+        }
+      },
+      "validation": {
+        "id": "megaminx",
+        "status": "verified",
+        "representatives": 1502,
+        "wordNodes": 15959,
+        "solutionLengthUpperBound": 1365,
+        "samples": [
+          {
+            "moves": 696,
+            "stages": 42,
+            "planningMs": 2.7434900000000653
+          },
+          {
+            "moves": 617,
+            "stages": 46,
+            "planningMs": 2.5135989999999993
+          },
+          {
+            "moves": 697,
+            "stages": 48,
+            "planningMs": 2.2113930000000437
+          }
+        ],
+        "bytes": 811704,
+        "validationMs": 27.912953000000016
+      }
+    },
+    {
+      "id": "jing",
+      "compile": {
+        "schreierTests": 868,
+        "compositions": 3260,
+        "rebuilds": 11,
+        "pairStates": 0,
+        "strongGenerators": 18,
+        "dagNodes": 347,
+        "estimatedPeakBytes": 95840,
+        "elapsedMs": 2.7460720000090078,
+        "optimization": {
+          "elapsedMs": 24.939618999999766,
+          "changes": 79,
+          "candidates": 2292,
+          "passes": 2,
+          "generators": 147,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 72
+        }
+      },
+      "validation": {
+        "id": "jing",
+        "status": "verified",
+        "representatives": 44,
+        "wordNodes": 237,
+        "solutionLengthUpperBound": 72,
+        "samples": [
+          {
+            "moves": 65,
+            "stages": 8,
+            "planningMs": 1.7286880000000338
+          },
+          {
+            "moves": 30,
+            "stages": 5,
+            "planningMs": 0.2171610000000328
+          },
+          {
+            "moves": 43,
+            "stages": 6,
+            "planningMs": 0.3677539999999908
+          }
+        ],
+        "bytes": 6660,
+        "validationMs": 2.9998390000000654
+      }
+    },
+    {
+      "id": "skewb",
+      "compile": {
+        "schreierTests": 1176,
+        "compositions": 5603,
+        "rebuilds": 10,
+        "pairStates": 0,
+        "strongGenerators": 25,
+        "dagNodes": 733,
+        "estimatedPeakBytes": 168640,
+        "elapsedMs": 3.4727359999960754,
+        "optimization": {
+          "elapsedMs": 124.94246300000032,
+          "changes": 97,
+          "candidates": 5768,
+          "passes": 2,
+          "generators": 293,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 69
+        }
+      },
+      "validation": {
+        "id": "skewb",
+        "status": "verified",
+        "representatives": 52,
+        "wordNodes": 187,
+        "solutionLengthUpperBound": 69,
+        "samples": [
+          {
+            "moves": 62,
+            "stages": 11,
+            "planningMs": 0.3230079999999589
+          },
+          {
+            "moves": 31,
+            "stages": 6,
+            "planningMs": 0.45632499999999254
+          },
+          {
+            "moves": 43,
+            "stages": 9,
+            "planningMs": 0.18891000000007807
+          }
+        ],
+        "bytes": 7285,
+        "validationMs": 2.2193439999999782
+      }
+    },
+    {
+      "id": "masterskewb",
+      "compile": {
+        "schreierTests": 36289,
+        "compositions": 316143,
+        "rebuilds": 56,
+        "pairStates": 0,
+        "strongGenerators": 71,
+        "dagNodes": 19066,
+        "estimatedPeakBytes": 3544768,
+        "elapsedMs": 229.2627599999978,
+        "optimization": {
+          "elapsedMs": 2039.3545810000005,
+          "changes": 1140,
+          "candidates": 27874,
+          "passes": 3,
+          "generators": 1058,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 725
+        }
+      },
+      "validation": {
+        "id": "masterskewb",
+        "status": "verified",
+        "representatives": 247,
+        "wordNodes": 2381,
+        "solutionLengthUpperBound": 725,
+        "samples": [
+          {
+            "moves": 419,
+            "stages": 31,
+            "planningMs": 2.017080000000078
+          },
+          {
+            "moves": 552,
+            "stages": 37,
+            "planningMs": 0.7142969999999877
+          },
+          {
+            "moves": 339,
+            "stages": 28,
+            "planningMs": 0.8157070000000886
+          }
+        ],
+        "bytes": 81426,
+        "validationMs": 6.880586999999991
+      }
+    },
+    {
+      "id": "ultimate",
+      "compile": {
+        "schreierTests": 1956,
+        "compositions": 9384,
+        "rebuilds": 14,
+        "pairStates": 0,
+        "strongGenerators": 29,
+        "dagNodes": 1928,
+        "estimatedPeakBytes": 422144,
+        "elapsedMs": 8.344129999997676,
+        "optimization": {
+          "elapsedMs": 143.03810299999896,
+          "changes": 202,
+          "candidates": 7852,
+          "passes": 2,
+          "generators": 379,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 101
+        }
+      },
+      "validation": {
+        "id": "ultimate",
+        "status": "verified",
+        "representatives": 71,
+        "wordNodes": 359,
+        "solutionLengthUpperBound": 101,
+        "samples": [
+          {
+            "moves": 76,
+            "stages": 11,
+            "planningMs": 0.35351300000002084
+          },
+          {
+            "moves": 63,
+            "stages": 8,
+            "planningMs": 0.20565399999998135
+          },
+          {
+            "moves": 76,
+            "stages": 11,
+            "planningMs": 0.33302200000002813
+          }
+        ],
+        "bytes": 14751,
+        "validationMs": 1.7156389999998964
+      }
+    },
+    {
+      "id": "diamond",
+      "compile": {
+        "schreierTests": 505,
+        "compositions": 2273,
+        "rebuilds": 8,
+        "pairStates": 0,
+        "strongGenerators": 23,
+        "dagNodes": 615,
+        "estimatedPeakBytes": 148576,
+        "elapsedMs": 3.995059000008041,
+        "optimization": {
+          "elapsedMs": 34.466668999999456,
+          "changes": 91,
+          "candidates": 4120,
+          "passes": 2,
+          "generators": 256,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 48
+        }
+      },
+      "validation": {
+        "id": "diamond",
+        "status": "verified",
+        "representatives": 43,
+        "wordNodes": 153,
+        "solutionLengthUpperBound": 48,
+        "samples": [
+          {
+            "moves": 37,
+            "stages": 7,
+            "planningMs": 0.22095699999999852
+          },
+          {
+            "moves": 18,
+            "stages": 5,
+            "planningMs": 0.13627100000007886
+          },
+          {
+            "moves": 37,
+            "stages": 8,
+            "planningMs": 0.19159300000001167
+          }
+        ],
+        "bytes": 6560,
+        "validationMs": 1.0018330000000333
+      }
+    },
+    {
+      "id": "fto",
+      "compile": {
+        "schreierTests": 23861,
+        "compositions": 166822,
+        "rebuilds": 40,
+        "pairStates": 0,
+        "strongGenerators": 63,
+        "dagNodes": 4522,
+        "estimatedPeakBytes": 1141696,
+        "elapsedMs": 100.12877100000333,
+        "optimization": {
+          "elapsedMs": 1531.9119640000008,
+          "changes": 651,
+          "candidates": 30348,
+          "passes": 3,
+          "generators": 1052,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 593
+        }
+      },
+      "validation": {
+        "id": "fto",
+        "status": "verified",
+        "representatives": 228,
+        "wordNodes": 1781,
+        "solutionLengthUpperBound": 593,
+        "samples": [
+          {
+            "moves": 281,
+            "stages": 26,
+            "planningMs": 0.6180749999999762
+          },
+          {
+            "moves": 312,
+            "stages": 33,
+            "planningMs": 0.9676520000000437
+          },
+          {
+            "moves": 371,
+            "stages": 29,
+            "planningMs": 0.6405280000000175
+          }
+        ],
+        "bytes": 67307,
+        "validationMs": 5.138404000000037
+      }
+    },
+    {
+      "id": "crystal",
+      "compile": {
+        "schreierTests": 297509,
+        "compositions": 4722903,
+        "rebuilds": 52,
+        "pairStates": 0,
+        "strongGenerators": 99,
+        "dagNodes": 31380,
+        "estimatedPeakBytes": 8325120,
+        "elapsedMs": 11250.356574000001,
+        "optimization": {
+          "elapsedMs": 10032.429056,
+          "changes": 3972,
+          "candidates": 146701,
+          "passes": 1,
+          "generators": 5184,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 631
+        }
+      },
+      "validation": {
+        "id": "crystal",
+        "status": "verified",
+        "representatives": 1502,
+        "wordNodes": 5522,
+        "solutionLengthUpperBound": 631,
+        "samples": [
+          {
+            "moves": 274,
+            "stages": 45,
+            "planningMs": 2.6463549999999714
+          },
+          {
+            "moves": 254,
+            "stages": 43,
+            "planningMs": 2.520809999999983
+          },
+          {
+            "moves": 232,
+            "stages": 43,
+            "planningMs": 2.203651000000036
+          }
+        ],
+        "bytes": 628816,
+        "validationMs": 31.966910999999982
+      }
+    },
+    {
+      "id": "dino",
+      "compile": {
+        "schreierTests": 1334,
+        "compositions": 5592,
+        "rebuilds": 9,
+        "pairStates": 0,
+        "strongGenerators": 24,
+        "dagNodes": 336,
+        "estimatedPeakBytes": 97152,
+        "elapsedMs": 3.5306319999945117,
+        "optimization": {
+          "elapsedMs": 29.52875900000072,
+          "changes": 50,
+          "candidates": 3600,
+          "passes": 2,
+          "generators": 181,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 41
+        }
+      },
+      "validation": {
+        "id": "dino",
+        "status": "verified",
+        "representatives": 65,
+        "wordNodes": 115,
+        "solutionLengthUpperBound": 41,
+        "samples": [
+          {
+            "moves": 17,
+            "stages": 7,
+            "planningMs": 0.13880600000004506
+          },
+          {
+            "moves": 16,
+            "stages": 6,
+            "planningMs": 0.10827000000006137
+          },
+          {
+            "moves": 24,
+            "stages": 8,
+            "planningMs": 0.24646399999994628
+          }
+        ],
+        "bytes": 6563,
+        "validationMs": 0.9085150000000795
+      }
+    },
+    {
+      "id": "rainbow",
+      "compile": {
+        "schreierTests": 1334,
+        "compositions": 5592,
+        "rebuilds": 9,
+        "pairStates": 0,
+        "strongGenerators": 24,
+        "dagNodes": 336,
+        "estimatedPeakBytes": 183680,
+        "elapsedMs": 4.34861099999398,
+        "optimization": {
+          "elapsedMs": 26.54412500000035,
+          "changes": 50,
+          "candidates": 3600,
+          "passes": 2,
+          "generators": 181,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 41
+        }
+      },
+      "validation": {
+        "id": "rainbow",
+        "status": "verified",
+        "representatives": 65,
+        "wordNodes": 115,
+        "solutionLengthUpperBound": 41,
+        "samples": [
+          {
+            "moves": 17,
+            "stages": 7,
+            "planningMs": 0.21803299999999126
+          },
+          {
+            "moves": 16,
+            "stages": 6,
+            "planningMs": 0.3180600000000595
+          },
+          {
+            "moves": 24,
+            "stages": 8,
+            "planningMs": 0.3530719999999974
+          }
+        ],
+        "bytes": 13708,
+        "validationMs": 1.7941949999999451
+      }
+    },
+    {
+      "id": "rhombic",
+      "compile": {
+        "schreierTests": 22133,
+        "compositions": 129894,
+        "rebuilds": 26,
+        "pairStates": 0,
+        "strongGenerators": 43,
+        "dagNodes": 9528,
+        "estimatedPeakBytes": 1795200,
+        "elapsedMs": 105.96593899998697,
+        "optimization": {
+          "elapsedMs": 1143.667856,
+          "changes": 563,
+          "candidates": 30362,
+          "passes": 3,
+          "generators": 752,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 341
+        }
+      },
+      "validation": {
+        "id": "rhombic",
+        "status": "verified",
+        "representatives": 179,
+        "wordNodes": 1001,
+        "solutionLengthUpperBound": 341,
+        "samples": [
+          {
+            "moves": 224,
+            "stages": 18,
+            "planningMs": 0.4366860000000088
+          },
+          {
+            "moves": 260,
+            "stages": 20,
+            "planningMs": 0.47214899999994486
+          },
+          {
+            "moves": 187,
+            "stages": 18,
+            "planningMs": 0.5211820000000671
+          }
+        ],
+        "bytes": 42435,
+        "validationMs": 3.368374000000017
+      }
+    },
+    {
+      "id": "flatdiamond",
+      "compile": {
+        "schreierTests": 10756,
+        "compositions": 73743,
+        "rebuilds": 27,
+        "pairStates": 0,
+        "strongGenerators": 44,
+        "dagNodes": 5200,
+        "estimatedPeakBytes": 2908704,
+        "elapsedMs": 221.04099800000404,
+        "optimization": {
+          "elapsedMs": 1623.7979020000002,
+          "changes": 956,
+          "candidates": 42036,
+          "passes": 3,
+          "generators": 1034,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 304
+        }
+      },
+      "validation": {
+        "id": "flatdiamond",
+        "status": "verified",
+        "representatives": 213,
+        "wordNodes": 1147,
+        "solutionLengthUpperBound": 304,
+        "samples": [
+          {
+            "moves": 144,
+            "stages": 18,
+            "planningMs": 1.7753870000000234
+          },
+          {
+            "moves": 148,
+            "stages": 18,
+            "planningMs": 1.1190259999999626
+          },
+          {
+            "moves": 128,
+            "stages": 16,
+            "planningMs": 1.0536989999999378
+          }
+        ],
+        "bytes": 212829,
+        "validationMs": 8.975630999999908
+      }
+    },
+    {
+      "id": "cornerocta",
+      "compile": {
+        "schreierTests": 29159,
+        "compositions": 116784,
+        "rebuilds": 16,
+        "pairStates": 0,
+        "strongGenerators": 51,
+        "dagNodes": 2052,
+        "estimatedPeakBytes": 673920,
+        "elapsedMs": 84.53387600000133,
+        "optimization": {
+          "elapsedMs": 495.6668800000007,
+          "changes": 255,
+          "candidates": 26740,
+          "passes": 3,
+          "generators": 571,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 173
+        }
+      },
+      "validation": {
+        "id": "cornerocta",
+        "status": "verified",
+        "representatives": 177,
+        "wordNodes": 503,
+        "solutionLengthUpperBound": 173,
+        "samples": [
+          {
+            "moves": 102,
+            "stages": 20,
+            "planningMs": 0.7572709999999461
+          },
+          {
+            "moves": 79,
+            "stages": 15,
+            "planningMs": 0.5921370000000934
+          },
+          {
+            "moves": 52,
+            "stages": 11,
+            "planningMs": 0.4768550000000005
+          }
+        ],
+        "bytes": 44654,
+        "validationMs": 3.88493799999992
+      }
+    },
+    {
+      "id": "trajber",
+      "compile": {
+        "schreierTests": 25092,
+        "compositions": 124321,
+        "rebuilds": 31,
+        "pairStates": 0,
+        "strongGenerators": 48,
+        "dagNodes": 17884,
+        "estimatedPeakBytes": 3120384,
+        "elapsedMs": 67.29690299999493,
+        "optimization": {
+          "elapsedMs": 1445.3095489999996,
+          "changes": 788,
+          "candidates": 41966,
+          "passes": 3,
+          "generators": 1016,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 415
+        }
+      },
+      "validation": {
+        "id": "trajber",
+        "status": "verified",
+        "representatives": 185,
+        "wordNodes": 1423,
+        "solutionLengthUpperBound": 415,
+        "samples": [
+          {
+            "moves": 290,
+            "stages": 23,
+            "planningMs": 0.9280029999999897
+          },
+          {
+            "moves": 213,
+            "stages": 20,
+            "planningMs": 0.47583399999996345
+          },
+          {
+            "moves": 219,
+            "stages": 19,
+            "planningMs": 0.4934610000000248
+          }
+        ],
+        "bytes": 45176,
+        "validationMs": 4.410960999999929
+      }
+    },
+    {
+      "id": "jewel",
+      "compile": {
+        "schreierTests": 11479,
+        "compositions": 57174,
+        "rebuilds": 15,
+        "pairStates": 0,
+        "strongGenerators": 32,
+        "dagNodes": 1775,
+        "estimatedPeakBytes": 495680,
+        "elapsedMs": 37.632929999992484,
+        "optimization": {
+          "elapsedMs": 389.77353500000027,
+          "changes": 248,
+          "candidates": 24970,
+          "passes": 3,
+          "generators": 538,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 159
+        }
+      },
+      "validation": {
+        "id": "jewel",
+        "status": "verified",
+        "representatives": 159,
+        "wordNodes": 469,
+        "solutionLengthUpperBound": 159,
+        "samples": [
+          {
+            "moves": 95,
+            "stages": 13,
+            "planningMs": 0.2926429999999982
+          },
+          {
+            "moves": 103,
+            "stages": 16,
+            "planningMs": 0.42869500000006155
+          },
+          {
+            "moves": 89,
+            "stages": 13,
+            "planningMs": 0.4392599999999902
+          }
+        ],
+        "bytes": 31427,
+        "validationMs": 2.4096549999999297
+      }
+    },
+    {
+      "id": "pyramorphix",
+      "compile": {
+        "schreierTests": 1631,
+        "compositions": 9073,
+        "rebuilds": 9,
+        "pairStates": 0,
+        "strongGenerators": 26,
+        "dagNodes": 935,
+        "estimatedPeakBytes": 223328,
+        "elapsedMs": 4.736816000004183,
+        "optimization": {
+          "elapsedMs": 180.97286800000074,
+          "changes": 117,
+          "candidates": 14836,
+          "passes": 2,
+          "generators": 376,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 65
+        }
+      },
+      "validation": {
+        "id": "pyramorphix",
+        "status": "verified",
+        "representatives": 86,
+        "wordNodes": 194,
+        "solutionLengthUpperBound": 65,
+        "samples": [
+          {
+            "moves": 30,
+            "stages": 7,
+            "planningMs": 0.17547000000001844
+          },
+          {
+            "moves": 15,
+            "stages": 5,
+            "planningMs": 0.14546499999994467
+          },
+          {
+            "moves": 20,
+            "stages": 5,
+            "planningMs": 0.5850750000000744
+          }
+        ],
+        "bytes": 10994,
+        "validationMs": 1.4662599999999202
+      }
+    },
+    {
+      "id": "mastermorphix",
+      "compile": {
+        "schreierTests": 42724,
+        "compositions": 308419,
+        "rebuilds": 36,
+        "pairStates": 0,
+        "strongGenerators": 53,
+        "dagNodes": 18401,
+        "estimatedPeakBytes": 3426720,
+        "elapsedMs": 424.94318199998816,
+        "optimization": {
+          "elapsedMs": 2652.6380520000002,
+          "changes": 853,
+          "candidates": 54385,
+          "passes": 3,
+          "generators": 1082,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 544
+        }
+      },
+      "validation": {
+        "id": "mastermorphix",
+        "status": "verified",
+        "representatives": 244,
+        "wordNodes": 1636,
+        "solutionLengthUpperBound": 544,
+        "samples": [
+          {
+            "moves": 142,
+            "stages": 16,
+            "planningMs": 1.0613210000000208
+          },
+          {
+            "moves": 254,
+            "stages": 18,
+            "planningMs": 0.7059749999999667
+          },
+          {
+            "moves": 322,
+            "stages": 21,
+            "planningMs": 0.8590910000000349
+          }
+        ],
+        "bytes": 75240,
+        "validationMs": 6.440429999999992
+      }
+    },
+    {
+      "id": "helicopter",
+      "compile": {
+        "schreierTests": 23914,
+        "compositions": 119162,
+        "rebuilds": 30,
+        "pairStates": 0,
+        "strongGenerators": 41,
+        "dagNodes": 4614,
+        "estimatedPeakBytes": 927168,
+        "elapsedMs": 284.0242619999917,
+        "optimization": {
+          "elapsedMs": 118.08026299999983,
+          "changes": 180,
+          "candidates": 7560,
+          "passes": 2,
+          "generators": 333,
+          "unshortenedRepresentatives": 0,
+          "solutionLengthUpperBound": 306
+        }
+      },
+      "validation": {
+        "id": "helicopter",
+        "status": "verified",
+        "representatives": 157,
+        "wordNodes": 663,
+        "solutionLengthUpperBound": 306,
+        "samples": [
+          {
+            "moves": 158,
+            "stages": 17,
+            "planningMs": 0.3724809999999934
+          },
+          {
+            "moves": 160,
+            "stages": 20,
+            "planningMs": 0.76572299999998
+          },
+          {
+            "moves": 116,
+            "stages": 15,
+            "planningMs": 0.43587500000001
+          }
+        ],
+        "bytes": 29654,
+        "validationMs": 3.481892000000016
+      }
+    }
+  ]
+}

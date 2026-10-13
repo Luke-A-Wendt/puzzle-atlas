@@ -1,0 +1,803 @@
+{
+  "schemaVersion": 1,
+  "completedAt": "2026-10-13T00:20:06.826Z",
+  "scope": "Master Pyraminx, Kilominx, and final color-aligned Ghost Cube additions",
+  "method": "Bounded cache refinement; live-engine no-history solve and constrained-swap replay; complete legal-group order independently recomputed against every cached representative.",
+  "semantics": [
+    "Permutation arrays map each source address to its destination.",
+    "Every physical colored patch is represented; Ghost uses 168 abstract attachment addresses occupied by 61 patches, retaining complete piece and center orientation.",
+    "Cache coverage and upper bounds establish a finite solution for every legal modeled state. They do not certify globally shortest full solutions.",
+    "The selected constrained-swap acceptance witnesses are independently verified; their shortest status is established by complete BFS layers.",
+    "Bounded computation may leave other interactive requests unresolved, rather than misclassifying a legal request as impossible."
+  ],
+  "reproduction": {
+    "export": "node solver-backend/tools/export-models.cjs dist masterpyraminx kilominx ghost",
+    "cache": "Use solver-backend/tools/precompute-full.cjs, then bounded refineOne calls from tools/refine-caches.cjs (4000 ms for Master Pyraminx and Kilominx; 20000 ms for Ghost).",
+    "acceptance": "node solver-backend/tools/verify-additions.cjs masterpyraminx kilominx ghost",
+    "coverage": "auditModel(id) exported by solver-backend/tools/audit-complete-coverage.cjs checks bundled assets, every stored word and representative, and an independent complete stabilizer chain.",
+    "timing": "Recorded timings are environment-dependent. Optimizer budgets can produce different but verified representative choices."
+  },
+  "models": [
+    {
+      "id": "masterpyraminx",
+      "degree": 64,
+      "physicalStickerCount": 64,
+      "source": {
+        "engineFile": "games/masterpyraminx-engine.js",
+        "engineSha256": "f1adf58bc0bac9f364ba42ac8f25d9c37ae48829cadbc46b5133f1ccab20c893",
+        "movePermutationsSha256": "50817cf56affb8747b1a0ad1746b5ba3e6c863dfc32535997b84969047e8a9d7"
+      },
+      "bundledAssets": {
+        "cacheSha256": "d88b12fefdb6a47d55669832af4cac98cbd3b125f007d621ef8db5adf792c86f",
+        "modelSha256": "6c7522d478cc352a8a2f7f610cb369e7296cc2eb1d2d80162bf5266aee8d2c68",
+        "cacheBytes": 30128,
+        "modelBytes": 22128
+      },
+      "coverage": {
+        "id": "masterpyraminx",
+        "status": "complete_coverage_proved",
+        "cachedProductCount": "217225462874112000",
+        "representatives": 119,
+        "solutionLengthUpperBound": 208,
+        "exactLegalGroupOrder": "217225462874112000",
+        "proof": "Legal prefix-fixing representatives give distinct transversal products; their count equals an independently recomputed exact legal-group order.",
+        "elapsedMs": 60.576145,
+        "groupComputation": {
+          "schreierTests": 12920,
+          "compositions": 55491,
+          "rebuilds": 20,
+          "pairStates": 0,
+          "strongGenerators": 43,
+          "dagNodes": 898,
+          "estimatedPeakBytes": 395496
+        }
+      },
+      "acceptance": {
+        "id": "masterpyraminx",
+        "status": "verified",
+        "degree": 64,
+        "moves": 24,
+        "cacheBytes": 30128,
+        "modelBytes": 21618,
+        "compile": {
+          "schreierTests": 12844,
+          "compositions": 54216,
+          "rebuilds": 20,
+          "pairStates": 0,
+          "strongGenerators": 43,
+          "dagNodes": 1528,
+          "estimatedPeakBytes": 475904,
+          "elapsedMs": 67.80811700000001,
+          "optimization": {
+            "elapsedMs": 4001.9853810000004,
+            "changes": 352,
+            "candidates": 98872,
+            "passes": 2,
+            "generators": 12000,
+            "unshortenedRepresentatives": 0,
+            "seed": 20261012,
+            "solutionLengthUpperBound": 208
+          }
+        },
+        "certificate": {
+          "cachedProductCount": "217225462874112000",
+          "representatives": 119,
+          "solutionLengthUpperBound": 208
+        },
+        "engineChecks": {
+          "singleMoveChecks": 24,
+          "sequenceSteps": 160,
+          "bijectiveMoveChecks": 24,
+          "inverseChecks": 24,
+          "moveOrders": [
+            3
+          ]
+        },
+        "samples": [
+          {
+            "scrambleLength": 30,
+            "moves": 124,
+            "stages": 18,
+            "planningMs": 2.082363999999984
+          },
+          {
+            "scrambleLength": 60,
+            "moves": 135,
+            "stages": 18,
+            "planningMs": 1.2408669999999802
+          },
+          {
+            "scrambleLength": 120,
+            "moves": 113,
+            "stages": 17,
+            "planningMs": 0.9878229999999348
+          }
+        ],
+        "constrainedSwap": {
+          "moves": 3,
+          "held": 6,
+          "optimal": true,
+          "planningMs": 1.8120930000000044,
+          "independentWitnessMoves": 3,
+          "witnessDiscovery": {
+            "states": 98,
+            "transitions": 903,
+            "completedOrbits": 2,
+            "pointTransitions": 1536,
+            "pointOrbits": 12,
+            "elapsedMs": 0.6472579999999653
+          }
+        },
+        "eligibility": {
+          "status": "complete",
+          "planningMs": 11.158642999999756,
+          "operations": 30087
+        },
+        "elapsedMs": 2204.804373
+      },
+      "refinement": {
+        "id": "masterpyraminx",
+        "accepted": true,
+        "shorterRepresentatives": 74,
+        "elapsedMs": 4007.4748910000003,
+        "before": {
+          "upperBound": 1335,
+          "representativeMoves": 4991,
+          "mean": 605.15625,
+          "p95": 908,
+          "max": 943,
+          "samples": [
+            536,
+            903,
+            511,
+            612,
+            664,
+            603,
+            4,
+            908,
+            580,
+            667,
+            767,
+            312,
+            585,
+            782,
+            480,
+            943,
+            787,
+            529,
+            1,
+            865,
+            645,
+            872,
+            603,
+            735,
+            5,
+            379,
+            749,
+            509,
+            698,
+            623,
+            851,
+            657
+          ]
+        },
+        "proposed": {
+          "upperBound": 208,
+          "representativeMoves": 796,
+          "mean": 105.40625,
+          "p95": 158,
+          "max": 163,
+          "samples": [
+            100,
+            94,
+            119,
+            104,
+            121,
+            158,
+            4,
+            127,
+            30,
+            134,
+            113,
+            137,
+            117,
+            108,
+            39,
+            134,
+            141,
+            152,
+            1,
+            131,
+            127,
+            82,
+            141,
+            148,
+            5,
+            158,
+            106,
+            128,
+            157,
+            163,
+            5,
+            89
+          ]
+        },
+        "after": {
+          "upperBound": 208,
+          "representativeMoves": 796,
+          "mean": 105.40625,
+          "p95": 158,
+          "max": 163,
+          "samples": [
+            100,
+            94,
+            119,
+            104,
+            121,
+            158,
+            4,
+            127,
+            30,
+            134,
+            113,
+            137,
+            117,
+            108,
+            39,
+            134,
+            141,
+            152,
+            1,
+            131,
+            127,
+            82,
+            141,
+            148,
+            5,
+            158,
+            106,
+            128,
+            157,
+            163,
+            5,
+            89
+          ]
+        },
+        "bytesBefore": 30956,
+        "bytesAfter": 30128,
+        "optimizer": {
+          "elapsedMs": 4001.9853810000004,
+          "changes": 352,
+          "candidates": 98872,
+          "passes": 2,
+          "generators": 12000,
+          "unshortenedRepresentatives": 0,
+          "seed": 20261012,
+          "solutionLengthUpperBound": 208
+        },
+        "reason": "shorter_witnesses_and_no_benchmark_regression"
+      }
+    },
+    {
+      "id": "kilominx",
+      "degree": 60,
+      "physicalStickerCount": 60,
+      "source": {
+        "engineFile": "games/kilominx-engine.js",
+        "engineSha256": "daa4cd44101e949ce766e44011495e5509eea2f50649f947f42ea19d01a0fc98",
+        "movePermutationsSha256": "a25b1aa642fc7403074933bfa66e99f36d51afc0e84cab1d222e49878bc91cf5"
+      },
+      "bundledAssets": {
+        "cacheSha256": "b30e412cce55ffac0dff53813a12eb6d7279c643a2427e24673d6e44bc606d75",
+        "modelSha256": "41bf676dce3df3c1469aa556966fc5ea77dc6118315f25088027d68176d4d1ea",
+        "cacheBytes": 119168,
+        "modelBytes": 28476
+      },
+      "coverage": {
+        "id": "kilominx",
+        "status": "complete_coverage_proved",
+        "cachedProductCount": "1413834128545313800765440000",
+        "representatives": 605,
+        "solutionLengthUpperBound": 102,
+        "exactLegalGroupOrder": "1413834128545313800765440000",
+        "proof": "Legal prefix-fixing representatives give distinct transversal products; their count equals an independently recomputed exact legal-group order.",
+        "elapsedMs": 185.97159699999997,
+        "groupComputation": {
+          "schreierTests": 21222,
+          "compositions": 192348,
+          "rebuilds": 13,
+          "pairStates": 0,
+          "strongGenerators": 60,
+          "dagNodes": 4141,
+          "estimatedPeakBytes": 1024088
+        }
+      },
+      "acceptance": {
+        "id": "kilominx",
+        "status": "verified",
+        "degree": 60,
+        "moves": 48,
+        "cacheBytes": 119168,
+        "modelBytes": 27998,
+        "compile": {
+          "schreierTests": 21362,
+          "compositions": 184560,
+          "rebuilds": 13,
+          "pairStates": 0,
+          "strongGenerators": 60,
+          "dagNodes": 4589,
+          "estimatedPeakBytes": 1430240,
+          "elapsedMs": 331.72597,
+          "optimization": {
+            "elapsedMs": 4008.7992739999995,
+            "changes": 431,
+            "candidates": 155720,
+            "passes": 1,
+            "generators": 12000,
+            "unshortenedRepresentatives": 0,
+            "seed": 20261012,
+            "solutionLengthUpperBound": 102
+          }
+        },
+        "certificate": {
+          "cachedProductCount": "1413834128545313800765440000",
+          "representatives": 605,
+          "solutionLengthUpperBound": 102
+        },
+        "engineChecks": {
+          "singleMoveChecks": 48,
+          "sequenceSteps": 160,
+          "bijectiveMoveChecks": 48,
+          "inverseChecks": 48,
+          "moveOrders": [
+            5
+          ]
+        },
+        "samples": [
+          {
+            "scrambleLength": 30,
+            "moves": 73,
+            "stages": 19,
+            "planningMs": 1.1636029999999664
+          },
+          {
+            "scrambleLength": 60,
+            "moves": 78,
+            "stages": 19,
+            "planningMs": 1.0401409999999487
+          },
+          {
+            "scrambleLength": 120,
+            "moves": 76,
+            "stages": 18,
+            "planningMs": 1.1082120000000941
+          }
+        ],
+        "constrainedSwap": {
+          "moves": 4,
+          "held": 24,
+          "optimal": true,
+          "planningMs": 16.866164000000026,
+          "independentWitnessMoves": 4,
+          "witnessDiscovery": {
+            "states": 2003,
+            "transitions": 18728,
+            "completedOrbits": 2,
+            "pointTransitions": 2880,
+            "pointOrbits": 1,
+            "elapsedMs": 2.455337000000327
+          }
+        },
+        "eligibility": {
+          "status": "complete",
+          "planningMs": 31.46206499999971,
+          "operations": 256553
+        },
+        "elapsedMs": 1959.7860200000005
+      },
+      "refinement": {
+        "id": "kilominx",
+        "accepted": true,
+        "shorterRepresentatives": 236,
+        "elapsedMs": 4016.4953039999996,
+        "before": {
+          "upperBound": 892,
+          "representativeMoves": 4486,
+          "mean": 434.34375,
+          "p95": 789,
+          "max": 798,
+          "samples": [
+            734,
+            100,
+            158,
+            488,
+            469,
+            640,
+            789,
+            710,
+            266,
+            653,
+            282,
+            488,
+            279,
+            260,
+            410,
+            246,
+            424,
+            267,
+            496,
+            712,
+            572,
+            190,
+            743,
+            435,
+            663,
+            141,
+            466,
+            604,
+            798,
+            113,
+            3,
+            300
+          ]
+        },
+        "proposed": {
+          "upperBound": 102,
+          "representativeMoves": 1872,
+          "mean": 63.9375,
+          "p95": 81,
+          "max": 81,
+          "samples": [
+            47,
+            66,
+            71,
+            77,
+            59,
+            71,
+            60,
+            79,
+            65,
+            70,
+            58,
+            72,
+            39,
+            68,
+            71,
+            64,
+            73,
+            76,
+            77,
+            71,
+            79,
+            70,
+            81,
+            81,
+            7,
+            78,
+            62,
+            73,
+            63,
+            69,
+            3,
+            46
+          ]
+        },
+        "after": {
+          "upperBound": 102,
+          "representativeMoves": 1872,
+          "mean": 63.9375,
+          "p95": 81,
+          "max": 81,
+          "samples": [
+            47,
+            66,
+            71,
+            77,
+            59,
+            71,
+            60,
+            79,
+            65,
+            70,
+            58,
+            72,
+            39,
+            68,
+            71,
+            64,
+            73,
+            76,
+            77,
+            71,
+            79,
+            70,
+            81,
+            81,
+            7,
+            78,
+            62,
+            73,
+            63,
+            69,
+            3,
+            46
+          ]
+        },
+        "bytesBefore": 120086,
+        "bytesAfter": 119168,
+        "optimizer": {
+          "elapsedMs": 4008.7992739999995,
+          "changes": 431,
+          "candidates": 155720,
+          "passes": 1,
+          "generators": 12000,
+          "unshortenedRepresentatives": 0,
+          "seed": 20261012,
+          "solutionLengthUpperBound": 102
+        },
+        "reason": "shorter_witnesses_and_no_benchmark_regression"
+      }
+    },
+    {
+      "id": "ghost",
+      "degree": 168,
+      "physicalStickerCount": 61,
+      "source": {
+        "engineFile": "games/ghost-engine.js",
+        "engineSha256": "43c13a745d455977f4f93953895d008d339ee8fe7f0df873f32e2eb2c1194da0",
+        "movePermutationsSha256": "2059c2974facf7599d6c9b790c2e8b742a929d113a6a787b3d2a695edd9abadb"
+      },
+      "bundledAssets": {
+        "cacheSha256": "b54e9cddde3a3f0ad172d0f8289a2d1275ff211cbc39fda1bf23632d68a0c2cd",
+        "modelSha256": "ec0ad5b655f8d6fd0f1a851bd68f4018205dd92c90c1bd77c7c87d6f11ddced8",
+        "cacheBytes": 163612,
+        "modelBytes": 51399
+      },
+      "coverage": {
+        "id": "ghost",
+        "status": "complete_coverage_proved",
+        "cachedProductCount": "88580102706155225088000",
+        "representatives": 255,
+        "solutionLengthUpperBound": 368,
+        "exactLegalGroupOrder": "88580102706155225088000",
+        "proof": "Legal prefix-fixing representatives give distinct transversal products; their count equals an independently recomputed exact legal-group order.",
+        "elapsedMs": 251.63957399999993,
+        "groupComputation": {
+          "schreierTests": 35755,
+          "compositions": 210646,
+          "rebuilds": 27,
+          "pairStates": 0,
+          "strongGenerators": 44,
+          "dagNodes": 2987,
+          "estimatedPeakBytes": 1723360
+        }
+      },
+      "acceptance": {
+        "id": "ghost",
+        "status": "verified",
+        "degree": 168,
+        "moves": 18,
+        "cacheBytes": 163612,
+        "modelBytes": 50913,
+        "compile": {
+          "schreierTests": 30726,
+          "compositions": 178794,
+          "rebuilds": 29,
+          "pairStates": 0,
+          "strongGenerators": 46,
+          "dagNodes": 11617,
+          "estimatedPeakBytes": 3119392,
+          "elapsedMs": 243.815072,
+          "optimization": {
+            "elapsedMs": 20005.021805,
+            "changes": 1073,
+            "candidates": 314140,
+            "passes": 2,
+            "generators": 12000,
+            "unshortenedRepresentatives": 0,
+            "seed": 20261012,
+            "solutionLengthUpperBound": 368
+          }
+        },
+        "certificate": {
+          "cachedProductCount": "88580102706155225088000",
+          "representatives": 255,
+          "solutionLengthUpperBound": 368
+        },
+        "engineChecks": {
+          "singleMoveChecks": 18,
+          "sequenceSteps": 160,
+          "bijectiveMoveChecks": 18,
+          "inverseChecks": 18,
+          "moveOrders": [
+            4,
+            2
+          ]
+        },
+        "samples": [
+          {
+            "scrambleLength": 30,
+            "moves": 187,
+            "stages": 21,
+            "planningMs": 2.5903849999999977
+          },
+          {
+            "scrambleLength": 60,
+            "moves": 203,
+            "stages": 19,
+            "planningMs": 1.9450140000000147
+          },
+          {
+            "scrambleLength": 120,
+            "moves": 242,
+            "stages": 19,
+            "planningMs": 1.4637969999999996
+          }
+        ],
+        "constrainedSwap": {
+          "moves": 3,
+          "held": 41,
+          "optimal": true,
+          "planningMs": 2.211264,
+          "independentWitnessMoves": 3,
+          "witnessDiscovery": {
+            "states": 216,
+            "transitions": 1233,
+            "completedOrbits": 2,
+            "pointTransitions": 3024,
+            "pointOrbits": 17,
+            "elapsedMs": 0.6062780000000032
+          }
+        },
+        "eligibility": {
+          "status": "complete",
+          "planningMs": 18.068911999999983,
+          "operations": 89720
+        },
+        "elapsedMs": 187.80578500000001
+      },
+      "refinement": {
+        "id": "ghost",
+        "accepted": true,
+        "shorterRepresentatives": 191,
+        "elapsedMs": 20015.622889000002,
+        "before": {
+          "upperBound": 59086,
+          "representativeMoves": 151069,
+          "mean": 26655.5625,
+          "p95": 41688,
+          "max": 43002,
+          "samples": [
+            4509,
+            5782,
+            43002,
+            25411,
+            35494,
+            30479,
+            17497,
+            31059,
+            33011,
+            13023,
+            41019,
+            28669,
+            6965,
+            14476,
+            37811,
+            37085,
+            28486,
+            41563,
+            40651,
+            33220,
+            25144,
+            10578,
+            22185,
+            41688,
+            2,
+            37213,
+            32945,
+            28116,
+            6668,
+            30584,
+            41609,
+            27034
+          ]
+        },
+        "proposed": {
+          "upperBound": 368,
+          "representativeMoves": 1916,
+          "mean": 196.6875,
+          "p95": 257,
+          "max": 300,
+          "samples": [
+            11,
+            256,
+            211,
+            257,
+            218,
+            247,
+            6,
+            203,
+            181,
+            300,
+            253,
+            246,
+            231,
+            62,
+            169,
+            191,
+            202,
+            184,
+            257,
+            234,
+            133,
+            232,
+            243,
+            238,
+            2,
+            228,
+            234,
+            199,
+            223,
+            207,
+            179,
+            257
+          ]
+        },
+        "after": {
+          "upperBound": 368,
+          "representativeMoves": 1916,
+          "mean": 196.6875,
+          "p95": 257,
+          "max": 300,
+          "samples": [
+            11,
+            256,
+            211,
+            257,
+            218,
+            247,
+            6,
+            203,
+            181,
+            300,
+            253,
+            246,
+            231,
+            62,
+            169,
+            191,
+            202,
+            184,
+            257,
+            234,
+            133,
+            232,
+            243,
+            238,
+            2,
+            228,
+            234,
+            199,
+            223,
+            207,
+            179,
+            257
+          ]
+        },
+        "bytesBefore": 231358,
+        "bytesAfter": 163612,
+        "optimizer": {
+          "elapsedMs": 20005.021805,
+          "changes": 1073,
+          "candidates": 314140,
+          "passes": 2,
+          "generators": 12000,
+          "unshortenedRepresentatives": 0,
+          "seed": 20261012,
+          "solutionLengthUpperBound": 368
+        },
+        "reason": "shorter_witnesses_and_no_benchmark_regression"
+      }
+    }
+  ]
+}

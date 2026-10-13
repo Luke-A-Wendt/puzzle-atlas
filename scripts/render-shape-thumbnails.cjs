@@ -1,0 +1,3 @@
+const fs=require('fs'),path=require('path'),{createCanvas}=require('@napi-rs/canvas');
+const base=path.resolve(__dirname,'../dist'),E=require(base+'/games/shape-engine.js');require(base+'/games/shape-bsp.js');const R=require(base+'/games/shape-renderer.js');
+for(const type of E.types){const model=E.create(type),canvas=createCanvas(960,720),ctx=canvas.getContext('2d'),view=['pyramorphix','mastermorphix'].includes(type)?{yaw:.80,pitch:.57,zoom:1.14}:type==='flatdiamond'?{yaw:-.38,pitch:.48,zoom:1.10}:{yaw:-.62,pitch:.48,zoom:1.13};R.render(ctx,model,{width:960,height:720,labels:false,highlight:false,view});fs.writeFileSync(base+'/assets/'+type+'.png',canvas.toBuffer('image/png'));console.log(type);}

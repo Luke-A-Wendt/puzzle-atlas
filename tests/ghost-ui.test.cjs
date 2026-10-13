@@ -1,0 +1,20 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),path=require('node:path');
+const {createHarness}=require('./game-harness.cjs');
+test('Ghost page keeps mirror, live piece identities, exact move playback and solver bridge wired',()=>{
+ const app=createHarness({htmlPath:path.resolve(__dirname,'../dist/games/ghost.html'),bundled:true,speed:5});
+ const api=app.context.PUZZLE_API;
+ assert(app.snapshot().solved);assert.equal(app.snapshot().pieces.length,26);
+ assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,61);
+ assert.equal(typeof app.context.PUZZLE_SOLVER_BRIDGE.refreshControls,'function');
+ assert.equal(app.elements.get('mirrorMode').hidden,false);
+ assert(api.move('R'));app.frame(5);assert(app.snapshot().animating);app.complete();assert(!app.snapshot().solved);
+ app.click('undo');app.complete();assert(app.snapshot().solved);
+ assert(api.runMoves("U F R2 L' B D2"));app.complete();assert(!app.snapshot().solved);
+ const state=JSON.stringify(app.snapshot().pieces);
+ app.click('pieceLabels');app.frame(0);assert.equal(app.elements.get('pieceLabels').attributes['aria-pressed'],'true');
+ app.click('mirrorMode');app.frame(0);assert(app.snapshot().mirrorMode);assert(app.elements.get('ringPanel').hidden);
+ assert.equal(JSON.stringify(app.snapshot().pieces),state,'mirror preserves state');
+ app.click('mirrorMode');app.frame(0);assert(!app.snapshot().mirrorMode);assert(!app.elements.get('ringPanel').hidden);
+ api.reset();app.frame(0);assert(app.snapshot().solved);
+});

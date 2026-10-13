@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Megaminx · Puzzle Atlas</title>
+<meta name="description" content="Play a Megaminx through twelve interactive rings, with a live 3D puzzle, seeded scrambles and an animated solve journal.">
+<link rel="stylesheet" href="game-theme.css">
+<link rel="stylesheet" href="constrained-solver.css">
+<link rel="stylesheet" href="play-timer.css"></head>
+<body class="game-megaminx">
+<main class="app" id="puzzleApp">
+
+<section class="panel action-panel" aria-label="Game controls"><div class="action-group"><button id="randomize" class="primary"><span class="icon">⤨</span>Randomize</button><button id="solve"><span class="icon">✦</span>Auto solve</button><button id="pause" hidden>Pause</button><button id="undo" class="outline">↶ Undo</button><button id="reset" class="outline">Reset</button></div><div class="action-meta"><span id="status" class="status" role="status">● Solved</span><div class="seedbox"><span id="seedLabel">Start solved, or try a new scramble.</span><br><code id="seed">NO SEED YET</code></div></div></section>
+<div class="workspace">
+<section class="panel" id="ringPanel"><div class="panel-head ring-panel-head"><h2>Ring map</h2><button id="ringFocus" class="small outline" aria-pressed="true">Show all rings</button><button id="ringPanelHide" class="small outline" type="button" aria-expanded="true" aria-controls="ringPanel">← Hide ring map</button></div><div class="canvas-wrap ring-wrap"><canvas id="rings" tabindex="0" aria-label="Connected rings show where each color moves. Click a ring to select its axis, then drag along it or use the arrow keys."></canvas><div class="canvas-caption">Bright rings show the selected turn</div></div><div class="ring-controls"><div class="selector" id="selector"></div><div class="turn-bar"><button id="ccw" title="Turn the selected ring counterclockwise"><span class="direction">↶</span>Ring left</button><div class="turn-selected"><strong id="selectedName">A</strong><span>Selected</span></div><button id="cw" title="Turn the selected ring clockwise"><span class="direction">↷</span>Ring right</button></div><p id="ringHint" class="ring-hint">Arrows rotate the ring as seen here. Each step is a 72° face turn.</p></div></section>
+<section class="panel"><div class="panel-head view-panel-head"><h2>3D puzzle</h2><span class="tag">LIVE 3D VIEW</span><div class="view-panel-controls" id="ringTab" role="group" aria-label="View panels"><button id="ringPanelToggle" class="small outline" type="button" aria-expanded="false" aria-controls="ringPanel" hidden>Show ring map →</button><button id="guidePanelToggle" class="small outline" type="button" aria-expanded="false" hidden>Show guide ←</button></div></div><div class="canvas-wrap cube-wrap"><canvas id="cube" tabindex="0" aria-label="3D Megaminx. Drag to rotate the view, or focus and use arrow keys. Use plus and minus to zoom."></canvas><div class="cube-top"><button id="faceView" class="small outline">View selected face</button> <button id="homeView" class="small outline">Reset view</button></div><div class="canvas-caption">Drag to look around · scroll or pinch to zoom</div></div><div class="notation-panel" aria-label="Conventional notation moves"><div class="notation-heading"><span>Notation moves</span><div class="view-speed-control"><label for="speed">Animation</label><input id="speed" type="range" min="1" max="5" value="3" aria-label="Animation speed"><span id="speedText">Normal</span></div><label class="inverse-toggle"><input id="notationInverse" type="checkbox" aria-label="Use inverse notation moves"> Inverse (′)</label></div><div class="notation-buttons" id="notationButtons"></div><p>Clockwise looking at the named face. Use these buttons for the guide.</p></div><div class="cube-bottom"><div class="metric"><div><strong id="moveCount">0</strong><span>Your turns</span></div><div><strong id="solvedFaces">12 / 12</strong><span>Uniform faces</span></div></div><div class="legend" id="legend" aria-label="Face colors"></div></div></section>
+</div>
+
+<section class="panel log-panel"><details class="journal" id="journalPanel"><summary aria-label="Move journal and keyboard help"><h2 id="logTitle">Move journal</h2><span class="journal-hint">Moves &amp; help</span></summary><div id="log" class="log" role="log" aria-live="off"><span class="empty">Your moves will appear here. Try a ring or press Randomize.</span></div><p id="message" class="message" role="status">Every ring turn is a legal Megaminx move.</p><details class="journal-help"><summary>How to play &amp; keyboard shortcuts</summary><p id="cubeNote">Select a face letter to highlight the stickers that turn together.</p><p>Make each of the twelve faces a single color. Select a face letter, then use the direction buttons or drag its highlighted ring to make one 72° turn.</p><p>Drag the Megaminx to look around. Scroll or pinch to zoom. Click a visible face’s center letter to select its ring. “View selected face” brings that face to the front.</p><p>The map shows all 132 stickers, including the fixed centers. Shared rings connect the color nodes, and every moving dot follows its highlighted path to the next position. Solved face colors form clear clusters. The selected rings stay bright while the other tracks fade into the background. “Show all rings” reveals the surrounding paths; “Focus selected rings” restores the quieter view.</p><p>Use <kbd>←</kbd> and <kbd>→</kbd> for the selected ring. Keys <kbd>A</kbd> through <kbd>L</kbd> turn the matching face; hold <kbd>Shift</kbd> for the inverse. Face names A–L are local to this game. A prime (′) means counterclockwise viewed from outside that face; 2 means two 72° steps. The arrow buttons follow the ring’s on-screen direction, which can differ from a face’s notation.</p><p>Randomize continues from the current position and applies 40 seeded legal face turns with a fresh seed each time. Auto solve opens the Constrained Solver and works from the current arrangement, pausing between stages and highlighting solved nodes that later stages protect. It does not need recorded moves or promise the shortest solution; difficult states may reach the computation limit. With the 3D view focused, arrow keys rotate the camera and <kbd>+</kbd>/<kbd>−</kbd> zoom. Your puzzle state stays in this browser tab.</p></details></details><div class="log-tools"><button id="copy" class="small outline">Copy moves</button></div></section>
+
+</main><div class="toast" id="toast" role="status"></div>
+<script>
+/* Megaminx geometry and exact legal face permutations. No external dependencies.
+   A–L are game-local face labels; a positive move is clockwise as seen outside.
+   The dodecahedron is the intersection n.face · p <= 1, with icosahedral normals. */
+(function (root) {
+  'use strict';
+  const TAU = Math.PI * 2, EPS = 1e-9, CUT = 0.70;
+  const add = (a,b) => a.map((x,i) => x+b[i]);
+  const sub = (a,b) => a.map((x,i) => x-b[i]);
+  const scale = (v,k) => v.map(x => x*k);
+  const dot = (a,b) => a.reduce((s,x,i) => s+x*b[i],0);
+  const cross = (a,b) => [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const length = v => Math.hypot(...v);
+  const unit = v => scale(v,1/length(v));
+  const distance = (a,b) => length(sub(a,b));
+  function rotate(v,axis,angle) {
+    const n = unit(axis), c = Math.cos(angle), s = Math.sin(angle);
+    return add(add(scale(v,c),scale(cross(n,v),s)),scale(n,dot(n,v)*(1-c)));
+  }
+  const colors = ['#f8fafc','#e54147','#27b985','#3286ee','#9967e8','#ffd251',
+                  '#f38838','#6dd8db','#f18fbd','#b6d657','#926750','#747d90'];
+  const colorNames = ['White','Red','Emerald','Blue','Violet','Yellow',
+                      'Orange','Aqua','Pink','Lime','Brown','Slate'];
+  const normals = [[0,1,0]];
+  const h = 1/Math.sqrt(5), r = 2/Math.sqrt(5);
+  for (let k=0;k<5;k++) normals.push([r*Math.sin(k*TAU/5),h,r*Math.cos(k*TAU/5)]);
+  for (let k=0;k<5;k++) normals.push([r*Math.sin((k+.5)*TAU/5),-h,r*Math.cos((k+.5)*TAU/5)]);
+  normals.push([0,-1,0]);
+  const faces = normals.map((normal,index) => {
+    const u = unit(sub([1,0,0],scale(normal,normal[0]))), v = cross(normal,u);
+    return {id:String.fromCharCode(65+index),index,name:colorNames[index],color:colors[index],
+            normal,center:normal.slice(),u,v,vertices:[],neighbors:[]};
+  });
+  const configs = Object.fromEntries(faces.map(f => [f.id,f]));
+  const vertices = [];
+  for (let i=0;i<12;i++) for (let j=i+1;j<12;j++) for (let k=j+1;k<12;k++) {
+    const a=normals[i],b=normals[j],c=normals[k],bc=cross(b,c),det=dot(a,bc);
+    if (Math.abs(det)<EPS) continue;
+    const p=scale(add(add(bc,cross(c,a)),cross(a,b)),1/det);
+    if (normals.every(n => dot(n,p)<=1+EPS)) vertices.push({p,faces:[faces[i].id,faces[j].id,faces[k].id]});
+  }
+  for (const f of faces) {
+    const angle = p => Math.atan2(dot(sub(p,f.center),f.v),dot(sub(p,f.center),f.u));
+    f.vertices=vertices.filter(v => v.faces.includes(f.id)).map(v => v.p).sort((a,b) => angle(a)-angle(b));
+    f.neighbors=faces.filter(g => Math.abs(dot(g.normal,f.normal)-h)<EPS)
+      .sort((a,b) => angle(a.normal)-angle(b.normal)).map(g => g.id);
+  }
+  function cleanPolygon(poly) {
+    const result=[];
+    for (const p of poly) if (!result.length || distance(p,result[result.length-1])>1e-8) result.push(p);
+    if (result.length>1 && distance(result[0],result[result.length-1])<1e-8) result.pop();
+    return result;
+  }
+  function clip(poly,n,threshold,high) {
+    const out=[], sign=high?1:-1;
+    for (let i=0;i<poly.length;i++) {
+      const a=poly[i],b=poly[(i+1)%poly.length], da=sign*(dot(a,n)-threshold), db=sign*(dot(b,n)-threshold);
+      if (da>=-EPS) out.push(a);
+      if ((da>EPS && db<-EPS)||(da<-EPS && db>EPS)) out.push(add(a,scale(sub(b,a),da/(da-db))));
+    }
+    return cleanPolygon(out);
+  }
+  function centroid(poly,n) {
+    const a=poly[0]; let area=0,total=[0,0,0];
+    for (let i=1;i<poly.length-1;i++) {
+      const b=poly[i],c=poly[i+1],tri=Math.abs(dot(cross(sub(b,a),sub(c,a)),n))/2;
+      area+=tri; total=add(total,scale(add(add(a,b),c),tri/3));
+    }
+    return {area,p:area?scale(total,1/area):a};
+  }
+  // Solver identities are topological, never an angular-sort side effect.
+  // Tiny browser/libm differences can put a centroid on opposite sides of
+  // atan2's -pi/+pi seam, cyclically changing an entire face's sticker IDs.
+  // Each row is the published order of center, edges, then corners, keyed by
+  // the sorted names of the faces meeting at that piece. Keep these IDs stable
+  // so the integer move model and its precomputed stabilizer cache agree on
+  // every device. Geometry may vary by a few ulps without changing identity.
+  const canonicalPieces={
+    A:'A AF AB AC AD AE ABF ABC ACD ADE AEF',
+    B:'B BK BG BC AB BF BFK BGK BCG ABC ABF',
+    C:'C BC CG CH CD AC ABC BCG CGH CDH ACD',
+    D:'D AD CD DH DI DE ADE ACD CDH DHI DEI',
+    E:'E EF AE DE EI EJ AEF ADE DEI EIJ EFJ',
+    F:'F FK BF AF EF FJ FJK BFK ABF AEF EFJ',
+    G:'G GK GL GH CG BG GKL GHL CGH BCG BGK',
+    H:'H HI DH CH GH HL HIL DHI CDH CGH GHL',
+    I:'I EI DI HI IL IJ EIJ DEI DHI HIL IJL',
+    J:'J FJ EJ IJ JL JK EFJ EIJ IJL JKL FJK',
+    K:'K JK KL GK BK FK JKL GKL BGK BFK FJK',
+    L:'L JL IL HL GL KL IJL HIL GHL GKL JKL'
+  };
+  const slots=[];
+  for (const f of faces) {
+    const faceSlots=[];
+    for (let mask=0;mask<32;mask++) {
+      let poly=f.vertices.slice(); const pieceFaces=[f.id];
+      for (let i=0;i<5 && poly.length>=3;i++) {
+        const high=Boolean(mask&(1<<i)),g=configs[f.neighbors[i]];
+        if (high) pieceFaces.push(g.id);
+        poly=clip(poly,g.normal,CUT,high);
+      }
+      if (poly.length<3) continue;
+      const c=centroid(poly,f.normal); if (c.area<1e-8) continue;
+      if (pieceFaces.length>3) throw new Error('Invalid Megaminx cut geometry');
+      pieceFaces.sort();
+      const kind=['','center','edge','corner'][pieceFaces.length];
+      faceSlots.push({face:f.id,p:c.p,normal:f.normal.slice(),regionPolygon:poly,
+        polygon:poly.map(p => add(c.p,scale(sub(p,c.p),.90))),kind,pieceFaces,area:c.area});
+    }
+    const byPiece=new Map(faceSlots.map(s=>[s.kind+':'+s.pieceFaces.join(''),s]));
+    const canonical=canonicalPieces[f.id].split(' ');
+    if (byPiece.size!==faceSlots.length || faceSlots.length!==canonical.length)
+      throw new Error('Megaminx face topology is not a bijection');
+    for (const name of canonical) {
+      const key=['','center','edge','corner'][name.length]+':'+name,s=byPiece.get(key);
+      if (!s) throw new Error('Missing canonical Megaminx sticker '+f.id+':'+name);
+      byPiece.delete(key);s.id=slots.length;slots.push(s);
+    }
+    if (byPiece.size) throw new Error('Unknown Megaminx sticker topology');
+  }
+  if (vertices.length!==20 || slots.length!==132 || faces.some(f => slots.filter(s => s.face===f.id).length!==11))
+    throw new Error('Invalid Megaminx geometry');
+  // Each turn is computed once as a geometric bijection of immutable sticker slots.
+  const permutations={};
+  for (const f of faces) {
+    const map=slots.map(s => {
+      if (!s.pieceFaces.includes(f.id)) return s.id;
+      const p=rotate(s.p,f.normal,-TAU/5),normal=rotate(s.normal,f.normal,-TAU/5);
+      let nearest=-1,best=Infinity;
+      for (const target of slots) {
+        const d=distance(target.p,p)+distance(target.normal,normal);
+        if (d<best) {nearest=target.id;best=d;}
+      }
+      if (best>1e-7) throw new Error('Face turn does not map to a legal sticker slot');
+      return nearest;
+    });
+    if (new Set(map).size!==132) throw new Error('Face turn is not a bijection');
+    permutations[f.id]=map;
+  }
+  function normalizeMove(move) {
+    if (!move || !configs[move.face]) throw new Error('Invalid Megaminx face');
+    const dir=move.dir===undefined?1:move.dir, turns=move.turns===undefined?1:move.turns;
+    if ((dir!==1 && dir!==-1) || (turns!==1 && turns!==2)) throw new Error('Invalid Megaminx turn');
+    return {face:move.face,dir,turns};
+  }
+  function makeSolved() {return slots.map(s => ({id:s.id,slot:s.id,color:configs[s.face].color}));}
+  function selected(sticker,move) {return slots[sticker.slot].pieceFaces.includes(normalizeMove(move).face);}
+  function applyMove(state,move) {
+    const m=normalizeMove(move),map=permutations[m.face],count=m.dir>0?m.turns:5-m.turns;
+    return state.map(sticker => {
+      let slot=sticker.slot; for (let i=0;i<count;i++) slot=map[slot];
+      return {id:sticker.id,slot,color:sticker.color};
+    });
+  }
+  function invertMove(move) {const m=normalizeMove(move);return {face:m.face,dir:-m.dir,turns:m.turns};}
+  function moveLabel(move) {const m=normalizeMove(move);return m.face+(m.turns===2?'2':'')+(m.dir<0?'′':'');}
+  function isSolved(state) {
+    if (!Array.isArray(state) || state.length!==132) return false;
+    return state.every(s => slots[s.slot] && s.color===configs[slots[s.slot].face].color);
+  }
+  // String-seeded 32-bit generator, stable across browsers and sessions.
+  function seededRandom(seed) {
+    let a=2166136261;
+    for (const char of String(seed)) {a^=char.charCodeAt(0);a=Math.imul(a,16777619);}
+    return function() {
+      a|=0; a=(a+0x6D2B79F5)|0;
+      let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t;
+      return ((t^(t>>>14))>>>0)/4294967296;
+    };
+  }
+  function scramble(seed,count=40) {
+    if (!Number.isInteger(count) || count<0) throw new Error('Invalid scramble length');
+    const random=seededRandom(seed),moves=[];let previous=null;
+    for (let i=0;i<count;i++) {
+      const candidates=faces.filter(f => f.id!==previous);
+      const face=candidates[Math.floor(random()*candidates.length)].id;
+      moves.push({face,dir:random()<.5?-1:1,turns:random()<.5?1:2});previous=face;
+    }
+    return moves;
+  }
+  const polyhedron={vertices:vertices.map(v => v.p),vertexFaces:vertices.map(v => v.faces),faces,cut:CUT,inradius:1};
+  root.MegaEngine=Object.freeze({faces,configs,colors,slots,polyhedron,makeSolved,normalizeMove,
+    applyMove,invertMove,moveLabel,isSolved,selected,scramble,seededRandom,rotate,
+    vector:Object.freeze({add,sub,scale,dot,cross,length,unit,distance})});
+  if (typeof module!=='undefined' && module.exports) module.exports=root.MegaEngine;
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+</script>
+<script src="balanced-ring-projection.js"></script>
+<script src="connected-ring-belts.js"></script>
+<script src="connected-rings.js"></script>
+<script src="face-grouped-rings.js"></script>
+<script>window.MegaRings=FaceGroupedRings.createFixed(MegaEngine);</script>
+<script>
+(function(){
+'use strict';
+const E=MegaEngine,G=MegaRings,$=id=>document.getElementById(id);
+const ringsCanvas=$('rings'),cubeCanvas=$('cube'),rc=ringsCanvas.getContext('2d'),cc=cubeCanvas.getContext('2d');
+let stickers=E.makeSolved(),history=[],journal=[],selected='A',userTurns=0,seed=null,seedCounter=0;
+let ringFocused=true;
+let mode='idle',queue=[],animation=null,paused=false,pauseAt=0,sequenceTotal=0,sequenceDone=0,stopRequested=false,dirty=true;
+let view={yaw:-.34,pitch:.38,zoom:1},ringDrag=null,cubePointers=new Map(),pinchDistance=0;
+let ringViewport={scale:1,ox:0,oy:0},sizes={rings:{w:500,h:500},cube:{w:500,h:400}},lastTimestamp=0;
+const mod=(x,n)=>((x%n)+n)%n;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t*t*(3-2*t);
+function toast(text){$('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),2000);}
+function makeSeed(){seedCounter++;const bytes=new Uint32Array(2);if(globalThis.crypto&&crypto.getRandomValues)crypto.getRandomValues(bytes);else{bytes[0]=(Math.random()*4294967296)>>>0;bytes[1]=Date.now()>>>0;}return Array.from(bytes,n=>n.toString(16).padStart(8,'0')).join('-').toUpperCase()+'-'+seedCounter.toString(36).toUpperCase();}
+function currentMove(){return animation?animation.move:null;}
+function locked(){return !!animation||mode!=='idle';}
+function uniformFaces(){const groups=new Map();stickers.forEach(s=>{const k=E.slots[s.slot].face;if(!groups.has(k))groups.set(k,new Set());groups.get(k).add(s.color);});return [...groups.values()].filter(v=>v.size===1).length;}
+let scrambleSpeedActive=false;
+function updateUI(){
+ if(scrambleSpeedActive&&mode!=='scramble'){scrambleSpeedActive=false;$('speed').value='3';$('speedText').textContent='Normal';}
+ const solved=E.isSolved(stickers),busy=locked();
+ document.querySelectorAll('.notation-key').forEach(b=>b.disabled=busy);
+ $('status').className='status'+(busy?' busy':solved?'':' mixed');
+ $('status').textContent=busy?(paused?'Ⅱ Paused':mode==='solve'?'✦ Solving':mode==='scramble'?'⤨ Scrambling':mode==='algorithm'?'↻ Solving':'↻ Turning'):(solved?'● Solved':'● In play');
+ $('moveCount').textContent=userTurns;$('solvedFaces').textContent=uniformFaces()+' / 12';
+ $('selectedName').textContent=selected;
+ $('ringFocus').textContent=ringFocused?'Show all rings':'Focus selected rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
+ document.querySelectorAll('.ring-key').forEach(b=>{b.classList.toggle('active',b.dataset.face===selected);b.setAttribute('aria-pressed',String(b.dataset.face===selected));b.disabled=busy;});
+ $('ccw').disabled=busy;$('cw').disabled=busy;$('randomize').disabled=busy;
+ $('solve').disabled=busy||solved;$('undo').disabled=busy||!history.length;
+ $('pause').hidden=mode==='idle';$('pause').textContent=mode==='scramble'?'Stop':paused?'Resume':'Pause';$('pause').disabled=false;
+ $('copy').disabled=!journal.some(j=>j.move);
+ $('cubeNote').textContent=selected+' · '+E.configs[selected].name+' face. The layer turns its 15 neighboring stickers and the 10 stickers around its fixed face center.';
+ const cw={face:selected,dir:G.getRing(selected).cwDir},ccw=E.invertMove(cw);
+ $('cw').title='Clockwise on diagram · '+E.moveLabel(cw);$('ccw').title='Counterclockwise on diagram · '+E.moveLabel(ccw);
+ dirty=true;window.ConstrainedSolverUI?.syncTransport?.();
+}
+function setSelected(face){selected=face;updateUI();}
+function addLabel(label){journal.push({label});const el=document.createElement('div');el.className='log-label';el.textContent=label;$('log').appendChild(el);}
+function clearJournal(){journal=[];$('log').replaceChildren();}
+function addMove(move,source){
+ if(!journal.length)$('log').replaceChildren();
+ $('log').querySelectorAll('.current').forEach(n=>n.classList.remove('current'));
+ journal.push({move:E.normalizeMove(move),source});
+ const el=document.createElement('span');el.className='move current'+(source==='solve'?' solve':'');
+ const index=document.createElement('span');index.className='move-index';index.textContent=journal.filter(j=>j.move).length;
+ el.append(index,document.createTextNode(E.moveLabel(move).replace("'",'′')));$('log').appendChild(el);$('log').scrollTop=$('log').scrollHeight;
+}
+// Explicit puzzle turns always honor the speed chosen in this control.
+function duration(){return [0,1400,850,450,240,110][+$('speed').value];}
+function beginMove(move,source){
+ const m=E.normalizeMove(move);selected=m.face;ringDrag=null;
+ animation={move:m,source,before:stickers,after:E.applyMove(stickers,m),start:performance.now(),duration:duration()*(m.turns===2?1.35:1)};
+ updateUI();
+}
+function manual(move){if(locked())return;if(!journal.length)clearJournal();beginMove(move,'manual');}
+function turn(screenDirection){manual({face:selected,dir:screenDirection*G.getRing(selected).cwDir,turns:1});}
+function finishMove(){
+ const a=animation;stickers=a.after;animation=null;
+ if(a.source==='solve'||a.source==='undo')history.pop();else history.push(a.move);
+ if(a.source==='manual'||a.source==='algorithm')userTurns++;
+ if(a.source==='undo')userTurns=Math.max(0,userTurns-1);
+ addMove(a.move,a.source);
+ if(stopRequested){
+  if(mode!=='idle')sequenceDone++;
+  mode='idle';paused=false;stopRequested=false;
+  $('message').textContent='Stopped after completing the current move. Remaining moves were canceled.';
+  updateUI();return;
+ }
+ if(mode!=='idle'){
+  sequenceDone++;$('message').textContent=(mode==='solve'?'Solving':mode==='algorithm'?'Applying moves':'Scrambling')+' · '+sequenceDone+' / '+sequenceTotal+' · '+E.moveLabel(a.move);
+  if(!queue.length){const finished=mode;mode='idle';paused=false;
+   $('message').textContent=finished==='solve'?'Solved. Reversed '+sequenceTotal+' recorded moves.':finished==='algorithm'?'Practice sequence complete. All moves are in the journal.':'Scramble ready. 40 legal turns from solved — your move.';
+   if(finished==='solve'){$('logTitle').textContent='Move journal · solved';toast('Solved — every move has been printed below.');}
+  }
+ }else $('message').textContent=E.isSolved(stickers)?'Solved. All twelve faces are uniform.':(a.source==='undo'?'Undid the last recorded turn.':'Played '+E.moveLabel(a.move)+'.');
+ updateUI();
+}
+function startSequence(moves,type){if(type==='scramble'){scrambleSpeedActive=true;$('speed').value='5';$('speedText').textContent='Fast';}stopRequested=false;mode=type;queue=moves.slice();sequenceTotal=queue.length;sequenceDone=0;paused=false;const first=queue.shift();if(first)beginMove(first,type);else{mode='idle';updateUI();}}
+function randomize(){
+ if(locked())return;seed=makeSeed();
+ const moves=E.scramble(seed,40);addLabel('Scramble · 40 legal turns');$('seedLabel').textContent='Fresh seed · continues current state';$('seed').textContent=seed;
+ $('logTitle').textContent='Move journal';$('message').textContent='Scrambling the current position…';startSequence(moves,'scramble');
+}
+function solve(){if(locked()||E.isSolved(stickers))return false;const solver=window.ConstrainedSolverUI;if(!solver||typeof solver.autoSolve!=='function'){toast('Constrained Solver is unavailable. Reload this puzzle to try again.');return false;}return solver.autoSolve();}
+function reset(){animation=null;queue=[];mode='idle';paused=false;sequenceTotal=0;sequenceDone=0;stopRequested=false;ringDrag=null;stickers=E.makeSolved();history=[];userTurns=0;seed=null;clearJournal();$('log').innerHTML='<span class="empty">Your moves will appear here. Try a ring or press Randomize.</span>';$('seedLabel').textContent='Start solved, or try a new scramble.';$('seed').textContent='NO SEED YET';$('logTitle').textContent='Move journal';$('message').textContent='Reset to the solved starting state.';updateUI();}
+// Cancel queued turns while committing the active turn at its exact legal endpoint.
+function stopAfterCurrentMove(){
+ if(!animation&&mode==='idle')return false;
+ queue=[];stopRequested=true;
+ if(paused){if(animation)animation.start+=performance.now()-pauseAt;paused=false;}
+ if(!animation){mode='idle';stopRequested=false;$('message').textContent='Stopped at a legal move boundary.';}
+ updateUI();return true;
+}
+function stopScrambleNow(){
+ if(mode!=='scramble')return false;
+ // State is committed only in finishMove; discard the uncommitted animation.
+ animation=null;queue=[];mode='idle';paused=false;stopRequested=false;ringDrag=null;
+ $('message').textContent='Randomizing stopped · '+sequenceDone+' completed turns. The unfinished turn was canceled.';
+ updateUI();return true;
+}
+function resumePlayback(){if(paused){if(animation)animation.start+=performance.now()-pauseAt;paused=false;updateUI();}}
+function togglePause(){if(window.ConstrainedSolverUI?.autoStopActive?.())return window.ConstrainedSolverUI.stopAuto();if(mode==='scramble')return stopScrambleNow();if(mode==='idle')return;if(paused){if(animation)animation.start+=performance.now()-pauseAt;paused=false;}else{pauseAt=performance.now();paused=true;}updateUI();}
+function resize(){for(const [name,canvas]of [['rings',ringsCanvas],['cube',cubeCanvas]]){const b=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);sizes[name]={w:b.width,h:b.height};canvas.width=Math.round(b.width*dpr);canvas.height=Math.round(b.height*dpr);canvas.getContext('2d').setTransform(dpr,0,0,dpr,0,0);}dirty=true;}
+function ringPoint(event){const b=ringsCanvas.getBoundingClientRect();return{x:(event.clientX-b.left-ringViewport.ox)/ringViewport.scale,y:(event.clientY-b.top-ringViewport.oy)/ringViewport.scale};}
+function nearestRing(p){return G.nearestRing(p,selected);}
+// Read-only overlay bridge: these are the exact marks from the existing draw pass.
+let solverRingNodes=[];
+window.PUZZLE_SOLVER_BRIDGE=Object.freeze({
+ viewport:()=>({x:ringViewport.ox??ringViewport.cx??0,y:ringViewport.oy??ringViewport.cy??0,scale:ringViewport.scale}),
+ nodes:()=>solverRingNodes.map(node=>({...node})),
+ refreshControls:updateUI,
+ requestRender:()=>{dirty=true;}
+});
+function drawRings(t){
+ solverRingNodes=[];
+ if(!(sizes.rings.w>40&&sizes.rings.h>40))return;
+ const result=G.render(rc,{width:sizes.rings.w,height:sizes.rings.h,selected,focus:ringFocused,state:animation?animation.before:stickers,animation,progress:t});ringViewport=result.viewport;solverRingNodes=result.dots.map(d=>({stickerId:String(d.sticker),x:ringViewport.cx+d.x*ringViewport.scale,y:ringViewport.cy+d.y*ringViewport.scale,r:d.r*ringViewport.scale,color:d.color,reference:!!d.reference,highlighted:!!d.highlighted,highlightLineWidth:d.highlightLineWidth||2.2,highlightOuterRadius:d.r*ringViewport.scale}));}
+
+function rot(v,axis,a){const c=Math.cos(a),s=Math.sin(a),[x,y,z]=v;return axis===0?[x,c*y-s*z,s*y+c*z]:axis===1?[c*x+s*z,y,-s*x+c*z]:[c*x-s*y,s*x+c*y,z];}
+function camera(v){return rot(rot(v,1,view.yaw),0,view.pitch);}
+function add(a,b){return a.map((v,i)=>v+b[i]);}
+function mul(a,n){return a.map(v=>v*n);}
+function dot(a,b){return a.reduce((v,x,i)=>v+x*b[i],0);}
+let faceTargets=[];
+function drawCube(t){
+ const{w,h}=sizes.cube;cc.clearRect(0,0,w,h);faceTargets=[];
+ const scale=Math.min(w,h)*.30*view.zoom,eye=5.6;
+ function project(v){const q=eye/(eye-v[2]);return[w/2+v[0]*scale*q,h*.50-v[1]*scale*q];}
+ const polygons=[],active=animation,move=active?active.move:null,axis=active?E.configs[move.face].normal:null,angle=active?-Math.PI*2/5*move.dir*move.turns*t:0;
+ function transformed(v,moving){return camera(moving?E.rotate(v,axis,angle):v);}
+ function poly(points,normal,color,moving,isSticker,chosen,depthHint){
+  const center=points.reduce((a,b)=>add(a,mul(b,1/points.length)),[0,0,0]);
+  const cv=transformed(center,moving),nv=transformed(normal,moving);
+  if(dot(nv,[-cv[0],-cv[1],eye-cv[2]])<=0)return;
+  polygons.push({points:points.map(p=>transformed(p,moving)),depth:depthHint===undefined?cv[2]:depthHint,color,isSticker,chosen,light:clamp(.79+.21*dot(nv,[-.2,.65,.72]),.64,1)});return cv[2];
+ }
+ // A dark inner body closes the gaps behind the separately rotating cap.
+ for(const f of E.faces)poly(f.vertices.map(p=>mul(p,.97)),f.normal,'#101117',false,false,false);
+ const bodyCount=polygons.length;
+ for(const s of active?active.before:stickers){
+  const slot=E.slots[s.slot],moving=!!active&&slot.pieceFaces.includes(move.face),chosen=slot.pieceFaces.includes(selected);
+  const depth=poly(slot.regionPolygon,slot.normal,'#1b1923',moving,false,chosen);
+  poly(slot.polygon.map(p=>add(p,mul(slot.normal,.0025))),slot.normal,s.color,moving,true,chosen,depth===undefined?undefined:depth+.00001);
+ }
+ const body=polygons.splice(0,bodyCount);polygons.sort((a,b)=>a.depth-b.depth);polygons.unshift(...body.sort((a,b)=>a.depth-b.depth));
+ for(const f of polygons){const pts=f.points.map(project);cc.beginPath();pts.forEach((p,i)=>i?cc.lineTo(...p):cc.moveTo(...p));cc.closePath();cc.fillStyle=f.color;cc.fill();if(f.isSticker){cc.fillStyle='rgba(0,0,0,'+(1-f.light)+')';cc.fill();cc.strokeStyle=f.chosen?'rgba(240,222,255,.64)':'rgba(255,255,255,.12)';cc.lineWidth=f.chosen?1.05:.6;}else{cc.strokeStyle=f.chosen?'#605071':'#302b3b';cc.lineWidth=.7;}cc.stroke();}
+ for(const f of E.faces){const cv=camera(mul(f.normal,1.012)),nv=camera(f.normal);if(dot(nv,[-cv[0],-cv[1],eye-cv[2]])<.5)continue;const p=project(cv);faceTargets.push({face:f.id,x:p[0],y:p[1]});cc.beginPath();cc.arc(p[0],p[1],f.id===selected?11.5:10,0,Math.PI*2);cc.fillStyle=f.id===selected?'#e1d5ff':'rgba(13,12,20,.76)';cc.fill();cc.strokeStyle=f.id===selected?'#fff':'rgba(255,255,255,.4)';cc.lineWidth=1;cc.stroke();cc.fillStyle=f.id===selected?'#292037':'#fff';cc.font='600 10px system-ui';cc.textAlign='center';cc.textBaseline='middle';cc.fillText(f.id,p[0],p[1]+.4);}
+}
+function frame(now){lastTimestamp=now;let t=0;
+ if(animation){t=clamp(((paused?pauseAt:now)-animation.start)/animation.duration,0,1);if(t>=1&&!paused){finishMove();if(mode!=='idle'&&queue.length)beginMove(queue.shift(),mode);t=0;}dirty=true;}
+ if(dirty){drawRings(ease(t));drawCube(ease(t));dirty=false;}requestAnimationFrame(frame);
+}
+for(const [axis,faces] of [['A — D',['A','B','C','D']],['E — H',['E','F','G','H']],['I — L',['I','J','K','L']]]){
+ const group=document.createElement('div');group.className='axis-row';const label=document.createElement('span');label.className='axis-label';label.textContent=axis;const buttons=document.createElement('div');buttons.className='axis-buttons';
+ faces.forEach(face=>{const b=document.createElement('button');b.type='button';b.className='ring-key';b.dataset.face=face;b.textContent=face;b.style.borderBottomColor=E.configs[face].color;b.title='Select '+face+' · '+E.configs[face].name+' ring';b.setAttribute('aria-label',b.title);b.addEventListener('click',()=>setSelected(face));buttons.appendChild(b);});group.append(label,buttons);$('selector').appendChild(group);
+}
+for(const f of E.faces){const item=document.createElement('span'),swatch=document.createElement('i');swatch.className='swatch';swatch.style.background=f.color;item.append(swatch,document.createTextNode(f.id+' · '+f.name));$('legend').appendChild(item);}
+$('ringFocus').addEventListener('click',()=>{ringFocused=!ringFocused;ringDrag=null;updateUI();});
+$('faceView').addEventListener('click',()=>{const n=E.configs[selected].normal;view.yaw=-Math.atan2(n[0],n[2]);view.pitch=Math.atan2(n[1],Math.hypot(n[0],n[2]));dirty=true;});
+$('ccw').addEventListener('click',()=>turn(-1));$('cw').addEventListener('click',()=>turn(1));$('randomize').addEventListener('click',randomize);$('solve').addEventListener('click',solve);$('pause').addEventListener('click',togglePause);$('reset').addEventListener('click',reset);
+$('undo').addEventListener('click',()=>{if(!locked()&&history.length)beginMove(E.invertMove(history[history.length-1]),'undo');});
+$('homeView').addEventListener('click',()=>{view={yaw:-.34,pitch:.38,zoom:1};dirty=true;});
+$('speed').addEventListener('input',()=>{
+ $('speedText').textContent=['','Slow','Gentle','Normal','Quick','Fast'][+$('speed').value];
+ if(animation){const now=paused?pauseAt:performance.now(),progress=clamp((now-animation.start)/animation.duration,0,1),nextDuration=duration()*(animation.move.turns===2?1.35:1);
+  animation.start=now-progress*nextDuration;animation.duration=nextDuration;}
+ dirty=true;
+});
+$('copy').addEventListener('click',async()=>{
+ const text=journal.map(j=>j.label?'\n'+j.label+':':E.moveLabel(j.move)).join(' ').trim();
+ try{await navigator.clipboard.writeText(text);toast('Moves copied.');}catch(_){const field=document.createElement('textarea');field.value=text;field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();const copied=document.execCommand('copy');field.remove();toast(copied?'Moves copied.':'Copy is unavailable in this browser.');}
+});
+ringsCanvas.addEventListener('pointerdown',e=>{
+ if(locked()||e.button>0)return;const p=ringPoint(e),nearest=G.nearestRing(p,selected);if(!nearest||nearest.distance*ringViewport.scale>13)return;const ring=nearest.ring;setSelected(ring.face||ring.name);
+ ringDrag={pointer:e.pointerId,ring,angle:G.dragAngle(p,ring),total:0,startX:e.clientX,startY:e.clientY};ringsCanvas.setPointerCapture(e.pointerId);ringsCanvas.focus({preventScroll:true});dirty=true;
+});
+ringsCanvas.addEventListener('pointermove',e=>{if(!ringDrag||e.pointerId!==ringDrag.pointer)return;const p=ringPoint(e),r=ringDrag.ring,a=G.dragAngle(p,r);if(!Number.isFinite(a))return;ringDrag.total+=mod(a-ringDrag.angle+Math.PI,Math.PI*2)-Math.PI;ringDrag.angle=a;dirty=true;});
+function endRing(e,cancel){if(!ringDrag||e.pointerId!==ringDrag.pointer)return;const delta=ringDrag.total;ringDrag=null;dirty=true;if(!cancel&&Math.abs(delta)>.20)manual({face:selected,dir:delta>0?1:-1,turns:1});}
+ringsCanvas.addEventListener('pointerup',e=>endRing(e,false));ringsCanvas.addEventListener('pointercancel',e=>endRing(e,true));ringsCanvas.addEventListener('lostpointercapture',e=>endRing(e,true));
+cubeCanvas.addEventListener('pointerdown',e=>{if(e.button>0)return;cubePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,moved:false});cubeCanvas.setPointerCapture(e.pointerId);cubeCanvas.focus({preventScroll:true});if(cubePointers.size===2){cubePointers.forEach(p=>p.moved=true);const [a,b]=[...cubePointers.values()];pinchDistance=Math.hypot(a.x-b.x,a.y-b.y);}});
+cubeCanvas.addEventListener('pointermove',e=>{const old=cubePointers.get(e.pointerId);if(!old)return;const next={x:e.clientX,y:e.clientY,startX:old.startX,startY:old.startY,moved:old.moved||Math.hypot(e.clientX-old.startX,e.clientY-old.startY)>6};cubePointers.set(e.pointerId,next);if(cubePointers.size===2){const[a,b]=[...cubePointers.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinchDistance>0)view.zoom=clamp(view.zoom*d/pinchDistance,.6,1.5);pinchDistance=d;}else{view.yaw+=(next.x-old.x)*.009;view.pitch=clamp(view.pitch+(next.y-old.y)*.009,-Math.PI/2,Math.PI/2);}dirty=true;});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])cubeCanvas.addEventListener(event,e=>{const p=cubePointers.get(e.pointerId);if(event==='pointerup'&&p&&!p.moved&&cubePointers.size===1&&!locked()){const b=cubeCanvas.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;const hit=faceTargets.find(f=>Math.hypot(f.x-x,f.y-y)<17);if(hit)setSelected(hit.face);}cubePointers.delete(e.pointerId);pinchDistance=0;});
+cubeCanvas.addEventListener('wheel',e=>{e.preventDefault();view.zoom=clamp(view.zoom*Math.exp(-e.deltaY*.001),.6,1.5);dirty=true;},{passive:false});
+document.addEventListener('keydown',e=>{
+ if(e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select'))return;
+ const key=e.key.toUpperCase();
+ if(e.target===cubeCanvas&&['ARROWLEFT','ARROWRIGHT','ARROWUP','ARROWDOWN','+','-','='].includes(key)){e.preventDefault();if(key==='ARROWLEFT')view.yaw-=.15;if(key==='ARROWRIGHT')view.yaw+=.15;if(key==='ARROWUP')view.pitch=clamp(view.pitch-.15,-Math.PI/2,Math.PI/2);if(key==='ARROWDOWN')view.pitch=clamp(view.pitch+.15,-Math.PI/2,Math.PI/2);if(key==='+'||key==='=')view.zoom=clamp(view.zoom+.1,.6,1.5);if(key==='-')view.zoom=clamp(view.zoom-.1,.6,1.5);dirty=true;return;}
+ if(locked())return;
+ if(key==='ARROWLEFT'||key==='ARROWRIGHT'){e.preventDefault();turn(key==='ARROWRIGHT'?1:-1);return;}
+ if(E.configs[key]&&!e.repeat){e.preventDefault();manual({face:key,dir:e.shiftKey?-1:1});}
+});
+window.addEventListener('resize',resize);if(typeof ResizeObserver!=='undefined'){const obs=new ResizeObserver(resize);obs.observe(ringsCanvas);obs.observe(cubeCanvas);}resize();updateUI();requestAnimationFrame(frame);
+// Small read-only snapshot lets automated integrity checks inspect the running game.
+window.RingMegaminx=Object.freeze({snapshot:()=>({stickers:stickers.map(s=>({...s})),history:history.map(m=>({...m})),mode,paused,selected,seed,userTurns,journal:journal.map(j=>j.move?{...j,move:{...j.move}}:{...j}),animating:!!animation,sequence:{completed:sequenceDone,total:sequenceTotal,remaining:queue.length+(animation&&mode!=='idle'?1:0),active:mode!=='idle',stopping:stopRequested},view:{...view}})});
+
+// Atlas integration: standard notation controls and a small same-origin API.
+const notationFaces=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+function parseAtlasMove(move){
+ if(typeof move!=='string')return E.normalizeMove(move);
+ const match=/^([A-Za-z]+)(2?)(['′’]?)$/.exec(move.trim());
+ if(!match)throw new Error('Invalid notation move: '+move);
+ return E.normalizeMove({face:match[1],turns:match[2]?2:1,dir:match[3]?-1:1});
+}
+function notationLabel(face){return face;}
+function updateNotationLabels(){
+ const inverse=$('notationInverse').checked;
+ document.querySelectorAll('.notation-key').forEach(b=>{
+  b.textContent=notationLabel(b.dataset.face)+(inverse?'′':'');
+  b.setAttribute('aria-label','Turn '+notationLabel(b.dataset.face)+(inverse?' counterclockwise':' clockwise')+' using puzzle notation');
+ });
+}
+for(const face of notationFaces){
+ const b=document.createElement('button');b.type='button';b.className='notation-key';b.dataset.face=face;
+ b.addEventListener('click',()=>manual({face,dir:$('notationInverse').checked?-1:1}));
+ $('notationButtons').appendChild(b);
+}
+$('notationInverse').addEventListener('change',updateNotationLabels);updateNotationLabels();
+window.PUZZLE_API=Object.freeze({stopAfterCurrentMove,stopScrambleNow,resumePlayback,
+ puzzle:'megaminx',
+ snapshot:()=>window.RingMegaminx.snapshot(),
+ move:move=>{if(locked())return false;manual(parseAtlasMove(move));return true;},
+ runMoves:(moves,options={})=>{
+  if(locked())return false;
+  const list=(typeof moves==='string'?moves.trim().split(/\s+/):moves).filter(Boolean).map(parseAtlasMove);
+  if(!list.length||list.length>300)return false;
+  if(!journal.length)clearJournal();addLabel(typeof options?.label==='string'?options.label.slice(0,120):'Guide practice');startSequence(list,'algorithm');return true;
+ },
+ reset:()=>{reset();return true;},
+ randomize:()=>{if(locked())return false;randomize();return true;},
+ solve,
+ select:face=>{if(locked()||!E.configs[face])return false;setSelected(face);return true;},
+ 
+});
+if(window.parent!==window){
+ window.parent.postMessage({type:'puzzle-ready',puzzle:'megaminx'},window.location.origin);
+ let lastReportedHeight=0,heightReportPending=false;
+ function reportHeight(){
+  heightReportPending=false;
+  const height=Math.ceil($('puzzleApp').getBoundingClientRect().height)+2;
+  if(height!==lastReportedHeight&&height>0){lastReportedHeight=height;window.parent.postMessage({type:'puzzle-height',puzzle:'megaminx',height},window.location.origin);}
+ }
+ function scheduleHeightReport(){if(!heightReportPending){heightReportPending=true;requestAnimationFrame(reportHeight);}}
+ if(typeof ResizeObserver!=='undefined')new ResizeObserver(scheduleHeightReport).observe($('puzzleApp'));
+ window.addEventListener('resize',scheduleHeightReport);scheduleHeightReport();
+}
+})();
+
+</script>
+<script src="play-timer.js"></script>
+<script src="ring-panel.js"></script>
+<script src="constrained-solver-core.js"></script>
+<script src="constrained-solver.js"></script>
+</body></html>

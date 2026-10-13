@@ -1,0 +1,1 @@
+'use strict';const {parentPort,workerData}=require('node:worker_threads');const {solveSync}=require('./index.cjs');parentPort.postMessage(solveSync(workerData.model,workerData.request,workerData.options));

@@ -1,0 +1,1 @@
+(function(root){'use strict';const F=root.FaceGroupedRings||(typeof require==='function'?require('./face-grouped-rings.js'):null);root.ShapeRings=Object.freeze({create:F.create});if(typeof module!=='undefined'&&module.exports)module.exports=root.ShapeRings;})(typeof globalThis!=='undefined'?globalThis:this);

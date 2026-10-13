@@ -1,0 +1,364 @@
+{
+  "schemaVersion": 1,
+  "backendVersion": "0.2.0",
+  "sourceHashes": {
+    "index.cjs": "bc447e9f4c766d08adf563a66123831efae4052f3d9dea952f4e577f14b4af40",
+    "atlas-adapter.cjs": "a2cab12e23f862fcad08d5b62b1085e92d4c9d4b9a4dec8ecd78a4dd2c4e356c",
+    "auto-adapter.cjs": "74aac6163b8fb5100702afd46741dd4b0a538177bdde667261a81e75226d3d77",
+    "search.cjs": "281baf1700eda4dbbd600debc476b9e5b2351eca1109a4142983f5a0e77d66f9",
+    "shorten.cjs": "dd1ffeddcf959eb46f866f8fbfde8960d097dbd63414a1e35af2bbb5d6b12f31",
+    "group.cjs": "d9bb853cc0e10d7b1084259c6dd91b57592739ba18e070fdada50d9832deaeb0",
+    "full-solve.cjs": "985e2d8f9a11c9ade7256f87e0fa570a2aad0b704e84b08a3cc5484172b2ccf4",
+    "eligibility.cjs": "258556c48fe11f1e5c11bab0fb04f56d7c7e2e1815cf64090ea4dfb70a360849",
+    "eligibility-status.cjs": "27cb0cb5809a7814570610effd8e4c65cbdf0d815c4c98eeced1ede5a78e7429"
+  },
+  "adaptations": [
+    "Remove Node worker_threads API and Node cache class; keep solveSync unchanged.",
+    "Use performance.now() in place of process.hrtime.bigint().",
+    "Bound browser resource budgets and use worker termination for cancellation."
+  ],
+  "fullSolveCaches": {
+    "masterpyraminx": "d88b12fefdb6a47d55669832af4cac98cbd3b125f007d621ef8db5adf792c86f",
+    "kilominx": "b30e412cce55ffac0dff53813a12eb6d7279c643a2427e24673d6e44bc606d75",
+    "ghost": "b54e9cddde3a3f0ad172d0f8289a2d1275ff211cbc39fda1bf23632d68a0c2cd",
+    "cube2": "977a35446c3fa849d1dcb68bb61df7e3b9aa49cf5e80c0954aa4370e97ddff31",
+    "cube3": "7515e1dcf06572d1dd9e00ec9e0ffdfc9b245ed50931ed98cb901303f400f9cf",
+    "cube4": "8f9c0282338e84cbbeee20545990cdc1cc89e868f1e71f20055e2160cfedc05e",
+    "cube5": "6f035a12eb1c68eb0ce7d3f17ce8994d26338a53f488337fd5d0bbc3ff3d7700",
+    "cube6": "32e4f9766af8d711f8132a9826f8206068257ffbe0dc79a8c5ed9733446991f2",
+    "cube7": "91945aa70ae285b58efd3b3a33cd6746b4d02b468f723e803e49f59032d54150",
+    "cube8": "b562db8820e9edc8686e7421a4e91b4d6d821ec3238ec5ef41128a4e24a4c018",
+    "mirror": "d44467f7e7c921715134669d6009cf40b658c694e7689814d33174962c95db67",
+    "homer": "fd1c506be6c64f76d484449b2fdb726a11ebaf9805d0428266c35d9a798cb1ec",
+    "pyraminx": "f60a67d1130ef8de2ccbf63850b137534d6b9f4b5c838bd63c11c81d7c25a9e5",
+    "tetraminx": "f917ae48b97fabceebcc56d18f3d51554f5e369ac47decaa7b9f90db784a09dd",
+    "megaminx": "2053a94fec1193b320b38e973c2745b228c4c825ffe0a072c0dcadf2d79a140c",
+    "jing": "6a7f7b10ae82142126b2eae16eb6a8b9562d739473308a475c4b93c7baeff8c7",
+    "skewb": "947e459a820302317fb5d06b426049039537745d58d24db5dc0df27710b2f4dc",
+    "masterskewb": "099919d52776a9f50b46bde86e1bde4d7578dcddb425aa92dd2ce09da6304972",
+    "ultimate": "474c205d35d96a2aaf79f7a9098b244bee678100f6a2d411859ec462d1e783bd",
+    "diamond": "e14bbda3e373f0bfb80f0089d025cae0a114f70a5ba2e85abcb4b84121c64dfd",
+    "fto": "9654c4371149252eb2f0a59f632dc66b6e99ef969a869d723345025cdc38a6c2",
+    "crystal": "be9018f81efde1d2adc841d2daafe3508dc1379b747af564bd4668fb8419ff6a",
+    "dino": "9dd4948295c376d46832b9a7bc78024bf91d106e2fc7f2c883b546fb4c22a591",
+    "rainbow": "ebbab89e9ed9c72ab4f0fb04ac04349f65fd7c10879616f64bbaa7b66ad3bf10",
+    "rhombic": "01bddce752356192e235ea58591ffa0257e145cace3c89162df39356c8e7666a",
+    "flatdiamond": "49d53fa0447601c43552a0203c00bc6d6fd2632cf7164b7e4c653b771d4b3eed",
+    "cornerocta": "46c1e3ffced843db805bdac0d094c228f20d162e01410c9056ae345901f47c98",
+    "trajber": "89cf86b6037bef38086d96926f2cc434d672d780028272d59bcf5b5a41b51359",
+    "jewel": "91d2a4b3982f449eb8a03bdb3e5e4435aa5fa004f0d6678b3abe54a47107da0a",
+    "pyramorphix": "e360403344bcf463ba5f21f316a1ad159c9b17e116703c161d9ba8d0b5985ad4",
+    "mastermorphix": "0a59d3f11bb191c3ea75e3af0d0c8fdca69d919809234825ffe6e1a2dcc99a19",
+    "helicopter": "1bcff6e508493030c7fd8b2dde4ec156423145d7ff04d20f904bbd71ebee3273",
+    "diamondstyle": "eb2aaa82ebd9d87601e483d8b2149d3e4a2f9c056e6874d6db20920f8112ede7",
+    "diamondcube": "cf6c990cc3f5f919cecb81fa237ff4ce7f13fb938b4e9215ce4a7ebd72d4e60c"
+  },
+  "models": [
+    {
+      "id": "masterpyraminx",
+      "name": "Master Pyraminx",
+      "degree": 64,
+      "stickerCount": 64,
+      "moves": 24,
+      "bytes": 22128,
+      "sha256": "6c7522d478cc352a8a2f7f610cb369e7296cc2eb1d2d80162bf5266aee8d2c68"
+    },
+    {
+      "id": "kilominx",
+      "name": "Kilominx",
+      "degree": 60,
+      "stickerCount": 60,
+      "moves": 48,
+      "bytes": 28476,
+      "sha256": "41bf676dce3df3c1469aa556966fc5ea77dc6118315f25088027d68176d4d1ea"
+    },
+    {
+      "id": "ghost",
+      "name": "Ghost Cube",
+      "degree": 168,
+      "stickerCount": 61,
+      "moves": 18,
+      "bytes": 51399,
+      "sha256": "ec0ad5b655f8d6fd0f1a851bd68f4018205dd92c90c1bd77c7c87d6f11ddced8"
+    },
+    {
+      "id": "cube2",
+      "name": "Cube 2×2",
+      "degree": 24,
+      "stickerCount": 24,
+      "moves": 18,
+      "bytes": 8496,
+      "sha256": "c9294e1aafbc5579da4d263273b0c570fd0be19e878407973069da095fbaa05d"
+    },
+    {
+      "id": "cube3",
+      "name": "Cube 3×3",
+      "degree": 54,
+      "stickerCount": 54,
+      "moves": 27,
+      "bytes": 17494,
+      "sha256": "fce59f40b81d3f832367f0d73e7d217a6a243ce42f98e2a6e440efccad80083b"
+    },
+    {
+      "id": "cube4",
+      "name": "Cube 4×4",
+      "degree": 96,
+      "stickerCount": 96,
+      "moves": 36,
+      "bytes": 32298,
+      "sha256": "c28b5e652954c93346384e07d9b58b08d8b58699e78eb1e958142fe79a98a188"
+    },
+    {
+      "id": "cube5",
+      "name": "Cube 5×5×5",
+      "degree": 150,
+      "stickerCount": 150,
+      "moves": 45,
+      "bytes": 54500,
+      "sha256": "e1d0ec1feacd5192d56f1589dcd84b6d01eb7a4d5c44c9c9e6fd213aaa10d999"
+    },
+    {
+      "id": "cube6",
+      "name": "Cube 6×6×6",
+      "degree": 216,
+      "stickerCount": 216,
+      "moves": 54,
+      "bytes": 86790,
+      "sha256": "208a174eaa73c93b620cba75cec72cfcd42f77fb7e80b920937274e5d59d1367"
+    },
+    {
+      "id": "cube7",
+      "name": "Cube 7×7×7",
+      "degree": 294,
+      "stickerCount": 294,
+      "moves": 63,
+      "bytes": 127460,
+      "sha256": "15acefd16d801a2e86036f4d5c979e7786d93914790f8966bdf9d556f8d54bde"
+    },
+    {
+      "id": "cube8",
+      "name": "Cube 8×8×8",
+      "degree": 384,
+      "stickerCount": 384,
+      "moves": 72,
+      "bytes": 181196,
+      "sha256": "b8f7dce64cf63d5f45c13c5912c7d59d657660dc9aa25f5408a8673d59e03c8d"
+    },
+    {
+      "id": "mirror",
+      "name": "Mirror Cube",
+      "degree": 54,
+      "stickerCount": 54,
+      "moves": 27,
+      "bytes": 17681,
+      "sha256": "f536816f9014c39ad2766bb9f58a78e0f9c5eb5bea210225d2459f7ef05bf413"
+    },
+    {
+      "id": "homer",
+      "name": "Homer",
+      "degree": 24,
+      "stickerCount": 24,
+      "moves": 18,
+      "bytes": 8674,
+      "sha256": "4e3946d849f8706205192d52e3020d54da6fac7894dc3328566245502374f063"
+    },
+    {
+      "id": "pyraminx",
+      "name": "Pyraminx",
+      "degree": 36,
+      "stickerCount": 36,
+      "moves": 16,
+      "bytes": 12319,
+      "sha256": "73f352b3d689b9aa9d5ece7965d6edc9e24e8315334e1e5e3206420691262f81"
+    },
+    {
+      "id": "tetraminx",
+      "name": "Tetraminx",
+      "degree": 24,
+      "stickerCount": 24,
+      "moves": 8,
+      "bytes": 7676,
+      "sha256": "a63189ba4c9bc24183e54df43a6b4a40a9dd759b5873107fe55e95d92495e3a5"
+    },
+    {
+      "id": "megaminx",
+      "name": "Megaminx",
+      "degree": 132,
+      "stickerCount": 132,
+      "moves": 48,
+      "bytes": 59992,
+      "sha256": "bb5d97b6400529a578c854fdd4ea583e581c5fecc59138d05d4400256bf1920c"
+    },
+    {
+      "id": "jing",
+      "name": "Jing Pyraminx",
+      "degree": 28,
+      "stickerCount": 28,
+      "moves": 8,
+      "bytes": 8126,
+      "sha256": "a4fbc69de120cdbedc13aa85a567022add6318dbf595d39bfb33e9f4b7fe5ec2"
+    },
+    {
+      "id": "skewb",
+      "name": "Skewb",
+      "degree": 30,
+      "stickerCount": 30,
+      "moves": 16,
+      "bytes": 8923,
+      "sha256": "8a771160a0f08e8c96a1884feec40f8867f85b0e92fda32f40d90701d4299506"
+    },
+    {
+      "id": "masterskewb",
+      "name": "Master Skewb",
+      "degree": 78,
+      "stickerCount": 78,
+      "moves": 16,
+      "bytes": 18132,
+      "sha256": "0488b2816300e945487932dbb673fbde39041a253043d96a49171d340b6dd534"
+    },
+    {
+      "id": "ultimate",
+      "name": "Skewb Puzzleball",
+      "degree": 48,
+      "stickerCount": 48,
+      "moves": 16,
+      "bytes": 15282,
+      "sha256": "42688b335b8a58586ec56eb13680754f295975307c3c94898407bfdc24b129a9"
+    },
+    {
+      "id": "diamond",
+      "name": "Skewb Diamond",
+      "degree": 32,
+      "stickerCount": 32,
+      "moves": 16,
+      "bytes": 11817,
+      "sha256": "2101ac0c0ed29829596fde438f0a72e31f0f335c96781aad4a9093da7f6814b8"
+    },
+    {
+      "id": "fto",
+      "name": "Face-turning Octahedron",
+      "degree": 72,
+      "stickerCount": 72,
+      "moves": 24,
+      "bytes": 25877,
+      "sha256": "002b574c99f21e009a0678657b0d9e92c2fd2fb12a358821ccc5d91a83cafb8a"
+    },
+    {
+      "id": "crystal",
+      "name": "Pyraminx Crystal",
+      "degree": 120,
+      "stickerCount": 120,
+      "moves": 48,
+      "bytes": 51791,
+      "sha256": "6e59c084ca294b74a1cf1c5f8318333e7198fcb47d36b5fed9bc50613a48e86c"
+    },
+    {
+      "id": "dino",
+      "name": "Dino Cube",
+      "degree": 24,
+      "stickerCount": 24,
+      "moves": 16,
+      "bytes": 7429,
+      "sha256": "8386c0d3e048ea3feaadf8354a6afb3b2d043b53846dbbdcff6d9fecde7cfb6b"
+    },
+    {
+      "id": "rainbow",
+      "name": "Rainbow Cube",
+      "degree": 56,
+      "stickerCount": 56,
+      "moves": 16,
+      "bytes": 16178,
+      "sha256": "5552e1ee44281b2e07936225e85e0bf5e9f7bf7f9464280cfd9d30a5685ade16"
+    },
+    {
+      "id": "rhombic",
+      "name": "Rhombic Dodecahedron Cube",
+      "degree": 60,
+      "stickerCount": 60,
+      "moves": 18,
+      "bytes": 17500,
+      "sha256": "ae604292304fd35de549500b122ff82c254c507bbd303ae785bab336a242bbf4"
+    },
+    {
+      "id": "flatdiamond",
+      "name": "Flat Diamond Cube",
+      "degree": 254,
+      "stickerCount": 68,
+      "moves": 18,
+      "bytes": 99223,
+      "sha256": "0fd0f3252475c0af43b7b5e809192acd052ea7e9333f412e7ec07daa3954f88b"
+    },
+    {
+      "id": "cornerocta",
+      "name": "Corner-turning Octahedron",
+      "degree": 72,
+      "stickerCount": 72,
+      "moves": 36,
+      "bytes": 27977,
+      "sha256": "388b74d481ca03322a4902efbf034eaa81b5757bc7b031c668a61383ec8a9772"
+    },
+    {
+      "id": "trajber",
+      "name": "Trajber’s Octahedron",
+      "degree": 56,
+      "stickerCount": 56,
+      "moves": 18,
+      "bytes": 19302,
+      "sha256": "a84fc9a844f3af3fa20bba2a2b69a4a11d17cc338b44c675fc0baefdddfff5b4"
+    },
+    {
+      "id": "jewel",
+      "name": "Christoph’s Jewel",
+      "degree": 54,
+      "stickerCount": 54,
+      "moves": 18,
+      "bytes": 16585,
+      "sha256": "f7e61ef017b72c7b8da85e67eeb11f6d594547a0b4817c2503c8538507458ea1"
+    },
+    {
+      "id": "pyramorphix",
+      "name": "Pyramorphix",
+      "degree": 32,
+      "stickerCount": 16,
+      "moves": 18,
+      "bytes": 16930,
+      "sha256": "4a20cb558c7eb548ba495d860ed3d78347392c5da6aca3bbb6950f748fc1f248"
+    },
+    {
+      "id": "mastermorphix",
+      "name": "MasterMorphix",
+      "degree": 80,
+      "stickerCount": 40,
+      "moves": 18,
+      "bytes": 34816,
+      "sha256": "2a220d49638108df466165e4b1dc8dee74bb05e475ae6a37d64d4d34a03b5039"
+    },
+    {
+      "id": "helicopter",
+      "name": "Helicopter Cube",
+      "degree": 48,
+      "stickerCount": 48,
+      "moves": 12,
+      "bytes": 12282,
+      "sha256": "6afb4d3524aa35778b758bef5b0d1f120459cea05366b90b4d5460a39bcdf1de"
+    },
+    {
+      "id": "diamondstyle",
+      "name": "Diamond Puzzler",
+      "degree": 26,
+      "stickerCount": 26,
+      "moves": 18,
+      "bytes": 9483,
+      "sha256": "f82579c8c4ba4b648878a83e50fd0f35a0da213149c637a1a26841ab848fa4c1"
+    },
+    {
+      "id": "diamondcube",
+      "name": "Diamond Cuboctahedron",
+      "degree": 86,
+      "stickerCount": 86,
+      "moves": 18,
+      "bytes": 23560,
+      "sha256": "7d8554c6af07b5c63520b3a88bdb685baf27fbb0df13bdb4410d6c141f0e2d30"
+    }
+  ]
+}

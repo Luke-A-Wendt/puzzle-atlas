@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('node:assert/strict'),E=require('../dist/games/kilominx-engine.js'),v=E.vector;
+const m=E.create('kilominx'),initial=JSON.stringify(m.snapshot());
+const key=p=>p.map(n=>Math.round(n*1e6)).join(','),shape=ps=>ps.map(key).sort().join(';');
+const area=ps=>ps.slice(1,-1).reduce((n,p,i)=>n+v.length(v.cross(v.sub(p,ps[0]),v.sub(ps[i+2],ps[0])))/2,0);
+const volume=body=>body.reduce((sum,f)=>sum+f.points.slice(1,-1).reduce((s,p,i)=>s+v.dot(f.points[0],v.cross(p,f.points[i+2]))/6,0),0);
+const parity=xs=>xs.reduce((n,x,i)=>n+xs.slice(i+1).filter(y=>y<x).length,0)%2;
+assert.equal(m.type,'kilominx');assert.equal(m.pieces.length,20);assert.equal(m.slots.length,60);assert.equal(m.configs.length,12);assert.equal(E.rotations.length,60);assert.equal(m.mirrorEligible,false);
+for(const p of m.pieces){assert.equal(p.kind,'corner');assert.equal(p.stickers.length,3);assert.equal(p.homeFaces.length,3);assert(volume(p.body)>0,'positive-volume closed polyhedral shell');for(const f of p.body){assert(f.points.length>=3);for(const x of f.points)assert(Math.abs(v.dot(f.normal,x)-f.offset)<1e-7,'flat body face');assert(v.dot(v.cross(v.sub(f.points[1],f.points[0]),v.sub(f.points[2],f.points[0])),f.normal)>0,'outward winding');}}
+assert(Math.abs(m.pieces.reduce((s,p)=>s+volume(p.body),0)-volume(m.faces))<1e-7,'solved polyhedral shells partition the dodecahedron');
+for(const f of m.faces){const ss=m.slots.filter(s=>s.face===f.id);assert.equal(ss.length,5);assert(ss.every(s=>s.regionPolygon.length===4),'five kite stickers per flat face');assert(Math.abs(ss.reduce((sum,s)=>sum+area(s.regionPolygon),0)-area(f.points))<1e-7,'complete face coverage');}
+const fullShapes=m.slots.map(s=>shape(s.regionPolygon)).sort().join('|');
+for(const c of m.configs){assert.equal(m.movingPieces(c.id).length,5);assert.equal(m.slots.filter(s=>m.movingPieces(c.id).includes(s.piece)).length,15);m.applyMove(c.id);assert(!m.isSolved());assert.equal(parity(m.pieces.map(p=>p.slot)),0,'a five-cycle is even');assert.equal(m.pieces.filter(p=>p.id!==p.slot).length,5);m.applyMove(c.id+'\'');assert.equal(JSON.stringify(m.snapshot()),initial);for(let n=0;n<5;n++)m.applyMove(c.id);assert.equal(JSON.stringify(m.snapshot()),initial,'five 72-degree turns exact identity');m.applyMove(c.id+'2');m.applyMove(c.id+'2\'');assert.equal(JSON.stringify(m.snapshot()),initial);}
+for(let seed=0;seed<40;seed++){const moves=m.scramble('Kilominx-'+seed,40);assert.deepEqual(moves,m.scramble('Kilominx-'+seed,40));moves.forEach(move=>m.applyMove(move));assert.equal(new Set(m.pieces.map(p=>p.slot)).size,20);assert.equal(new Set(m.stickerState.map(s=>s.slot)).size,60);assert.equal(parity(m.pieces.map(p=>p.slot)),0,'every legal corner permutation even');assert.equal(m.pieces.flatMap(p=>m.mesh(p).stickers).map(s=>shape(s.regionPolygon)).sort().join('|'),fullShapes,'rigid stickers occupy the same legal physical slots');E.invertMoves(moves).forEach(move=>m.applyMove(move));assert.equal(JSON.stringify(m.snapshot()),initial);assert(m.isSolved());}
+for(const invalid of ['Z','A3','',null,{face:'A',dir:0}])assert.throws(()=>m.applyMove(invalid));
+console.log('Kilominx: 20 flat-sided corner shells, 60 kite stickers, 12 five-corner face turns; 40 seeded scramble/reversal, exact slots, area/volume partition and parity PASS');

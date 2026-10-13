@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict'),path=require('node:path'),{createHarness}=require('./game-harness.cjs'),assertAutoSolveDelegates=require('./auto-solve-delegate.cjs');
+const {verifyModel}=require('./connected-ring-maps.test.cjs'),{dragPath,dispatchPath}=require('./connected-ring-drag-helper.cjs');
+const E=require('../dist/games/kilominx-engine.js'),R=require('../dist/games/face-grouped-rings.js');
+const app=createHarness({htmlPath:path.join(__dirname,'../dist/games/kilominx.html'),bundled:true,speed:5}),api=app.context.PUZZLE_API,settle=()=>app.complete();
+assert(app.snapshot().solved);assert.equal(api.puzzle,'kilominx');assert.equal(app.document.querySelectorAll('.ring-key').length,12);assert.equal(app.document.querySelectorAll('.notation-key').length,12);assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,60);assert.equal(typeof app.context.PUZZLE_SOLVER_BRIDGE.refreshControls,'function');
+for(const face of 'ABCDEFGHIJKL'){api.select(face);assert.equal(app.snapshot().selected,face);api.move(face);settle();assert(!app.snapshot().solved);api.move(face+'\'');settle();assert(app.snapshot().solved);}
+api.randomize();assert.equal(app.elements.get('speed').value,'5');settle();assert(!app.snapshot().solved);assert.equal(app.snapshot().history.length,40);assert.equal(app.elements.get('speed').value,'3');assertAutoSolveDelegates(app.context);api.reset();api.runMoves('A2 B\' C');settle();assert.equal(app.snapshot().history.length,3);app.click('undo');settle();assert.equal(app.snapshot().history.length,2);api.reset();
+api.randomize();app.frame(500);assert(api.stopScrambleNow());assert.equal(app.snapshot().mode,'idle');assert(!app.snapshot().animating);api.reset();
+const model=E.create(),G=R.create(model),draw=G.render(app.elements.get('rings').getContext('2d'),{width:500,height:500,selected:'A'});dispatchPath(app.elements.get('rings'),dragPath(G,'A',1),draw.viewport);settle();assert.equal(app.snapshot().history.at(-1).face,'A');assert.equal(app.snapshot().history.at(-1).dir,1);api.reset();
+verifyModel(E,'kilominx');
+const {recorder,stickerMarks}=require('./connected-map-recorder.cjs'),{distinctPaths,incidence}=require('./ring-intersection-audit.cjs'),capture=recorder();
+for(const mixed of [false,true]){if(mixed)model.scramble('kilominx-intersections',9).forEach(move=>model.applyMove(move));G.render(capture.context,{width:600,height:600,selected:'A',focus:true});const paths=distinctPaths(capture),dots=stickerMarks(capture,new Set(model.colors));assert.equal(dots.length,60);for(const dot of dots){assert.equal(dot.kind,'circle');assert(incidence(dot,paths).paths>=2,'every resting sticker is an intersection of at least two distinct drawn rings');}}
+console.log('Kilominx: controls, Auto Solve delegation, overlay bridge, randomize speed/restoration and immediate stop, undo and continuous ring drag PASS');

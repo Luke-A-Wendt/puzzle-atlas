@@ -1,0 +1,21 @@
+Puzzle Atlas — complete website, version 47
+
+Includes all 34 puzzles, artwork, guides, solver models and caches,
+plus development source, backend tools, and tests.
+Includes the Megaminx browser-precision fix.
+
+To run locally, extract this ZIP, open a terminal in the puzzle-atlas
+folder, then run:
+
+    python3 -m http.server 8000 --directory dist
+
+On Windows, you may use py instead of python3.
+Open http://localhost:8000 in your browser.
+Serve through HTTP rather than double-clicking index.html: the solver
+loads local data and a Web Worker, which browsers restrict under file://.
+
+To host elsewhere, upload the entire contents of dist/ to a static host.
+No AI API key or model calls are required.
+
+Published source commit: ba42bc5065f11c66c55179777f8cd188b550b8ce
+Site-specific hosting bindings and Git internals are omitted.

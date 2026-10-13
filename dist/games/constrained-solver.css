@@ -1,0 +1,74 @@
+/* Scoped to the optional mode; normal ring drawing and layout are retained. */
+#ringPanel{container-type:inline-size;container-name:ring-map-panel}
+.cs-mode-switch{display:flex;align-items:center;gap:2px;flex:0 0 auto;padding:2px;border:1px solid #45404e;border-radius:9px;background:#14151c}
+.ring-panel-head .cs-mode-switch button{min-height:25px;padding:3px 7px;border-color:transparent;border-radius:6px;background:transparent;color:var(--muted);font-size:10px;line-height:1.3;font-weight:600}
+/* Use the same neutral selected treatment as the 3D move-action hover. */
+.ring-panel-head .cs-mode-switch button[aria-pressed="true"],.cs-tools button[aria-pressed="true"]{background:#33303f;border-color:#78718c;color:var(--ink)}
+.ring-panel-head .cs-mode-switch button:disabled{opacity:.5}
+.cs-mode-switch[aria-busy="true"]{border-color:#5d5869}
+#constrainedSolverControls[hidden],#csNodeOverlay[hidden],#csAnchorBackdrop[hidden],#csCancel[hidden],#csRetry[hidden]{display:none!important}
+#csGo[hidden],#csAutoProgress[hidden],#csClear[hidden],.cs-tools[hidden],.cs-hold-label[hidden]{display:none!important}
+#csAutoProgressBar[hidden],#csAutoProgressLabel[hidden]{display:none!important}
+#csAutoNotice[hidden],#csAutoNoticeProgress[hidden],#csAutoNoticeRetry[hidden],#csAutoNoticeDismiss[hidden]{display:none!important}
+.action-panel.cs-notice-visible{flex-wrap:wrap}
+.cs-auto-notice{flex:1 0 100%;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid #45404e;border-radius:8px;background:#20202b;color:#e4dfef;font-size:12px;line-height:1.45;min-width:0}
+#csAutoNoticeText{flex:1 1 240px;overflow-wrap:anywhere}
+#csAutoNoticeProgress{flex:0 1 120px;max-width:100%;height:5px;accent-color:#f4f1fc}
+.cs-auto-notice[data-state="error"]{border-color:#887d70}
+.cs-auto-notice button{font-size:11px;min-height:32px}
+.cs-search-actions[hidden],#csSwap[hidden]{display:none!important}
+.cs-search-actions{display:flex;gap:6px;margin-top:6px}
+.cs-auto-active .cs-held-count{color:var(--ink)}
+.cs-auto-progress{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;margin:9px 0 2px;color:var(--muted);font-size:10px;line-height:1.4}
+.cs-auto-progress progress{display:block;width:100%;height:6px;accent-color:#f4f1fc;border:0;border-radius:8px;overflow:hidden;background:#333846}
+#csStepProgressLabel{margin-top:3px}
+.cs-auto-progress progress::-webkit-progress-bar{background:#333846}
+.cs-auto-progress progress::-webkit-progress-value{background:#f4f1fc;border-radius:8px}
+.cs-auto-progress progress::-moz-progress-bar{background:#f4f1fc;border-radius:8px}
+.cs-active>.ring-controls,.cs-active .ring-wrap>.canvas-caption,.cs-active .ring-panel-head #ringFocus{display:none!important}
+.cs-controls{padding:10px 12px 9px;flex:0 0 auto;border-top:1px solid #363141;background:linear-gradient(120deg,#202029,#191b25);min-width:0}
+.cs-toolbar,.cs-selection,.cs-bottom{display:flex;align-items:center;gap:7px;min-width:0}
+.cs-toolbar{flex-wrap:wrap;justify-content:space-between;gap:6px}
+.cs-hold-label{color:var(--muted);font-size:10px;font-weight:600;white-space:nowrap}
+.cs-tools{display:flex;gap:3px;border:1px solid #45404e;padding:3px;border-radius:9px;background:#14151c;flex:1 1 175px;min-width:160px}
+.cs-tools button{flex:1;min-width:0;min-height:31px;padding:5px 9px;background:transparent;border-color:transparent;font-size:11px;white-space:nowrap;font-weight:600}
+.cs-toolbar>.small{font-size:10px;min-height:31px;padding:5px 8px;white-space:nowrap}
+.cs-held-count{color:var(--muted);font-size:10px;white-space:nowrap;min-width:34px;font-variant-numeric:tabular-nums}
+.cs-selection{margin-top:9px;gap:6px;align-items:stretch}
+.cs-pair-chip{display:grid;grid-template-columns:22px minmax(0,1fr);grid-template-rows:auto auto;column-gap:7px;row-gap:1px;align-content:center;flex:1 1 0;min-width:0;min-height:48px;padding:6px 8px;text-align:left;border:1px dashed #5a5667;border-radius:8px;background:#181b23;color:#bab6c7;line-height:1.25;transition:background .15s,border-color .15s,box-shadow .15s}
+.cs-pair-chip .cs-slot-label{grid-column:1;grid-row:1 / 3;align-self:center;display:grid;place-items:center;width:22px;height:22px;border:1px solid #77717f;border-radius:50%;color:var(--ink);font-size:11px;font-weight:700}
+.cs-pair-chip .cs-slot-value{grid-column:2;grid-row:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:600}
+.cs-pair-chip .cs-slot-action{grid-column:2;grid-row:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:9px;font-weight:400}
+.cs-pair-chip.chosen{color:var(--ink);background:#33303f;border-color:#78718c;border-style:solid}
+.cs-pair-chip.editing{color:var(--ink);background:#33303f;border-color:#d1cbdc;border-style:solid;box-shadow:inset 0 0 0 1px #d1cbdc}
+.cs-pair-chip.editing .cs-slot-label{border-color:#f4f1fc;background:#45414f}
+.cs-pair-chip.editing .cs-slot-action{color:#e3ddec}
+.cs-pair-chip.invalid{border-color:#b4a68b;border-style:solid}
+.cs-pair-chip.invalid .cs-slot-action{color:#d4c4a5}
+.cs-pair-chip:disabled{opacity:.52;cursor:not-allowed}
+.cs-pair-chip:disabled .cs-slot-action{color:var(--muted)}
+.cs-auto-active .cs-pair-chip:disabled{opacity:1;cursor:default}
+.cs-swap-arrow{align-self:center;flex:0 0 auto;font-size:15px;color:#a9a3b5}
+.cs-go{align-self:stretch;flex:0 0 auto;min-width:48px;padding:6px 12px;font-size:12px;font-weight:700}
+.cs-go:not(:disabled){background:#33303f;border-color:#aaa4b8;color:#fff}
+.cs-go:disabled{opacity:.4}
+.cs-status{font-size:11px;line-height:1.5;color:#d7d2e4;margin:8px 0 4px;min-height:1.5em;max-width:64em;overflow-wrap:anywhere}
+.cs-eligibility{font-size:10px;line-height:1.45;color:#aaa6b8;margin:4px 0 8px;overflow-wrap:anywhere}
+.cs-eligibility[data-state="checking"]{color:#d1ccdd}
+.cs-eligibility[data-state="ready"]{color:#c6c1d2}
+.cs-eligibility[data-state="blocked"]{color:#d4c4a5}
+.cs-eligibility[data-state="unknown"]{color:var(--muted)}
+.cs-eligibility[hidden]{display:none!important}
+.cs-bottom{justify-content:space-between;flex-wrap:wrap;padding-top:6px;margin-top:7px;border-top:1px solid #35313e}
+.cs-keyboard{font-size:9px;color:#a6a2b5}
+.cs-node-overlay{position:absolute;inset:0;width:100%;height:100%;z-index:3;cursor:crosshair;touch-action:none;background:transparent}
+.cs-anchor-backdrop{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;background:transparent}
+.ring-wrap>#rings{position:relative;z-index:1}
+.ring-wrap>.canvas-caption{z-index:2}
+.cs-node-overlay:active{cursor:crosshair}
+[data-solver-phase="executing"] .cs-node-overlay,[data-solver-phase="solving"] .cs-node-overlay{cursor:progress}
+.cs-working #randomize,.cs-working #solve,.cs-working #reset,.cs-working #undo,.cs-working #mirrorMode,.cs-working #advanced,.cs-working .notation-key{opacity:.42;cursor:not-allowed}
+@media(max-width:1100px){.cs-active .ring-panel-head h2{font-size:11px}.cs-controls{padding:8px 10px}.cs-tools button{padding-inline:6px}.cs-hold-label{display:none}.cs-keyboard{font-size:8px}.ring-panel-head .cs-mode-switch button{padding-inline:5px}}
+@media(max-width:850px) and (orientation:portrait),(max-width:680px){.cs-controls{padding:10px 12px}.ring-panel-head .cs-mode-switch button{min-height:32px}.cs-tools button{min-height:38px}.cs-toolbar>.small{min-height:38px}.cs-pair-chip{min-height:50px}.cs-status{font-size:12px}.cs-keyboard,.cs-bottom{display:none}}
+@container ring-map-panel (max-width:420px){.ring-panel-head{flex-wrap:wrap}.ring-panel-head .cs-mode-switch{order:3;flex:1 1 100%}.ring-panel-head .cs-mode-switch button{flex:1}.cs-hold-label{display:none}}
+@media(max-width:420px){.ring-panel-head:has(.cs-mode-switch){flex-wrap:wrap}.ring-panel-head .cs-mode-switch{order:3;flex:1 1 100%}.ring-panel-head .cs-mode-switch button{flex:1}.cs-tools{flex-basis:160px}.cs-selection{gap:4px}.cs-pair-chip{column-gap:5px;padding-inline:6px}.cs-pair-chip .cs-slot-value{font-size:10px}.cs-go{min-width:42px;padding-inline:8px}.cs-swap-arrow{font-size:13px}}

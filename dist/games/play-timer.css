@@ -1,0 +1,11 @@
+.cube-bottom.has-play-timer .legend,.cube-bottom.has-play-timer .shape-key{display:none!important}
+.play-timer{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.play-timer-face{min-width:71px;text-align:right}
+.play-timer-readout{display:block;color:var(--text,#f4f1fc);font:550 17px/1.15 ui-monospace,SFMono-Regular,Consolas,monospace;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.play-timer-label{display:block;color:var(--muted,#9690a3);font-size:8px;line-height:1.4}
+.play-timer-controls{display:flex;gap:4px}
+.play-timer-controls button{min-width:40px;min-height:28px;margin:0;padding:3px 7px;border-radius:5px;font-size:10px;line-height:1.3;color:var(--text,#f4f1fc)}
+.play-timer-controls button:focus-visible{outline:2px solid white;outline-offset:2px}
+.play-timer-controls button:disabled{opacity:.35;cursor:default}
+.play-timer.is-running .play-timer-label{color:var(--text,#f4f1fc)}
+@media(max-width:420px){.cube-bottom.has-play-timer{gap:7px;padding-right:10px;padding-left:10px}.cube-bottom.has-play-timer .metric{gap:10px}.play-timer{gap:7px}.play-timer-controls{gap:3px}.play-timer-controls button{min-width:35px;padding:3px 5px}.play-timer-face{min-width:64px}.play-timer-readout{font-size:16px}}

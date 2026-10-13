@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Tetraminx · Puzzle Atlas</title>
+<meta name="description" content="Play a Tetraminx through four interactive rings, with a live 3D puzzle, seeded scrambles and an animated solve journal.">
+<link rel="stylesheet" href="game-theme.css">
+<style>.game-tetraminx .selector{grid-template-columns:minmax(0,1fr)}.game-tetraminx .legend{grid-template-columns:repeat(2,auto)}</style>
+<link rel="stylesheet" href="constrained-solver.css">
+<link rel="stylesheet" href="play-timer.css"></head>
+<body class="game-tetraminx">
+<main class="app" id="puzzleApp">
+
+<section class="panel action-panel" aria-label="Game controls"><div class="action-group"><button id="randomize" class="primary"><span class="icon">⤨</span>Randomize</button><button id="solve"><span class="icon">✦</span>Auto solve</button><button id="pause" hidden>Pause</button><button id="undo" class="outline">↶ Undo</button><button id="reset" class="outline">Reset</button></div><div class="action-meta"><span id="status" class="status" role="status">● Solved</span><div class="seedbox"><span id="seedLabel">Start solved, or try a new scramble.</span><br><code id="seed">NO SEED YET</code></div></div></section>
+<div class="workspace">
+<section class="panel" id="ringPanel"><div class="panel-head ring-panel-head"><h2>Ring map</h2><button id="ringFocus" class="small outline" aria-pressed="true">Show all rings</button><button id="ringPanelHide" class="small outline" type="button" aria-expanded="true" aria-controls="ringPanel">← Hide ring map</button></div><div class="canvas-wrap ring-wrap"><canvas id="rings" tabindex="0" aria-label="Connected rotation rings with individual color stickers. Drag any ring or select an axis below and use the arrow keys."></canvas><div class="canvas-caption">Bright rings turn · faint face rings group stickers</div></div><div class="ring-controls"><div class="selector" id="selector"></div><div class="turn-bar"><button id="ccw" title="Turn the selected ring counterclockwise"><span class="direction">↶</span>Ring left</button><div class="turn-selected"><strong id="selectedName">U</strong><span>Selected</span></div><button id="cw" title="Turn the selected ring clockwise"><span class="direction">↷</span>Ring right</button></div><p id="ringHint" class="ring-hint">Drag a ring in either direction. Each step is a 120° turn.</p></div></section>
+<section class="panel"><div class="panel-head view-panel-head"><h2>3D puzzle</h2><span class="tag">LIVE 3D VIEW</span><div class="view-panel-controls" id="ringTab" role="group" aria-label="View panels"><button id="ringPanelToggle" class="small outline" type="button" aria-expanded="false" aria-controls="ringPanel" hidden>Show ring map →</button><button id="guidePanelToggle" class="small outline" type="button" aria-expanded="false" hidden>Show guide ←</button></div></div><div class="canvas-wrap cube-wrap"><canvas id="cube" tabindex="0" aria-label="3D Tetraminx. Drag to rotate the view, or focus and use arrow keys. Use plus and minus to zoom."></canvas><div class="cube-top"><button id="faceView" class="small outline">View selected axis</button> <button id="homeView" class="small outline">Reset view</button></div><div class="canvas-caption">Drag to look around · scroll or pinch to zoom</div></div><div class="notation-panel" aria-label="Conventional notation moves"><div class="notation-heading"><span>Notation moves</span><div class="view-speed-control"><label for="speed">Animation</label><input id="speed" type="range" min="1" max="5" value="3" aria-label="Animation speed"><span id="speedText">Normal</span></div><label class="inverse-toggle"><input id="notationInverse" type="checkbox" aria-label="Use inverse notation moves"> Inverse (′)</label></div><div class="notation-buttons" id="notationButtons"></div><p>Clockwise looking down the named cut corner. Four layers, no separate tips.</p></div><div class="cube-bottom"><div class="metric"><div><strong id="moveCount">0</strong><span>Your turns</span></div><div><strong id="solvedFaces">4 / 4</strong><span>Uniform faces</span></div></div><div class="legend" id="legend" aria-label="Face colors"></div></div></section>
+</div>
+
+<section class="panel log-panel"><details class="journal" id="journalPanel"><summary aria-label="Move journal and keyboard help"><h2 id="logTitle">Move journal</h2><span class="journal-hint">Moves &amp; help</span></summary><div id="log" class="log" role="log" aria-live="off"><span class="empty">Your moves will appear here. Try a ring or press Randomize.</span></div><p id="message" class="message" role="status">Every ring turn is a legal Tetraminx move.</p><details class="journal-help"><summary>How to play &amp; keyboard shortcuts</summary><p id="cubeNote">Select a layer to highlight its moving pieces.</p><p>Make each of the four faces a single color. Choose a letter under <b>Main layers</b>, then press a direction button. You can also drag any ring and release for one 120° turn.</p><p>Uppercase <b>U L R B</b> turn the upper, left, right and back layers. The Tetraminx is the tipless relative of the Pyraminx: its four truncated corners have dark triangular caps. These labels stay attached to the puzzle as you change your view. Drag the 3D puzzle to look around; scroll or pinch to zoom. Click a vertex letter to select its main layer. “View selected axis” looks straight down that vertex.</p><p>The 24 single-color dots form four face-color clusters in the solved state. Shared edge stickers sit at the intersections of their two rotation rings. A move turns three edges and one vertex piece. Selecting an axis highlights its nine affected stickers; the dark tip caps do not carry colors.</p><p>The selected rings and arrows stay bright while the other tracks fade into the background. “Show all rings” reveals the surrounding paths; “Focus selected rings” restores the quieter view. Moving dots follow their ring to the next sticker position, and the map stays fixed as you select or turn an axis.</p><p>Use <kbd>←</kbd> and <kbd>→</kbd> for the selected ring. Keys <kbd>U</kbd>, <kbd>L</kbd>, <kbd>R</kbd>, <kbd>B</kbd> turn main layers; hold <kbd>Shift</kbd> to reverse. A prime (′) means counterclockwise looking from the selected vertex toward the puzzle’s center. Each move is 120°. Arrow buttons turn the selected ring clockwise or counterclockwise as it appears here. With the 3D view focused, arrow keys rotate the camera and <kbd>+</kbd>/<kbd>−</kbd> zoom.</p><p>Randomize continues from the current position and applies 20 legal layer turns, using a fresh seed each time. Auto solve opens the Constrained Solver and works from the current arrangement, pausing between stages and highlighting solved nodes that later stages protect. It does not need recorded moves or promise the shortest solution; difficult states may reach the computation limit. Your puzzle state stays in this browser tab.</p></details></details><div class="log-tools"><button id="copy" class="small outline">Copy moves</button></div></section>
+
+</main><div class="toast" id="toast" role="status"></div>
+<script>
+/* Tetraminx: exact sticker permutations and rigid convex pieces.
+   Main U/L/R/B turns rotate three edges and one three-color vertex piece. Tips are absent.
+   Positive direction is clockwise viewed from the chosen vertex toward the core. */
+(function(root){
+'use strict';
+const TAU=Math.PI*2,RADIUS=1.6,EPS=1e-9;
+const add=(a,b)=>a.map((v,i)=>v+b[i]),sub=(a,b)=>a.map((v,i)=>v-b[i]),mul=(a,k)=>a.map(v=>v*k),dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],length=a=>Math.hypot(...a),unit=a=>mul(a,1/length(a)),distance=(a,b)=>length(sub(a,b)),avg=ps=>ps.reduce((a,b)=>add(a,mul(b,1/ps.length)),[0,0,0]);
+function rotate(p,n,a){const c=Math.cos(a),s=Math.sin(a);return add(add(mul(p,c),mul(cross(n,p),s)),mul(n,dot(n,p)*(1-c)));}
+const labels=['U','L','R','B'],names=['Upper','Left','Right','Back'];
+const directions=[[0,1,0],[-Math.sqrt(2/3),-1/3,Math.sqrt(2)/3],[Math.sqrt(2/3),-1/3,Math.sqrt(2)/3],[0,-1/3,-2*Math.sqrt(2)/3]];
+const vertices=labels.map((id,i)=>({id,index:i,name:names[i],normal:directions[i],p:mul(directions[i],RADIUS)}));
+const byVertex=Object.fromEntries(vertices.map(v=>[v.id,v]));
+const colors={U:'#f4ce48',L:'#4c90ef',R:'#ee596e',B:'#39bd8b'};
+const colorNames={U:'Yellow',L:'Blue',R:'Red',B:'Green'};
+function orient(poly,n){return dot(cross(sub(poly[1],poly[0]),sub(poly[2],poly[1])),n)<0?poly.slice().reverse():poly;}
+const faces=vertices.map(v=>{const normal=mul(v.normal,-1);return{id:v.id,name:colorNames[v.id],color:colors[v.id],normal,vertices:orient(vertices.filter(q=>q.id!==v.id).map(q=>q.p),normal)};});
+const faceById=Object.fromEntries(faces.map(f=>[f.id,f]));
+function lambda(p,v){return(1+3*dot(v.normal,p)/RADIUS)/4;}
+const slots=[];
+for(const face of faces){
+ const fv=vertices.filter(v=>v.id!==face.id);
+ function point(w){return w.reduce((p,v,i)=>add(p,mul(fv[i].p,v/3)),[0,0,0]);}
+ function tile(weights){const poly=orient(weights.map(point),face.normal),p=avg(poly),axes=vertices.filter(v=>lambda(p,v)>1/3+1e-7).map(v=>v.id);const tip=vertices.find(v=>lambda(p,v)>2/3+1e-7);if(tip)return;const kind=axes.length===2?'edge':'center',pieceId=(kind==='center'?'c':'e')+axes.slice().sort().join('');slots.push({id:slots.length,face:face.id,normal:face.normal,p,regionPolygon:poly,polygon:poly.map(q=>add(p,mul(sub(q,p),.87))),axes,kind,pieceId});}
+ for(let i=0;i<=2;i++)for(let j=0;j<=2-i;j++){const k=2-i-j;tile([[i+1,j,k],[i,j+1,k],[i,j,k+1]]);}
+ for(let i=0;i<=1;i++)for(let j=0;j<=1-i;j++){const k=1-i-j;tile([[i,j+1,k+1],[i+1,j,k+1],[i+1,j+1,k]]);}
+}
+const configs={};for(const v of vertices){configs[v.id]={face:v.id,vertex:v.id,normal:v.normal,tip:false,label:v.name+' layer'};}
+function normalizeMove(m){if(typeof m==='string'){const match=/^([ULRB])([2]?)(['′’]?)$/.exec(m.trim());if(!match)throw Error('Invalid Tetraminx move');m={face:match[1],turns:match[2]?2:1,dir:match[3]?-1:1};}if(!m||!configs[m.face])throw Error('Invalid Tetraminx move');const dir=m.dir===undefined?1:m.dir,turns=m.turns===undefined?1:m.turns;if(![-1,1].includes(dir)||![1,2].includes(turns))throw Error('Invalid turn');return{face:m.face,dir,turns};}
+function slotSelected(slot,cfg){return slot.axes.includes(cfg.vertex);}
+const permutations={};for(const cfg of Object.values(configs)){permutations[cfg.face]=slots.map(s=>{if(!slotSelected(s,cfg))return s.id;const p=rotate(s.p,cfg.normal,-TAU/3),n=rotate(s.normal,cfg.normal,-TAU/3);let best=Infinity,id=-1;for(const t of slots){const d=distance(t.p,p)+distance(t.normal,n);if(d<best){best=d;id=t.id;}}if(best>1e-7)throw Error('Invalid Tetraminx permutation');return id;});if(new Set(permutations[cfg.face]).size!==24)throw Error('Non-bijective move');}
+// Store orientations as one of the tetrahedron's twelve exact rotation states.
+const orientations=[[[1,0,0],[0,1,0],[0,0,1]]];
+const frameDistance=(a,b)=>Math.max(...a.flatMap((v,i)=>v.map((x,j)=>Math.abs(x-b[i][j]))));
+function findFrame(f){return orientations.findIndex(o=>frameDistance(o,f)<1e-8);}
+for(let i=0;i<orientations.length;i++)for(const v of vertices){const f=orientations[i].map(p=>rotate(p,v.normal,-TAU/3));if(findFrame(f)<0)orientations.push(f);if(orientations.length>12)throw Error('Invalid orientation group');}
+const orientationTurns={};for(const v of vertices)orientationTurns[v.id]=orientations.map(f=>findFrame(f.map(p=>rotate(p,v.normal,-TAU/3))));
+const transform=(p,ori)=>[0,1,2].map(a=>p.reduce((s,v,i)=>s+v*orientations[ori][i][a],0));
+function makeSolved(){return slots.map(s=>({id:s.id,slot:s.id,color:colors[s.face],ori:0}));}
+function selected(s,m){return slotSelected(slots[s.slot],configs[normalizeMove(m).face]);}
+function applyMove(state,m){m=normalizeMove(m);const cfg=configs[m.face],count=((m.dir*m.turns)%3+3)%3,map=permutations[m.face];return state.map(s=>{if(!slotSelected(slots[s.slot],cfg))return{...s};let slot=s.slot,ori=s.ori;for(let i=0;i<count;i++){slot=map[slot];ori=orientationTurns[cfg.vertex][ori];}return{id:s.id,slot,color:s.color,ori};});}
+function invertMove(m){m=normalizeMove(m);return{...m,dir:-m.dir};}
+function moveLabel(m){m=normalizeMove(m);return m.face+(m.turns===2?'2':'')+(m.dir<0?'′':'');}
+function isSolved(state){if(!Array.isArray(state)||state.length!==24)return false;const groups=new Map();for(const s of state){const slot=slots[s.slot];if(!slot)return false;if(!groups.has(slot.face))groups.set(slot.face,new Set());groups.get(slot.face).add(s.color);}return groups.size===4&&[...groups.values()].every(g=>g.size===1);}
+function seededRandom(seed){let a=2166136261;for(const c of String(seed)){a^=c.charCodeAt(0);a=Math.imul(a,16777619);}return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function scramble(seed,count=20){const rnd=seededRandom(seed),moves=[];let prev='';for(let i=0;i<count;i++){const options=labels.filter(v=>v!==prev),face=options[Math.floor(rnd()*options.length)];moves.push({face,dir:rnd()<.5?-1:1,turns:1});prev=face;}return moves;}
+function clean(poly){const out=[];for(const p of poly)if(!out.length||distance(p,out[out.length-1])>1e-8)out.push(p);if(out.length>1&&distance(out[0],out[out.length-1])<1e-8)out.pop();return out;}
+function clipSolid(mesh,n,d){
+ const distances=mesh.flatMap(f=>f.points.map(p=>dot(n,p)-d));if(distances.every(v=>v<=EPS))return mesh;
+ const result=[],cap=[];function addCap(p){if(!cap.some(v=>distance(v,p)<1e-8))cap.push(p);}
+ for(const face of mesh){const out=[];for(let i=0;i<face.points.length;i++){const a=face.points[i],b=face.points[(i+1)%face.points.length],da=dot(n,a)-d,db=dot(n,b)-d;
+  if(da<=EPS){out.push(a);if(Math.abs(da)<=EPS)addCap(a);}
+  if((da>EPS)!==(db>EPS)){const p=add(a,mul(sub(b,a),da/(da-db)));out.push(p);addCap(p);}}
+  const points=clean(out);if(points.length>=3)result.push({...face,points});}
+ if(cap.length>=3){const center=avg(cap),ref=Math.abs(n[0])<.8?[1,0,0]:[0,1,0],u=unit(cross(ref,n)),v=cross(n,u);cap.sort((a,b)=>Math.atan2(dot(sub(a,center),v),dot(sub(a,center),u))-Math.atan2(dot(sub(b,center),v),dot(sub(b,center),u)));result.push({points:cap,normal:n,face:null});}return result;
+}
+const base=faces.map(f=>({face:f.id,normal:f.normal,points:f.vertices}));
+const homePieces=[];for(const pieceId of new Set(slots.map(s=>s.pieceId))){const samples=slots.filter(s=>s.pieceId===pieceId),sample=samples[0];let mesh=base;const constraints=[];
+ {for(const v of vertices){const high=sample.axes.includes(v.id);constraints.push({n:mul(v.normal,high?-1:1),d:RADIUS/9*(high?-1:1)});}if(sample.kind==='center'){const v=byVertex[sample.axes[0]];constraints.push({n:v.normal,d:RADIUS*5/9});}}
+ for(const c of constraints)mesh=clipSolid(mesh,c.n,c.d);
+ const unique=[];mesh.forEach(f=>f.points.forEach(p=>{if(!unique.some(v=>distance(v,p)<1e-8))unique.push(p);}));const center=avg(unique);homePieces.push({id:pieceId,kind:sample.kind,axes:sample.axes,mesh,center,slots:samples});
+}
+let core=base;for(const v of vertices)core=clipSolid(core,v.normal,RADIUS/9);
+function getPieces(state){const byHome=new Map();for(const s of state){const id=slots[s.id].pieceId;if(!byHome.has(id))byHome.set(id,[]);byHome.get(id).push(s);}return homePieces.map(home=>{const stickers=byHome.get(home.id),ori=stickers[0].ori,current=slots[stickers[0].slot];return{id:home.id,kind:home.kind,axes:current.axes,ori,center:transform(home.center,ori),faces:home.mesh.map(f=>{const points=f.points.map(p=>transform(add(home.center,mul(sub(p,home.center),.98)),ori)),sticker=f.face?stickers.find(s=>slots[s.id].face===f.face):null;return{points,normal:transform(f.normal,ori),sticker,stickerPolygon:sticker?slots[sticker.id].polygon.map(p=>transform(add(p,mul(f.normal,.001)),ori)):null};})};});}
+root.TetraEngine=Object.freeze({configs,vertices,faces,faceById,slots,homePieces,core,orientations,makeSolved,applyMove,normalizeMove,selected,slotSelected,invertMove,moveLabel,isSolved,seededRandom,scramble,rotate,transform,getPieces,radius:RADIUS,vector:{add,sub,mul,dot,cross,length,unit,distance,avg}});
+if(typeof module!=='undefined'&&module.exports)module.exports=root.TetraEngine;
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+</script>
+<script src="balanced-ring-projection.js"></script>
+<script src="connected-tetra-rings.js"></script>
+<script src="connected-rings.js"></script>
+<script src="face-grouped-rings.js"></script>
+<script>window.TetraRings=FaceGroupedRings.createFixed(TetraEngine);</script>
+<script>
+/* Exact back-to-front ordering for convex opaque polygons in camera space.
+ * A BSP splits intersecting depth relationships, avoiding centroid-sort errors
+ * on turning polyhedral pieces. No WebGL or external dependencies.
+ */
+(function(root) {
+  'use strict';
+  const EPSILON = 1e-7;
+  const dot = (a,b) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const subtract = (a,b) => [a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+  const cross = (a,b) => [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  function planeOf(polygon) {
+    let normal = polygon.normal;
+    if (!normal) {
+      for (let i=1;i<polygon.points.length-1;i++) {
+        normal = cross(subtract(polygon.points[i],polygon.points[0]),subtract(polygon.points[i+1],polygon.points[0]));
+        if (dot(normal,normal)>EPSILON*EPSILON) break;
+      }
+    }
+    const length = normal ? Math.sqrt(dot(normal,normal)) : 0;
+    if (length<EPSILON) return null;
+    const n = normal.map(v=>v/length);
+    return {n,w:dot(n,polygon.points[0])};
+  }
+  // Bit flags: zero is coplanar, one front, two back, three spans the plane.
+  function classify(polygon,plane) {
+    let type=0;
+    for (const point of polygon.points) {
+      const d=dot(plane.n,point)-plane.w;
+      type|=d>EPSILON?1:d<-EPSILON?2:0;
+      if(type===3)break;
+    }
+    return type;
+  }
+  function clean(points) {
+    const result=[];
+    const different=(a,b)=>Math.max(Math.abs(a[0]-b[0]),Math.abs(a[1]-b[1]),Math.abs(a[2]-b[2]))>EPSILON;
+    for(const p of points) if(!result.length||different(p,result[result.length-1]))result.push(p);
+    if(result.length>1&&!different(result[0],result[result.length-1]))result.pop();
+    return result;
+  }
+  function split(polygon,plane,front,back,planeCache) {
+    const f=[],b=[],points=polygon.points;
+    for(let i=0;i<points.length;i++) {
+      const p=points[i],q=points[(i+1)%points.length];
+      const a=dot(plane.n,p)-plane.w,c=dot(plane.n,q)-plane.w;
+      const side=a>EPSILON?1:a<-EPSILON?-1:0;
+      const next=c>EPSILON?1:c<-EPSILON?-1:0;
+      if(side>=0)f.push(p);
+      if(side<=0)b.push(p);
+      if(side*next===-1) {
+        const t=a/(a-c),point=p.map((v,j)=>v+(q[j]-v)*t);
+        f.push(point); b.push(point);
+      }
+    }
+    const ownPlane=planeCache.get(polygon),texturePoints=polygon.texturePoints||polygon.points;
+    for(const [points,target]of [[clean(f),front],[clean(b),back]])if(points.length>=3) {
+      const fragment=Object.assign({},polygon,{points,texturePoints});
+      planeCache.set(fragment,ownPlane); target.push(fragment);
+    }
+  }
+  function choosePlane(polygons,cache) {
+    const samples=Math.min(16,polygons.length),seen=new Set();
+    let best=null,bestScore=Infinity;
+    for(let sample=0;sample<samples;sample++) {
+      const index=Math.floor(sample*polygons.length/samples),plane=cache.get(polygons[index]);
+      if(!plane)continue;
+      // A plane and its negation create the same partition.
+      const sign=plane.n.find(v=>Math.abs(v)>EPSILON)<0?-1:1;
+      const key=plane.n.concat(plane.w).map(v=>Math.round(v*sign/EPSILON)).join(',');
+      if(seen.has(key))continue; seen.add(key);
+      let front=0,back=0,spanning=0,coplanar=0;
+      for(const polygon of polygons) {
+        const type=classify(polygon,plane);
+        if(type===1)front++;else if(type===2)back++;else if(type===3)spanning++;else coplanar++;
+      }
+      const score=spanning*8+Math.abs(front-back)*.2-coplanar*.05;
+      if(score<bestScore){best=plane;bestScore=score;}
+    }
+    return best;
+  }
+  function order(polygons,eye) {
+    eye=eye||[0,0,9.7];
+    const cache=new Map(),valid=[];
+    for(const polygon of polygons)if(polygon.points&&polygon.points.length>=3) {
+      const plane=planeOf(polygon);
+      if(plane){valid.push(polygon);cache.set(polygon,plane);}
+    }
+    const result=[];
+    function visit(list) {
+      if(!list.length)return;
+      if(list.length===1){result.push(list[0]);return;}
+      const plane=choosePlane(list,cache),front=[],back=[],same=[];
+      if(!plane){result.push(...list);return;}
+      for(const polygon of list) {
+        const type=classify(polygon,plane);
+        if(type===1)front.push(polygon);
+        else if(type===2)back.push(polygon);
+        else if(type===3)split(polygon,plane,front,back,cache);
+        else same.push(polygon);
+      }
+      // Opaque coplanar surfaces have no geometric depth ordering. Draw body
+      // before tile for numerical ties; actual tiles are offset from the body.
+      same.sort((a,b)=>Number(!!a.sticker)-Number(!!b.sticker));
+      const positive=dot(plane.n,eye)>=plane.w;
+      visit(positive?back:front);
+      result.push(...same);
+      visit(positive?front:back);
+    }
+    visit(valid);
+    return result;
+  }
+  root.TetraBSP=Object.freeze({order});
+  if(typeof module!=='undefined'&&module.exports)module.exports=root.TetraBSP;
+})(typeof window!=='undefined'?window:globalThis);
+
+</script>
+<script>
+(function(){
+'use strict';
+const E=TetraEngine,G=TetraRings,$=id=>document.getElementById(id);
+const ringsCanvas=$('rings'),cubeCanvas=$('cube'),rc=ringsCanvas.getContext('2d'),cc=cubeCanvas.getContext('2d');
+let stickers=E.makeSolved(),history=[],journal=[],selected='U',userTurns=0,seed=null,seedCounter=0;
+let ringFocused=true;
+let mode='idle',queue=[],animation=null,paused=false,pauseAt=0,sequenceTotal=0,sequenceDone=0,stopRequested=false,dirty=true;
+let view={yaw:-.92,pitch:.24,zoom:1},ringDrag=null,cubePointers=new Map(),pinchDistance=0;
+let ringViewport={scale:1,ox:0,oy:0},sizes={rings:{w:500,h:500},cube:{w:500,h:400}},lastTimestamp=0;
+const mod=(x,n)=>((x%n)+n)%n;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t*t*(3-2*t);
+function toast(text){$('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),2000);}
+function makeSeed(){seedCounter++;const bytes=new Uint32Array(2);if(globalThis.crypto&&crypto.getRandomValues)crypto.getRandomValues(bytes);else{bytes[0]=(Math.random()*4294967296)>>>0;bytes[1]=Date.now()>>>0;}return Array.from(bytes,n=>n.toString(16).padStart(8,'0')).join('-').toUpperCase()+'-'+seedCounter.toString(36).toUpperCase();}
+function currentMove(){return animation?animation.move:null;}
+function locked(){return !!animation||mode!=='idle';}
+function uniformFaces(){const groups=new Map();stickers.forEach(s=>{const k=E.slots[s.slot].face;if(!groups.has(k))groups.set(k,new Set());groups.get(k).add(s.color);});return [...groups.values()].filter(v=>v.size===1).length;}
+let scrambleSpeedActive=false;
+function updateUI(){
+ if(scrambleSpeedActive&&mode!=='scramble'){scrambleSpeedActive=false;$('speed').value='3';$('speedText').textContent='Normal';}
+ const solved=E.isSolved(stickers),busy=locked();
+ document.querySelectorAll('.notation-key').forEach(b=>b.disabled=busy);
+ $('status').className='status'+(busy?' busy':solved?'':' mixed');
+ $('status').textContent=busy?(paused?'Ⅱ Paused':mode==='solve'?'✦ Solving':mode==='scramble'?'⤨ Scrambling':mode==='algorithm'?'↻ Solving':'↻ Turning'):(solved?'● Solved':'● In play');
+ $('moveCount').textContent=userTurns;$('solvedFaces').textContent=uniformFaces()+' / 4';
+ $('selectedName').textContent=selected;
+ $('ringFocus').textContent=ringFocused?'Show all rings':'Focus selected rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
+ document.querySelectorAll('.ring-key').forEach(b=>{b.classList.toggle('active',b.dataset.face===selected);b.setAttribute('aria-pressed',String(b.dataset.face===selected));b.disabled=busy;});
+ $('ccw').disabled=busy;$('cw').disabled=busy;$('randomize').disabled=busy;
+ $('solve').disabled=busy||solved;$('undo').disabled=busy||!history.length;
+ $('pause').hidden=mode==='idle';$('pause').textContent=mode==='scramble'?'Stop':paused?'Resume':'Pause';$('pause').disabled=false;
+ $('copy').disabled=!journal.some(j=>j.move);
+ $('cubeNote').textContent=selected+' · '+E.configs[selected].label+'. '+'Three edges and one three-color vertex piece turn together: nine stickers are highlighted on the ring map.';
+ const cw={face:selected,dir:G.getRing(selected).cwDir},ccw=E.invertMove(cw);
+ $('cw').title='Clockwise on diagram · '+E.moveLabel(cw);$('ccw').title='Counterclockwise on diagram · '+E.moveLabel(ccw);
+ dirty=true;window.ConstrainedSolverUI?.syncTransport?.();
+}
+function setSelected(face){selected=face;updateUI();}
+function addLabel(label){journal.push({label});const el=document.createElement('div');el.className='log-label';el.textContent=label;$('log').appendChild(el);}
+function clearJournal(){journal=[];$('log').replaceChildren();}
+function addMove(move,source){
+ if(!journal.length)$('log').replaceChildren();
+ $('log').querySelectorAll('.current').forEach(n=>n.classList.remove('current'));
+ journal.push({move:E.normalizeMove(move),source});
+ const el=document.createElement('span');el.className='move current'+(source==='solve'?' solve':'');
+ const index=document.createElement('span');index.className='move-index';index.textContent=journal.filter(j=>j.move).length;
+ el.append(index,document.createTextNode(E.moveLabel(move).replace("'",'′')));$('log').appendChild(el);$('log').scrollTop=$('log').scrollHeight;
+}
+// Explicit puzzle turns always honor the speed chosen in this control.
+function duration(){return [0,1400,850,450,240,110][+$('speed').value];}
+function beginMove(move,source){
+ const m=E.normalizeMove(move);selected=m.face;ringDrag=null;
+ animation={move:m,source,before:stickers,after:E.applyMove(stickers,m),start:performance.now(),duration:duration()*(m.turns===2?1.35:1)};
+ updateUI();
+}
+function manual(move){if(locked())return;if(!journal.length)clearJournal();beginMove(move,'manual');}
+function turn(screenDirection){manual({face:selected,dir:screenDirection*G.getRing(selected).cwDir,turns:1});}
+function finishMove(){
+ const a=animation;stickers=a.after;animation=null;
+ if(a.source==='solve'||a.source==='undo')history.pop();else history.push(a.move);
+ if(a.source==='manual'||a.source==='algorithm')userTurns++;
+ if(a.source==='undo')userTurns=Math.max(0,userTurns-1);
+ addMove(a.move,a.source);
+ if(stopRequested){
+  if(mode!=='idle')sequenceDone++;
+  mode='idle';paused=false;stopRequested=false;
+  $('message').textContent='Stopped after completing the current move. Remaining moves were canceled.';
+  updateUI();return;
+ }
+ if(mode!=='idle'){
+  sequenceDone++;$('message').textContent=(mode==='solve'?'Solving':mode==='algorithm'?'Applying moves':'Scrambling')+' · '+sequenceDone+' / '+sequenceTotal+' · '+E.moveLabel(a.move);
+  if(!queue.length){const finished=mode;mode='idle';paused=false;
+   $('message').textContent=finished==='solve'?'Solved. Reversed '+sequenceTotal+' recorded moves.':finished==='algorithm'?'Practice sequence complete. All moves are in the journal.':'Scramble ready. 20 layer turns from solved — your move.';
+   if(finished==='solve'){$('logTitle').textContent='Move journal · solved';toast('Solved — every move has been printed below.');}
+  }
+ }else $('message').textContent=E.isSolved(stickers)?'Solved. All four faces are uniform.':(a.source==='undo'?'Undid the last recorded turn.':'Played '+E.moveLabel(a.move)+'.');
+ updateUI();
+}
+function startSequence(moves,type){if(type==='scramble'){scrambleSpeedActive=true;$('speed').value='5';$('speedText').textContent='Fast';}stopRequested=false;mode=type;queue=moves.slice();sequenceTotal=queue.length;sequenceDone=0;paused=false;const first=queue.shift();if(first)beginMove(first,type);else{mode='idle';updateUI();}}
+function randomize(){
+ if(locked())return;seed=makeSeed();
+ const moves=E.scramble(seed,20);addLabel('Scramble · 20 layer turns');$('seedLabel').textContent='Fresh seed · continues current state';$('seed').textContent=seed;
+ $('logTitle').textContent='Move journal';$('message').textContent='Scrambling the current position…';startSequence(moves,'scramble');
+}
+function solve(){if(locked()||E.isSolved(stickers))return false;const solver=window.ConstrainedSolverUI;if(!solver||typeof solver.autoSolve!=='function'){toast('Constrained Solver is unavailable. Reload this puzzle to try again.');return false;}return solver.autoSolve();}
+function reset(){animation=null;queue=[];mode='idle';paused=false;sequenceTotal=0;sequenceDone=0;stopRequested=false;ringDrag=null;stickers=E.makeSolved();history=[];userTurns=0;seed=null;clearJournal();$('log').innerHTML='<span class="empty">Your moves will appear here. Try a ring or press Randomize.</span>';$('seedLabel').textContent='Start solved, or try a new scramble.';$('seed').textContent='NO SEED YET';$('logTitle').textContent='Move journal';$('message').textContent='Reset to the solved starting state.';updateUI();}
+// Cancel queued turns while committing the active turn at its exact legal endpoint.
+function stopAfterCurrentMove(){
+ if(!animation&&mode==='idle')return false;
+ queue=[];stopRequested=true;
+ if(paused){if(animation)animation.start+=performance.now()-pauseAt;paused=false;}
+ if(!animation){mode='idle';stopRequested=false;$('message').textContent='Stopped at a legal move boundary.';}
+ updateUI();return true;
+}
+function stopScrambleNow(){
+ if(mode!=='scramble')return false;
+ // State is committed only in finishMove; discard the uncommitted animation.
+ animation=null;queue=[];mode='idle';paused=false;stopRequested=false;ringDrag=null;
+ $('message').textContent='Randomizing stopped · '+sequenceDone+' completed turns. The unfinished turn was canceled.';
+ updateUI();return true;
+}
+function resumePlayback(){if(paused){if(animation)animation.start+=performance.now()-pauseAt;paused=false;updateUI();}}
+function togglePause(){if(window.ConstrainedSolverUI?.autoStopActive?.())return window.ConstrainedSolverUI.stopAuto();if(mode==='scramble')return stopScrambleNow();if(mode==='idle')return;if(paused){if(animation)animation.start+=performance.now()-pauseAt;paused=false;}else{pauseAt=performance.now();paused=true;}updateUI();}
+function resize(){for(const [name,canvas]of [['rings',ringsCanvas],['cube',cubeCanvas]]){const b=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);sizes[name]={w:b.width,h:b.height};canvas.width=Math.round(b.width*dpr);canvas.height=Math.round(b.height*dpr);canvas.getContext('2d').setTransform(dpr,0,0,dpr,0,0);}dirty=true;}
+function ringPoint(event){const b=ringsCanvas.getBoundingClientRect();return{x:(event.clientX-b.left-ringViewport.ox)/ringViewport.scale,y:(event.clientY-b.top-ringViewport.oy)/ringViewport.scale};}
+function nearestRing(p){return G.nearestRing(p,selected);}
+// Read-only overlay bridge: these are the exact marks from the existing draw pass.
+let solverRingNodes=[];
+window.PUZZLE_SOLVER_BRIDGE=Object.freeze({
+ viewport:()=>({x:ringViewport.ox??ringViewport.cx??0,y:ringViewport.oy??ringViewport.cy??0,scale:ringViewport.scale}),
+ nodes:()=>solverRingNodes.map(node=>({...node})),
+ refreshControls:updateUI,
+ requestRender:()=>{dirty=true;}
+});
+function drawRings(t){
+ solverRingNodes=[];
+ if(!(sizes.rings.w>40&&sizes.rings.h>40))return;
+ const result=G.render(rc,{width:sizes.rings.w,height:sizes.rings.h,selected,focus:ringFocused,state:animation?animation.before:stickers,animation,progress:t});ringViewport=result.viewport;solverRingNodes=result.dots.map(d=>({stickerId:String(d.sticker),x:ringViewport.cx+d.x*ringViewport.scale,y:ringViewport.cy+d.y*ringViewport.scale,r:d.r*ringViewport.scale,color:d.color,reference:!!d.reference,highlighted:!!d.highlighted,highlightLineWidth:d.highlightLineWidth||2.2,highlightOuterRadius:d.r*ringViewport.scale}));}
+
+function rot(v,axis,a){const c=Math.cos(a),s=Math.sin(a),[x,y,z]=v;return axis===0?[x,c*y-s*z,s*y+c*z]:axis===1?[c*x+s*z,y,-s*x+c*z]:[c*x-s*y,s*x+c*y,z];}
+function camera(v){return rot(rot(v,1,view.yaw),0,view.pitch);}
+function add(a,b){return a.map((v,i)=>v+b[i]);}
+function mul(a,n){return a.map(v=>v*n);}
+function dot(a,b){return a.reduce((v,x,i)=>v+x*b[i],0);}
+let faceTargets=[];
+function drawCube(t){
+ const{w,h}=sizes.cube;cc.clearRect(0,0,w,h);faceTargets=[];
+ const scale=Math.min(w,h)*.31*view.zoom,eye=5.8;
+ function project(v){const q=eye/(eye-v[2]);return[w/2+v[0]*scale*q,h*.52-v[1]*scale*q];}
+ const active=animation,cfg=active?E.configs[active.move.face]:null,chosenCfg=E.configs[selected],angle=active?-Math.PI*2/3*active.move.dir*active.move.turns*t:0,polys=[];
+ function transform(v,moving){return camera(moving?E.rotate(v,cfg.normal,angle):v);}
+ function poly(points,normal,moving,chosen,sticker){
+  const world=points.map(p=>transform(p,moving)),n=transform(normal,moving),center=world.reduce((a,b)=>add(a,mul(b,1/world.length)),[0,0,0]);
+  if(dot(n,[-center[0],-center[1],eye-center[2]])<=0)return;
+  polys.push({points:world,outline:world,normal:n,chosen,sticker,color:sticker?sticker.color:'#1b1922'});
+ }
+ for(const f of E.core)poly(f.points,f.normal,false,false,null);
+ for(const piece of E.getPieces(active?active.before:stickers)){
+  const moving=!!active&&piece.axes.includes(cfg.vertex);
+  const chosen=piece.axes.includes(chosenCfg.vertex);
+  for(const face of piece.faces){poly(face.points,face.normal,moving,chosen,null);if(face.sticker)poly(face.stickerPolygon,face.normal,moving,chosen,face.sticker);}
+ }
+ for(const f of TetraBSP.order(polys,[0,0,eye])){
+  const pts=f.points.map(project);cc.beginPath();pts.forEach((p,i)=>i?cc.lineTo(...p):cc.moveTo(...p));cc.closePath();
+  cc.fillStyle=f.color;cc.fill();
+  if(f.sticker){const light=clamp(.77+.25*dot(f.normal,[-.25,.6,.75]),.51,1);cc.fillStyle='rgba(0,0,0,'+(1-light)+')';cc.fill();}
+  cc.save();cc.clip();cc.beginPath();f.outline.map(project).forEach((p,i)=>i?cc.lineTo(...p):cc.moveTo(...p));cc.closePath();
+  cc.strokeStyle=f.sticker?(f.chosen?'rgba(244,227,255,.8)':'rgba(255,255,255,.16)'):(f.chosen?'#6a5b7e':'#3a3446');cc.lineWidth=f.sticker?(f.chosen?1.15:.65):.6;cc.stroke();cc.restore();
+ }
+ // Labels sit just beyond the stationary axes, never on the moving tiles.
+ for(const v of E.vertices){const cv=camera(mul(v.p,.77)),nv=camera(v.normal);if(nv[2]<-.58)continue;const p=project(cv),chosen=v.id===chosenCfg.vertex;
+  faceTargets.push({face:v.id,x:p[0],y:p[1]});cc.beginPath();cc.arc(p[0],p[1],chosen?11:9.5,0,Math.PI*2);cc.fillStyle=chosen?'#e1d5ff':'#211d2d';cc.fill();cc.strokeStyle=chosen?'#ffffffcc':'#7c718a';cc.lineWidth=1;cc.stroke();cc.fillStyle=chosen?'#292037':'#ded6ea';cc.font='600 10px system-ui';cc.textAlign='center';cc.textBaseline='middle';cc.fillText(v.id,p[0],p[1]+.4);
+ }
+}
+
+function frame(now){lastTimestamp=now;let t=0;
+ if(animation){t=clamp(((paused?pauseAt:now)-animation.start)/animation.duration,0,1);if(t>=1&&!paused){finishMove();if(mode!=='idle'&&queue.length)beginMove(queue.shift(),mode);t=0;}dirty=true;}
+ if(dirty){drawRings(ease(t));drawCube(ease(t));dirty=false;}requestAnimationFrame(frame);
+}
+for(const [axis,faces] of [['MAIN LAYERS',['U','L','R','B']]]){
+ const group=document.createElement('div');group.className='axis-row';const label=document.createElement('span');label.className='axis-label';label.textContent=axis;const buttons=document.createElement('div');buttons.className='axis-buttons';
+ faces.forEach(face=>{const b=document.createElement('button');b.type='button';b.className='ring-key';b.dataset.face=face;b.textContent=face;b.title='Select '+face+' · '+E.configs[face].label;b.setAttribute('aria-label',b.title);b.addEventListener('click',()=>setSelected(face));buttons.appendChild(b);});group.append(label,buttons);$('selector').appendChild(group);
+}
+for(const f of E.faces){const item=document.createElement('span'),swatch=document.createElement('i');swatch.className='swatch';swatch.style.background=f.color;item.append(swatch,document.createTextNode(f.name));$('legend').appendChild(item);}
+$('ringFocus').addEventListener('click',()=>{ringFocused=!ringFocused;ringDrag=null;updateUI();});
+$('faceView').addEventListener('click',()=>{const n=E.configs[selected].normal;view.yaw=-Math.atan2(n[0],n[2]);view.pitch=Math.atan2(n[1],Math.hypot(n[0],n[2]));dirty=true;});
+$('ccw').addEventListener('click',()=>turn(-1));$('cw').addEventListener('click',()=>turn(1));$('randomize').addEventListener('click',randomize);$('solve').addEventListener('click',solve);$('pause').addEventListener('click',togglePause);$('reset').addEventListener('click',reset);
+$('undo').addEventListener('click',()=>{if(!locked()&&history.length)beginMove(E.invertMove(history[history.length-1]),'undo');});
+$('homeView').addEventListener('click',()=>{view={yaw:-.92,pitch:.24,zoom:1};dirty=true;});
+$('speed').addEventListener('input',()=>{
+ $('speedText').textContent=['','Slow','Gentle','Normal','Quick','Fast'][+$('speed').value];
+ if(animation){const now=paused?pauseAt:performance.now(),progress=clamp((now-animation.start)/animation.duration,0,1),nextDuration=duration()*(animation.move.turns===2?1.35:1);
+  animation.start=now-progress*nextDuration;animation.duration=nextDuration;}
+ dirty=true;
+});
+$('copy').addEventListener('click',async()=>{
+ const text=journal.map(j=>j.label?'\n'+j.label+':':E.moveLabel(j.move)).join(' ').trim();
+ try{await navigator.clipboard.writeText(text);toast('Moves copied.');}catch(_){const field=document.createElement('textarea');field.value=text;field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();const copied=document.execCommand('copy');field.remove();toast(copied?'Moves copied.':'Copy is unavailable in this browser.');}
+});
+ringsCanvas.addEventListener('pointerdown',e=>{
+ if(locked()||e.button>0)return;const p=ringPoint(e),nearest=G.nearestRing(p,selected);if(!nearest||nearest.distance*ringViewport.scale>13)return;setSelected(nearest.ring.face);
+ ringDrag={pointer:e.pointerId,ring:nearest.ring,angle:G.dragAngle(p,nearest.ring),total:0,startX:e.clientX,startY:e.clientY};ringsCanvas.setPointerCapture(e.pointerId);ringsCanvas.focus({preventScroll:true});dirty=true;
+});
+ringsCanvas.addEventListener('pointermove',e=>{if(!ringDrag||e.pointerId!==ringDrag.pointer)return;const p=ringPoint(e),a=G.dragAngle(p,ringDrag.ring);ringDrag.total+=mod(a-ringDrag.angle+Math.PI,Math.PI*2)-Math.PI;ringDrag.angle=a;dirty=true;});
+function endRing(e,cancel){if(!ringDrag||e.pointerId!==ringDrag.pointer)return;const delta=ringDrag.total,face=ringDrag.ring.face;ringDrag=null;dirty=true;if(!cancel&&Math.abs(delta)>.20)manual({face,dir:delta>0?1:-1,turns:1});}
+ringsCanvas.addEventListener('pointerup',e=>endRing(e,false));ringsCanvas.addEventListener('pointercancel',e=>endRing(e,true));ringsCanvas.addEventListener('lostpointercapture',e=>endRing(e,true));
+cubeCanvas.addEventListener('pointerdown',e=>{if(e.button>0)return;cubePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,moved:false});cubeCanvas.setPointerCapture(e.pointerId);cubeCanvas.focus({preventScroll:true});if(cubePointers.size===2){cubePointers.forEach(p=>p.moved=true);const [a,b]=[...cubePointers.values()];pinchDistance=Math.hypot(a.x-b.x,a.y-b.y);}});
+cubeCanvas.addEventListener('pointermove',e=>{const old=cubePointers.get(e.pointerId);if(!old)return;const next={x:e.clientX,y:e.clientY,startX:old.startX,startY:old.startY,moved:old.moved||Math.hypot(e.clientX-old.startX,e.clientY-old.startY)>6};cubePointers.set(e.pointerId,next);if(cubePointers.size===2){const[a,b]=[...cubePointers.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinchDistance>0)view.zoom=clamp(view.zoom*d/pinchDistance,.6,1.5);pinchDistance=d;}else{view.yaw+=(next.x-old.x)*.009;view.pitch=clamp(view.pitch+(next.y-old.y)*.009,-Math.PI/2,Math.PI/2);}dirty=true;});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])cubeCanvas.addEventListener(event,e=>{const p=cubePointers.get(e.pointerId);if(event==='pointerup'&&p&&!p.moved&&cubePointers.size===1&&!locked()){const b=cubeCanvas.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;const hit=faceTargets.find(f=>Math.hypot(f.x-x,f.y-y)<17);if(hit)setSelected(hit.face);}cubePointers.delete(e.pointerId);pinchDistance=0;});
+cubeCanvas.addEventListener('wheel',e=>{e.preventDefault();view.zoom=clamp(view.zoom*Math.exp(-e.deltaY*.001),.6,1.5);dirty=true;},{passive:false});
+document.addEventListener('keydown',e=>{
+ if(e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select'))return;
+ const key=e.key.toUpperCase();
+ if(e.target===cubeCanvas&&['ARROWLEFT','ARROWRIGHT','ARROWUP','ARROWDOWN','+','-','='].includes(key)){e.preventDefault();if(key==='ARROWLEFT')view.yaw-=.15;if(key==='ARROWRIGHT')view.yaw+=.15;if(key==='ARROWUP')view.pitch=clamp(view.pitch-.15,-Math.PI/2,Math.PI/2);if(key==='ARROWDOWN')view.pitch=clamp(view.pitch+.15,-Math.PI/2,Math.PI/2);if(key==='+'||key==='=')view.zoom=clamp(view.zoom+.1,.6,1.5);if(key==='-')view.zoom=clamp(view.zoom-.1,.6,1.5);dirty=true;return;}
+ if(locked())return;
+ if(key==='ARROWLEFT'||key==='ARROWRIGHT'){e.preventDefault();turn(key==='ARROWRIGHT'?1:-1);return;}
+ const moveKey=key;
+ if(E.configs[moveKey]&&!e.repeat){e.preventDefault();manual({face:moveKey,dir:e.shiftKey?-1:1});}
+});
+window.addEventListener('resize',resize);if(typeof ResizeObserver!=='undefined'){const obs=new ResizeObserver(resize);obs.observe(ringsCanvas);obs.observe(cubeCanvas);}resize();updateUI();requestAnimationFrame(frame);
+// Small read-only snapshot lets automated integrity checks inspect the running game.
+window.RingTetraminx=Object.freeze({snapshot:()=>({stickers:stickers.map(s=>({...s})),history:history.map(m=>({...m})),mode,paused,selected,seed,userTurns,journal:journal.map(j=>j.move?{...j,move:{...j.move}}:{...j}),animating:!!animation,sequence:{completed:sequenceDone,total:sequenceTotal,remaining:queue.length+(animation&&mode!=='idle'?1:0),active:mode!=='idle',stopping:stopRequested},view:{...view}})});
+
+// Atlas integration: standard notation controls and a small same-origin API.
+const notationFaces=['U', 'L', 'R', 'B'];
+function parseAtlasMove(move){
+ if(typeof move!=='string')return E.normalizeMove(move);
+ const match=/^([A-Za-z]+)(2?)(['′’]?)$/.exec(move.trim());
+ if(!match)throw new Error('Invalid notation move: '+move);
+ return E.normalizeMove({face:match[1],turns:match[2]?2:1,dir:match[3]?-1:1});
+}
+function notationLabel(face){return face;}
+function updateNotationLabels(){
+ const inverse=$('notationInverse').checked;
+ document.querySelectorAll('.notation-key').forEach(b=>{
+  b.textContent=notationLabel(b.dataset.face)+(inverse?'′':'');
+  b.setAttribute('aria-label','Turn '+notationLabel(b.dataset.face)+(inverse?' counterclockwise':' clockwise')+' using puzzle notation');
+ });
+}
+for(const face of notationFaces){
+ const b=document.createElement('button');b.type='button';b.className='notation-key';b.dataset.face=face;
+ b.addEventListener('click',()=>manual({face,dir:$('notationInverse').checked?-1:1}));
+ $('notationButtons').appendChild(b);
+}
+$('notationInverse').addEventListener('change',updateNotationLabels);updateNotationLabels();
+window.PUZZLE_API=Object.freeze({stopAfterCurrentMove,stopScrambleNow,resumePlayback,
+ puzzle:'tetraminx',
+ snapshot:()=>window.RingTetraminx.snapshot(),
+ move:move=>{if(locked())return false;manual(parseAtlasMove(move));return true;},
+ runMoves:(moves,options={})=>{
+  if(locked())return false;
+  const list=(typeof moves==='string'?moves.trim().split(/\s+/):moves).filter(Boolean).map(parseAtlasMove);
+  if(!list.length||list.length>300)return false;
+  if(!journal.length)clearJournal();addLabel(typeof options?.label==='string'?options.label.slice(0,120):'Guide practice');startSequence(list,'algorithm');return true;
+ },
+ reset:()=>{reset();return true;},
+ randomize:()=>{if(locked())return false;randomize();return true;},
+ solve,
+ select:face=>{if(locked()||!E.configs[face])return false;setSelected(face);return true;},
+ 
+});
+if(window.parent!==window){
+ window.parent.postMessage({type:'puzzle-ready',puzzle:'tetraminx'},window.location.origin);
+ let lastReportedHeight=0,heightReportPending=false;
+ function reportHeight(){
+  heightReportPending=false;
+  const height=Math.ceil($('puzzleApp').getBoundingClientRect().height)+2;
+  if(height!==lastReportedHeight&&height>0){lastReportedHeight=height;window.parent.postMessage({type:'puzzle-height',puzzle:'tetraminx',height},window.location.origin);}
+ }
+ function scheduleHeightReport(){if(!heightReportPending){heightReportPending=true;requestAnimationFrame(reportHeight);}}
+ if(typeof ResizeObserver!=='undefined')new ResizeObserver(scheduleHeightReport).observe($('puzzleApp'));
+ window.addEventListener('resize',scheduleHeightReport);scheduleHeightReport();
+}
+})();
+
+</script>
+<script src="play-timer.js"></script>
+<script src="ring-panel.js"></script>
+<script src="constrained-solver-core.js"></script>
+<script src="constrained-solver.js"></script>
+</body></html>

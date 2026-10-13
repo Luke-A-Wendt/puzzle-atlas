@@ -1,0 +1,117 @@
+.play-page{height:100dvh;overflow:hidden}.play-header{height:55px;border-bottom:1px solid var(--line);padding:0 27px;display:flex;align-items:center;gap:32px}.play-header .brand{font-size:18px}.collection-back{font-size:11px;color:var(--muted);padding-left:28px;border-left:1px solid var(--line);display:flex;gap:9px;align-items:center}.collection-back:hover{color:var(--green)}.switcher{margin-left:auto;display:flex;align-items:center;gap:12px}.switcher label{font-size:10px;color:var(--muted)}.switcher select{border:1px solid var(--line);background:var(--white);color:var(--ink);padding:8px 30px 8px 12px;border-radius:5px;font-size:11px;max-width:230px;cursor:pointer}.play-main{height:calc(100dvh - 55px);display:flex;flex-direction:column;padding:0 12px}.play-titlebar{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:66px;padding:10px 5px}.play-family{font-size:9px;letter-spacing:1.2px;color:var(--green);margin-bottom:3px}.play-titlebar h1{font:550 27px/1.15 var(--sans);letter-spacing:-.6px}.titlebar-actions{display:flex;align-items:center;gap:28px}.play-subtitle{font-size:10px;color:var(--muted)}.text-button{background:var(--white);color:var(--green);border:1px solid var(--line);font-size:11px;display:flex;align-items:center;gap:15px;padding:8px 12px;border-radius:5px}.text-button:hover{background:#29233e}.play-layout{min-height:0;flex:1;display:grid;grid-template-columns:minmax(0,1fr) clamp(325px,29vw,405px);gap:18px}.game-area{height:100%;min-height:0;min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--white);overflow:hidden}.game-area iframe{display:block;border:0;width:100%;height:100%;background:var(--white)}.guide-panel{height:100%;min-height:0;display:flex;flex-direction:column;background:var(--white);border:1px solid var(--line);border-radius:10px;overflow:hidden}.guide-panel-head{padding:22px 24px 19px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);background:#211e2d}.guide-panel-head .eyebrow{font-size:8px;letter-spacing:1.2px;color:var(--green)}.guide-panel-head h2{font:550 22px/1.2 var(--sans);margin-top:6px;letter-spacing:-.4px}.book-icon{font:30px var(--serif);color:#b3a0ff}.guide-scroll{overflow-y:auto;overscroll-behavior:contain;min-height:0;flex:1;padding:22px 23px;scrollbar-width:thin;scrollbar-color:#5e516f transparent;scroll-behavior:smooth}.guide-scroll:focus-visible{outline:2px solid var(--green);outline-offset:-2px}.guide-intro{font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.75}.guide-intro h3{font-size:15px;color:var(--ink);font-weight:600;margin-bottom:7px}.guide-controls{display:flex;flex-wrap:wrap;gap:7px 10px;align-items:center;margin-bottom:20px}.guide-controls label{width:100%;font-size:10px;color:var(--muted)}.guide-controls select{min-width:0;flex:1;width:100px;color:var(--ink);border:1px solid var(--line);background:#22212b;border-radius:4px;padding:8px 6px;font-size:11px}.guide-controls button{font-size:10px;color:var(--green);background:none;border:0;padding:8px 0 8px 6px}.guide-scroll details{border-top:1px solid var(--line);padding:14px 0}.guide-scroll summary{cursor:pointer;list-style:none;color:var(--ink);display:flex;align-items:baseline;gap:10px;font-size:12px;font-weight:600}.guide-scroll summary::-webkit-details-marker{display:none}.guide-scroll summary::after{content:'+';margin-left:auto;font-size:16px;font-weight:400;color:var(--green);line-height:1}.guide-scroll details[open]>summary::after{content:'−'}.guide-scroll summary .step-number{font-size:10px;flex-shrink:0;color:var(--green);font-weight:500}.guide-scroll .step-body{font-size:12px;line-height:1.8;padding-top:12px;color:#c4bfd2}.guide-scroll p+p{margin-top:10px}.guide-scroll ol,.guide-scroll ul{padding-left:18px;margin:10px 0}.guide-scroll li+li{margin-top:8px}.guide-scroll code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;line-height:1.9;padding:2px 4px;border-radius:3px;color:#d0bfff;background:#2a243b;overflow-wrap:anywhere;box-decoration-break:clone;-webkit-box-decoration-break:clone}.guide-scroll strong{font-weight:650;color:#f4f1fc}.notation-block>div{font-size:11px;line-height:1.8;color:var(--muted);padding-top:9px}.notation-block ul{padding-left:16px;margin:5px 0}.guide-scroll a{color:var(--green);text-decoration:underline;text-underline-offset:3px}.guide-scroll h4{font-size:12px;font-weight:650;margin:12px 0 5px}.guide-session-note{font-size:11px;color:var(--muted);line-height:1.8;background:#22202d;border-radius:6px;padding:15px;margin:15px 0}.guide-session-note h3{font-size:12px;font-weight:600;margin-bottom:5px;color:var(--ink)}.guide-sources p,.guide-sources li{font-size:10px;line-height:1.75;color:var(--muted)}.guide-sources p{margin-top:10px}.guide-sources summary{font-size:11px}.guide-footer{border-top:1px solid var(--line);padding:11px 16px;font-size:9px;color:var(--muted);text-align:center}.play-footer{display:flex;justify-content:space-between;gap:20px;font-size:9px;color:var(--muted);padding:6px 5px 8px}.play-footer a{color:var(--green);white-space:nowrap}.play-layout.guide-hidden{grid-template-columns:1fr}.guide-hidden .guide-panel{display:none}.guide-scroll table{border-collapse:collapse;width:100%;font-size:10px;margin:10px 0}.guide-scroll td,.guide-scroll th{padding:5px 4px;border:1px solid var(--line);text-align:left}.guide-scroll select[data-role]{max-width:100%}
+@media(min-width:1550px){.play-main{width:100%}.play-layout{grid-template-columns:minmax(0,1fr) 415px;gap:22px}.guide-scroll{padding:25px 28px}.guide-scroll .step-body{font-size:13px}.guide-scroll code{font-size:12px}}
+@media(max-width:1100px){.play-header{padding:0 20px;gap:20px}.play-subtitle{display:none}.play-main{padding:0 12px}.play-layout{grid-template-columns:minmax(0,1fr) 315px;gap:12px}.guide-panel-head{padding:17px 18px}.guide-scroll{padding:17px}.play-titlebar{min-height:66px}.play-titlebar h1{font-size:28px}.play-footer{font-size:8px}}
+@media(max-width:850px) and (orientation:portrait),(max-width:699px){.play-page{height:auto;min-height:100dvh;overflow:auto}.play-header{height:60px;padding:0 16px;gap:10px}.play-header .brand{font-size:16px}.play-header .brand img{width:28px;height:28px}.collection-back{font-size:10px;border:0;padding:0;margin-left:auto}.switcher{margin:0}.switcher label{display:none}.switcher select{max-width:150px;font-size:10px;padding:7px}.play-main{height:auto;min-height:calc(100dvh - 60px);padding:0 10px 10px}.play-titlebar{min-height:78px;padding:15px 6px}.play-titlebar h1{font-size:28px}.play-family{font-size:8px}.titlebar-actions{display:none}.play-layout,.play-layout.guide-hidden{display:block;flex:none;min-height:0}.game-area{height:1050px;max-height:none}.guide-panel{display:none;height:auto;min-height:calc(100dvh - 225px)}.play-layout.mobile-guide .game-area{display:none}.play-layout.mobile-guide .guide-panel{display:flex}.guide-scroll{overflow:visible;padding:22px;scroll-behavior:auto}.guide-panel-head{padding:21px 22px}.guide-scroll .step-body{font-size:13px}.guide-scroll summary{font-size:13px}.play-footer{padding:12px 6px;font-size:9px;align-items:center}.play-footer>span{max-width:260px}.guide-footer{padding:14px}.play-layout.guide-hidden.mobile-guide .guide-panel{display:flex}.play-layout .game-area{height:var(--game-height,1120px)}}
+@media(max-width:440px){.switcher{display:none}.play-header .collection-back{font-size:11px}.play-titlebar h1{font-size:28px}.game-area{--game-height:1170px}.play-footer>span{max-width:210px}}
+.addition-move-builder,.fto-move-builder,.shape-move-builder,.dino-move-builder,.edge-crystal-move-builder,.skewb-expansion-move-builder{min-width:0;margin:14px 0;padding:12px;border:1px solid #4a405e;border-radius:8px;background:#201d2b}
+.panel-toggles{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 1px 8px;flex-shrink:0}
+.panel-toggles .text-button{min-height:34px;cursor:pointer}
+.panel-toggles .text-button:disabled{color:var(--muted);cursor:default;opacity:.65}
+@media(max-width:850px) and (orientation:portrait),(max-width:699px){.panel-toggles #guide-toggle{display:none}}
+.addition-move-builder legend,.fto-move-builder legend,.shape-move-builder legend,.dino-move-builder legend,.edge-crystal-move-builder legend,.skewb-expansion-move-builder legend{padding:0 5px;color:var(--green);font-size:11px;font-weight:600}
+.fto-builder-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.fto-builder-fields label{min-width:0;font-size:10px;color:var(--muted)}
+.addition-move-builder select,.fto-move-builder select,.shape-move-builder select,.dino-move-builder select,.edge-crystal-move-builder select,.skewb-expansion-move-builder select{display:block;width:100%;min-width:0;margin-top:4px;padding:8px 5px;color:var(--ink);background:#15141d;border:1px solid #504563;border-radius:5px;font-size:11px}
+.fto-builder-result{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;font-size:11px;overflow-wrap:anywhere}
+.fto-builder-result code{white-space:normal;overflow-wrap:anywhere}
+@media(orientation:landscape) and (max-height:650px) and (min-width:700px){.play-header{height:48px}.play-main{height:calc(100dvh - 48px)}.play-titlebar{min-height:62px;padding:8px 5px}.play-titlebar h1{font-size:24px}.play-layout{grid-template-columns:minmax(0,1fr) 280px}.guide-panel-head{padding:11px 16px}.guide-panel-head h2{font-size:21px}.guide-panel-head .eyebrow{display:none}.guide-footer{display:none}.guide-scroll{padding:14px}.play-footer{padding:5px}}
+
+/* Keep navigation and the current puzzle in one compact header. */
+.play-header{height:50px;padding:0 16px;gap:18px}
+.play-header .brand{font-size:16px;gap:8px;flex-shrink:0}
+.play-header .brand img{width:26px;height:26px}
+.collection-back{padding-left:16px;font-size:10px;white-space:nowrap;flex-shrink:0}
+.play-identity{flex:1;min-width:0}
+.play-identity h1{font:550 20px/1.2 var(--sans);letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.play-identity .play-family{font-size:8px;line-height:1.35;letter-spacing:.6px;margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.switcher{margin-left:auto;flex-shrink:0}
+.switcher label{display:none}
+.switcher select{height:30px;width:clamp(140px,17vw,210px);max-width:210px;padding:4px 24px 4px 9px;font-size:11px}
+.play-main{height:calc(100dvh - 50px);padding:0 8px 6px}
+.panel-toggles{padding:4px 1px;gap:8px}
+.panel-toggles .text-button{min-height:28px;padding:3px 9px;gap:8px;font-size:10px}
+.guide-panel-head{padding:11px 18px}
+.guide-panel-head .eyebrow{display:none}
+.guide-panel-head h2{font-size:18px;margin:0}
+.guide-panel-head .book-icon{font-size:23px;line-height:1}
+.guide-footer{display:none}
+@media(max-width:1000px){.play-header{gap:12px}.play-header .brand span{display:none}.collection-back{padding-left:12px}.play-identity h1{font-size:18px}}
+@media(max-width:850px) and (orientation:portrait),(max-width:699px){
+ .play-header{height:48px;padding:0 12px;gap:10px}
+ .collection-back{margin-left:0;padding-left:0;border:0}
+ .play-identity h1{font-size:17px}
+ .play-main{height:auto;min-height:calc(100dvh - 48px);padding:0 6px 6px}
+ .panel-toggles .text-button{min-height:34px;font-size:11px}
+
+
+ .guide-panel-head{padding:12px 18px}
+}
+@media(max-width:600px){.play-header .brand,.switcher{display:none}.play-identity .play-family{font-size:7px}.play-identity h1{font-size:16px}.play-header .collection-back{font-size:10px}}
+
+/* One header: home at left and the puzzle name at right. */
+.play-header{height:46px;gap:16px;padding:0 14px}
+.play-header .brand{display:inline-flex}
+.play-header .brand span{display:inline}
+.play-header .brand,.play-puzzle-name{font:650 16px/1.6 var(--sans);letter-spacing:-.7px}
+.play-puzzle-name{min-width:0;margin:0 0 0 auto;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.play-main{height:calc(100dvh - 46px);padding-top:5px}
+.guide-panel-head .text-button{font-size:10px;gap:6px;padding:4px 8px;min-height:28px;white-space:nowrap}
+.guide-panel-head{flex-wrap:nowrap;gap:10px}
+.guide-panel-head>div{min-width:0}
+.guide-panel-head h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.guide-panel-head .text-button{flex-shrink:0}
+@media(max-width:850px) and (orientation:portrait),(max-width:699px){.play-main{height:auto;min-height:calc(100dvh - 46px)}}
+@media(max-width:700px){.play-header{gap:8px;padding:0 8px}.play-header .brand span{display:none}}
+
+/* Shared solver chapter stays within the existing scrollable guide. */
+.solver-guide{margin:0 0 20px}
+.solver-guide>details:first-child{border-top:0;padding-top:0}
+.solver-guide .step-body{font-size:12px}
+.solver-guide-note{font-size:11px;color:var(--muted)}
+.solver-terms{margin:12px 0}
+.solver-terms>div{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.solver-terms dt{color:var(--ink);font-size:13px}
+.solver-terms dd{margin:0;color:#c4bfd2}
+.solver-equation{margin:12px 0;padding:12px 7px;background:#17161f;border:1px solid var(--line);border-radius:6px;overflow-x:auto;scrollbar-width:thin;font-size:14px;color:var(--ink)}
+.solver-equation math{margin:0;min-width:max-content}
+.solver-puzzle-method{margin:0 0 18px;padding:14px 12px;border:1px solid var(--line);border-radius:7px;background:#1c1a25;font-size:12px;line-height:1.8;color:#c4bfd2}
+.solver-puzzle-method h3{font-size:13px;color:var(--ink);margin:0 0 8px}
+.guide-scroll .guide-cite{white-space:nowrap;text-decoration:none;font-size:.9em}
+.guide-scroll .guide-cite:hover{text-decoration:underline}
+.guide-scroll .guide-bibliography{list-style:none;padding:0;margin:14px 0 0}
+.guide-bibliography li{display:grid;grid-template-columns:25px minmax(0,1fr);gap:7px;scroll-margin-top:15px}
+.guide-bibliography li+li{margin-top:14px}
+.guide-reference-number{color:var(--green);font-variant-numeric:tabular-nums}
+.guide-reference-url{overflow-wrap:anywhere;font-size:9px}
+.guide-bibliography li:target{background:#282532;border-radius:4px;outline:5px solid #282532}
+
+/* Lead with the current puzzle's solution; supporting material is optional. */
+.guide-method-title{font-size:11px;color:#d5cede}
+.guide-intro h3{font-size:18px;line-height:1.3}
+.guide-extra-heading{margin:22px 0 11px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.solver-guide{margin-bottom:0}
+.solver-technical{margin-top:22px}
+.solver-tech-intro{padding:14px;background:#1c1a25;border:1px solid var(--line);border-radius:8px;margin:16px 0}
+.solver-tech-intro h4{margin-top:0}
+.solver-tech-nav{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin:14px 0}
+.solver-tech-nav a{font-size:11px;line-height:1.45;text-decoration:none;padding:6px 9px;border:1px solid #393344;border-radius:5px;background:#22202c}
+.solver-tech-nav a:hover,.solver-tech-nav a:focus-visible{background:#30293e;border-color:#b3a0ff}
+.guide-scroll .solver-tech-section{padding:14px 0}
+.guide-scroll .solver-tech-section>summary{font-size:12px;line-height:1.5}
+.solver-tech-body{padding-top:12px;min-width:0}
+.guide-scroll .solver-tech-subsection{margin:12px 0 4px;padding:10px 0 10px 11px;border-left:2px solid #484054;border-top:1px solid #302a3a}
+.guide-scroll .solver-tech-subsection>summary{font-size:11px;line-height:1.5}
+.solver-tech-lead{color:#e0d9ec}
+.solver-tech-table{max-width:100%;overflow-x:auto;margin:12px 0;scrollbar-width:thin}
+.solver-tech-table table{margin:0;min-width:250px}
+.solver-tech-table td{vertical-align:top;line-height:1.65;overflow-wrap:anywhere}
+.solver-tech-table th{background:#24202e;color:#eee8f8;vertical-align:top}
+.solver-pseudocode{margin:14px 0;border:1px solid #454052;border-radius:7px;overflow:hidden;background:#12121a}
+.solver-pseudocode figcaption{padding:8px 10px;font-size:10px;font-weight:600;color:#d9c8f4;background:#24202f;border-bottom:1px solid #454052}
+.solver-pseudocode pre{margin:0;padding:12px 10px;overflow:auto;max-width:100%;tab-size:4;line-height:1.65;scrollbar-width:thin}
+.guide-scroll .solver-pseudocode code{display:block;min-width:max-content;white-space:pre;font:10px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;padding:0;background:none;color:#dfdbe9;overflow-wrap:normal;word-break:normal}
+.solver-pseudocode pre:focus-visible,.solver-tech-table:focus-visible{outline:2px solid var(--green);outline-offset:-2px}
+.solver-tech-section:target>summary,.solver-tech-subsection:target>summary{color:#d3beff}
+@media(max-width:699px){.solver-tech-intro{padding:12px}.guide-scroll .solver-tech-section>summary{font-size:13px}.guide-scroll .solver-tech-subsection>summary{font-size:12px}.guide-scroll .solver-pseudocode code{font-size:11px}}
+.solver-method-details .solver-puzzle-method{margin:12px 0 0;padding:0;border:0;background:none}
+.solver-method-details .solver-puzzle-method h3{font-size:12px}

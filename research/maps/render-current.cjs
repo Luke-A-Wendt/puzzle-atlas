@@ -1,0 +1,4 @@
+const fs=require('fs'),path=require('path'),{createCanvas}=require('@napi-rs/canvas'),{createHarness}=require('../../tests/game-harness.cjs');
+const names=['tetraminx','pyraminx','megaminx','diamond','ultimate','fto'],canvas=createCanvas(1680,1070),ctx=canvas.getContext('2d');ctx.fillStyle='#101017';ctx.fillRect(0,0,canvas.width,canvas.height);
+for(let i=0;i<names.length;i++){const name=names[i],rings=createCanvas(560,500),cube=createCanvas(560,500);const app=createHarness({htmlPath:path.resolve(__dirname,'../../dist/games/'+name+'.html'),bundled:true,canvasContexts:{rings:rings.getContext('2d'),cube:cube.getContext('2d')},dimensions:{rings:{width:560,height:500},cube:{width:560,height:500}}});app.frame(0);ctx.drawImage(rings,i%3*560,Math.floor(i/3)*535+35);ctx.fillStyle='#ece7fa';ctx.font='700 22px sans-serif';ctx.fillText(name.toUpperCase(),i%3*560+25,Math.floor(i/3)*535+27);}
+fs.writeFileSync(path.join(__dirname,'current-maps.png'),canvas.toBuffer('image/png'));

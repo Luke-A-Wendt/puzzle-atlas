@@ -1,0 +1,359 @@
+{
+  "schemaVersion": 1,
+  "models": [
+    {
+      "id": "cube2",
+      "singleMoveChecks": 18,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 18,
+      "inverseChecks": 18,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 22
+    },
+    {
+      "id": "cube3",
+      "singleMoveChecks": 27,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 27,
+      "inverseChecks": 27,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 52
+    },
+    {
+      "id": "cube4",
+      "singleMoveChecks": 36,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 36,
+      "inverseChecks": 36,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 94
+    },
+    {
+      "id": "cube5",
+      "singleMoveChecks": 45,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 45,
+      "inverseChecks": 45,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 148
+    },
+    {
+      "id": "cube6",
+      "singleMoveChecks": 54,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 54,
+      "inverseChecks": 54,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 214
+    },
+    {
+      "id": "cube7",
+      "singleMoveChecks": 63,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 63,
+      "inverseChecks": 63,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 292
+    },
+    {
+      "id": "mirror",
+      "singleMoveChecks": 27,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 27,
+      "inverseChecks": 27,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 52
+    },
+    {
+      "id": "homer",
+      "singleMoveChecks": 18,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 18,
+      "inverseChecks": 18,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 22
+    },
+    {
+      "id": "pyraminx",
+      "singleMoveChecks": 16,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 16,
+      "inverseChecks": 16,
+      "moveOrders": [
+        3
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 34
+    },
+    {
+      "id": "tetraminx",
+      "singleMoveChecks": 8,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 8,
+      "inverseChecks": 8,
+      "moveOrders": [
+        3
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 22
+    },
+    {
+      "id": "megaminx",
+      "singleMoveChecks": 48,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 48,
+      "inverseChecks": 48,
+      "moveOrders": [
+        5
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 130
+    },
+    {
+      "id": "jing",
+      "singleMoveChecks": 8,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 8,
+      "inverseChecks": 8,
+      "moveOrders": [
+        3
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 26
+    },
+    {
+      "id": "skewb",
+      "singleMoveChecks": 16,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 16,
+      "inverseChecks": 16,
+      "moveOrders": [
+        3
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 28
+    },
+    {
+      "id": "masterskewb",
+      "singleMoveChecks": 16,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 16,
+      "inverseChecks": 16,
+      "moveOrders": [
+        3
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 76
+    },
+    {
+      "id": "ultimate",
+      "singleMoveChecks": 16,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 16,
+      "inverseChecks": 16,
+      "moveOrders": [
+        3
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 46
+    },
+    {
+      "id": "diamond",
+      "singleMoveChecks": 16,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 16,
+      "inverseChecks": 16,
+      "moveOrders": [
+        3
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 30
+    },
+    {
+      "id": "fto",
+      "singleMoveChecks": 24,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 24,
+      "inverseChecks": 24,
+      "moveOrders": [
+        3
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 70
+    },
+    {
+      "id": "crystal",
+      "singleMoveChecks": 48,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 48,
+      "inverseChecks": 48,
+      "moveOrders": [
+        5
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 118
+    },
+    {
+      "id": "dino",
+      "singleMoveChecks": 16,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 16,
+      "inverseChecks": 16,
+      "moveOrders": [
+        3
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 22
+    },
+    {
+      "id": "rainbow",
+      "singleMoveChecks": 16,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 16,
+      "inverseChecks": 16,
+      "moveOrders": [
+        3
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 54
+    },
+    {
+      "id": "rhombic",
+      "singleMoveChecks": 18,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 18,
+      "inverseChecks": 18,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 58
+    },
+    {
+      "id": "flatdiamond",
+      "singleMoveChecks": 18,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 18,
+      "inverseChecks": 18,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 66
+    },
+    {
+      "id": "cornerocta",
+      "singleMoveChecks": 36,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 36,
+      "inverseChecks": 36,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 70
+    },
+    {
+      "id": "trajber",
+      "singleMoveChecks": 18,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 18,
+      "inverseChecks": 18,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 54
+    },
+    {
+      "id": "jewel",
+      "singleMoveChecks": 18,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 18,
+      "inverseChecks": 18,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 52
+    },
+    {
+      "id": "pyramorphix",
+      "singleMoveChecks": 18,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 18,
+      "inverseChecks": 18,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 14
+    },
+    {
+      "id": "mastermorphix",
+      "singleMoveChecks": 18,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 18,
+      "inverseChecks": 18,
+      "moveOrders": [
+        4,
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 38
+    },
+    {
+      "id": "helicopter",
+      "singleMoveChecks": 12,
+      "sequenceSteps": 160,
+      "bijectiveMoveChecks": 12,
+      "inverseChecks": 12,
+      "moveOrders": [
+        2
+      ],
+      "snapshotMappingChecks": 40,
+      "exactSwapProtectedCount": 46
+    }
+  ],
+  "totalSingleMoveChecks": 692,
+  "totalSequenceSteps": 4480,
+  "modelsVerified": 28
+}

@@ -1,0 +1,1 @@
+(function(root){'use strict';const F=root.FaceGroupedRings||(typeof require==='function'?require('./face-grouped-rings.js'):null);root.DinoRings=Object.freeze({create:F.create});if(typeof module!=='undefined'&&module.exports)module.exports=root.DinoRings;})(typeof globalThis!=='undefined'?globalThis:this);

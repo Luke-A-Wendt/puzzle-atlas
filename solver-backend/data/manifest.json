@@ -1,0 +1,748 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "/workspace/scratch/249cff57c447/puzzle-atlas/dist",
+  "models": [
+    {
+      "id": "masterpyraminx",
+      "name": "Master Pyraminx",
+      "degree": 64,
+      "stickerCount": 64,
+      "moves": 24,
+      "representation": "fixed-sticker-slots",
+      "bytes": 21618,
+      "validation": {
+        "singleMoveChecks": 24,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 24,
+        "inverseChecks": 24,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "kilominx",
+      "name": "Kilominx",
+      "degree": 60,
+      "stickerCount": 60,
+      "moves": 48,
+      "representation": "fixed-sticker-slots",
+      "bytes": 27998,
+      "validation": {
+        "singleMoveChecks": 48,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 48,
+        "inverseChecks": 48,
+        "moveOrders": [
+          5
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "ghost",
+      "name": "Ghost Cube",
+      "degree": 168,
+      "stickerCount": 61,
+      "moves": 18,
+      "representation": "expanded-sticker-pose-domain",
+      "bytes": 50913,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Ring map is dynamic. Nodes are finite pose addresses, not just solved-face slots; only initialOccupied/current occupied addresses contain stickers. A frontend adapter must resolve each current ring dot by its pos, center, and normal. Never treat stickerState.slot as a destination here.",
+        "Ghost uses abstract oriented piece attachments: pos and center are the mechanical piece position; normal is a canonical attachment direction, not a measured surface normal. Each of the 61 physical colored patches has one attachment. Center attachments have a transverse component, so all visible center rotations remain observable. Empty addresses are not selectable. The 3D polyhedral geometry and automatic alignment phase are separate from this exact 168-address permutation action.",
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "cube2",
+      "name": "Cube 2×2",
+      "degree": 24,
+      "stickerCount": 24,
+      "moves": 18,
+      "representation": "fixed-sticker-slots",
+      "bytes": 8200,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "cube3",
+      "name": "Cube 3×3",
+      "degree": 54,
+      "stickerCount": 54,
+      "moves": 27,
+      "representation": "fixed-sticker-slots",
+      "bytes": 16856,
+      "validation": {
+        "singleMoveChecks": 27,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 27,
+        "inverseChecks": 27,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "cube4",
+      "name": "Cube 4×4",
+      "degree": 96,
+      "stickerCount": 96,
+      "moves": 36,
+      "representation": "fixed-sticker-slots",
+      "bytes": 31138,
+      "validation": {
+        "singleMoveChecks": 36,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 36,
+        "inverseChecks": 36,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "cube5",
+      "name": "Cube 5×5×5",
+      "degree": 150,
+      "stickerCount": 150,
+      "moves": 45,
+      "representation": "fixed-sticker-slots",
+      "bytes": 52672,
+      "validation": {
+        "singleMoveChecks": 45,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 45,
+        "inverseChecks": 45,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "cube6",
+      "name": "Cube 6×6×6",
+      "degree": 216,
+      "stickerCount": 216,
+      "moves": 54,
+      "representation": "fixed-sticker-slots",
+      "bytes": 84074,
+      "validation": {
+        "singleMoveChecks": 54,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 54,
+        "inverseChecks": 54,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "cube7",
+      "name": "Cube 7×7×7",
+      "degree": 294,
+      "stickerCount": 294,
+      "moves": 63,
+      "representation": "fixed-sticker-slots",
+      "bytes": 123772,
+      "validation": {
+        "singleMoveChecks": 63,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 63,
+        "inverseChecks": 63,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "cube8",
+      "name": "Cube 8×8×8",
+      "degree": 384,
+      "stickerCount": 384,
+      "moves": 72,
+      "representation": "fixed-sticker-slots",
+      "bytes": 176296,
+      "validation": {
+        "singleMoveChecks": 72,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 72,
+        "inverseChecks": 72,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "mirror",
+      "name": "Mirror Cube",
+      "degree": 54,
+      "stickerCount": 54,
+      "moves": 27,
+      "representation": "fixed-sticker-slots",
+      "bytes": 17043,
+      "validation": {
+        "singleMoveChecks": 27,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 27,
+        "inverseChecks": 27,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "The permutation domain is the underlying cube sticker frame. In-place orientation of single-face center stickers is not represented. Mirror mode has no ring map in the current UI.",
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "homer",
+      "name": "Homer",
+      "degree": 24,
+      "stickerCount": 24,
+      "moves": 18,
+      "representation": "fixed-sticker-slots",
+      "bytes": 8378,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "The permutation domain is the underlying cube sticker frame. In-place orientation of single-face center stickers is not represented. Mirror mode has no ring map in the current UI.",
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "pyraminx",
+      "name": "Pyraminx",
+      "degree": 36,
+      "stickerCount": 36,
+      "moves": 16,
+      "representation": "fixed-sticker-slots",
+      "bytes": 12033,
+      "validation": {
+        "singleMoveChecks": 16,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 16,
+        "inverseChecks": 16,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "tetraminx",
+      "name": "Tetraminx",
+      "degree": 24,
+      "stickerCount": 24,
+      "moves": 8,
+      "representation": "fixed-sticker-slots",
+      "bytes": 7486,
+      "validation": {
+        "singleMoveChecks": 8,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 8,
+        "inverseChecks": 8,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "megaminx",
+      "name": "Megaminx",
+      "degree": 132,
+      "stickerCount": 132,
+      "moves": 48,
+      "representation": "fixed-sticker-slots",
+      "bytes": 58874,
+      "validation": {
+        "singleMoveChecks": 48,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 48,
+        "inverseChecks": 48,
+        "moveOrders": [
+          5
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "jing",
+      "name": "Jing Pyraminx",
+      "degree": 28,
+      "stickerCount": 28,
+      "moves": 8,
+      "representation": "fixed-sticker-slots",
+      "bytes": 7904,
+      "validation": {
+        "singleMoveChecks": 8,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 8,
+        "inverseChecks": 8,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "skewb",
+      "name": "Skewb",
+      "degree": 30,
+      "stickerCount": 30,
+      "moves": 16,
+      "representation": "fixed-sticker-slots",
+      "bytes": 8685,
+      "validation": {
+        "singleMoveChecks": 16,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 16,
+        "inverseChecks": 16,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "masterskewb",
+      "name": "Master Skewb",
+      "degree": 78,
+      "stickerCount": 78,
+      "moves": 16,
+      "representation": "fixed-sticker-slots",
+      "bytes": 17510,
+      "validation": {
+        "singleMoveChecks": 16,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 16,
+        "inverseChecks": 16,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "ultimate",
+      "name": "Skewb Puzzleball",
+      "degree": 48,
+      "stickerCount": 48,
+      "moves": 16,
+      "representation": "fixed-sticker-slots",
+      "bytes": 14900,
+      "validation": {
+        "singleMoveChecks": 16,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 16,
+        "inverseChecks": 16,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "diamond",
+      "name": "Skewb Diamond",
+      "degree": 32,
+      "stickerCount": 32,
+      "moves": 16,
+      "representation": "fixed-sticker-slots",
+      "bytes": 11563,
+      "validation": {
+        "singleMoveChecks": 16,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 16,
+        "inverseChecks": 16,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "fto",
+      "name": "Face-turning Octahedron",
+      "degree": 72,
+      "stickerCount": 72,
+      "moves": 24,
+      "representation": "fixed-sticker-slots",
+      "bytes": 25303,
+      "validation": {
+        "singleMoveChecks": 24,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 24,
+        "inverseChecks": 24,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "crystal",
+      "name": "Pyraminx Crystal",
+      "degree": 120,
+      "stickerCount": 120,
+      "moves": 48,
+      "representation": "fixed-sticker-slots",
+      "bytes": 50793,
+      "validation": {
+        "singleMoveChecks": 48,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 48,
+        "inverseChecks": 48,
+        "moveOrders": [
+          5
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "dino",
+      "name": "Dino Cube",
+      "degree": 24,
+      "stickerCount": 24,
+      "moves": 16,
+      "representation": "fixed-sticker-slots",
+      "bytes": 7239,
+      "validation": {
+        "singleMoveChecks": 16,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 16,
+        "inverseChecks": 16,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "rainbow",
+      "name": "Rainbow Cube",
+      "degree": 56,
+      "stickerCount": 56,
+      "moves": 16,
+      "representation": "fixed-sticker-slots",
+      "bytes": 15732,
+      "validation": {
+        "singleMoveChecks": 16,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 16,
+        "inverseChecks": 16,
+        "moveOrders": [
+          3
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "rhombic",
+      "name": "Rhombic Dodecahedron Cube",
+      "degree": 60,
+      "stickerCount": 60,
+      "moves": 18,
+      "representation": "fixed-sticker-slots",
+      "bytes": 17022,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "flatdiamond",
+      "name": "Flat Diamond Cube",
+      "degree": 254,
+      "stickerCount": 68,
+      "moves": 18,
+      "representation": "expanded-sticker-pose-domain",
+      "bytes": 98681,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Ring map is dynamic. Nodes are finite pose addresses, not just solved-face slots; only initialOccupied/current occupied addresses contain stickers. A frontend adapter must resolve each current ring dot by its pos, center, and normal. Never treat stickerState.slot as a destination here.",
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "cornerocta",
+      "name": "Corner-turning Octahedron",
+      "degree": 72,
+      "stickerCount": 72,
+      "moves": 36,
+      "representation": "fixed-sticker-slots",
+      "bytes": 27403,
+      "validation": {
+        "singleMoveChecks": 36,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 36,
+        "inverseChecks": 36,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "trajber",
+      "name": "Trajber’s Octahedron",
+      "degree": 56,
+      "stickerCount": 56,
+      "moves": 18,
+      "representation": "fixed-sticker-slots",
+      "bytes": 18856,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "jewel",
+      "name": "Christoph’s Jewel",
+      "degree": 54,
+      "stickerCount": 54,
+      "moves": 18,
+      "representation": "fixed-sticker-slots",
+      "bytes": 16155,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "pyramorphix",
+      "name": "Pyramorphix",
+      "degree": 32,
+      "stickerCount": 16,
+      "moves": 18,
+      "representation": "expanded-sticker-pose-domain",
+      "bytes": 16804,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Ring map is dynamic. Nodes are finite pose addresses, not just solved-face slots; only initialOccupied/current occupied addresses contain stickers. A frontend adapter must resolve each current ring dot by its pos, center, and normal. Never treat stickerState.slot as a destination here.",
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "mastermorphix",
+      "name": "MasterMorphix",
+      "degree": 80,
+      "stickerCount": 40,
+      "moves": 18,
+      "representation": "expanded-sticker-pose-domain",
+      "bytes": 34498,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Ring map is dynamic. Nodes are finite pose addresses, not just solved-face slots; only initialOccupied/current occupied addresses contain stickers. A frontend adapter must resolve each current ring dot by its pos, center, and normal. Never treat stickerState.slot as a destination here.",
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "helicopter",
+      "name": "Helicopter Cube",
+      "degree": 48,
+      "stickerCount": 48,
+      "moves": 12,
+      "representation": "fixed-sticker-slots",
+      "bytes": 11900,
+      "validation": {
+        "singleMoveChecks": 12,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 12,
+        "inverseChecks": 12,
+        "moveOrders": [
+          2
+        ]
+      },
+      "notes": [
+        "Only the cube-shape, non-jumbling 180-degree subgroup is exported. Jumbling changes legal cuts and is explicitly unsupported. A state reached using fractional alignment stops must be rejected even if a request only asks for half turns.",
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "diamondstyle",
+      "name": "Diamond Puzzler",
+      "degree": 26,
+      "stickerCount": 26,
+      "moves": 18,
+      "representation": "fixed-sticker-slots",
+      "bytes": 9277,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "diamondcube",
+      "name": "Diamond Cuboctahedron",
+      "degree": 86,
+      "stickerCount": 86,
+      "moves": 18,
+      "representation": "fixed-sticker-slots",
+      "bytes": 22874,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    }
+  ],
+  "totalBytes": 1130450
+}
