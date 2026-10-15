@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "single-double-conjugate-commutator-pair-powers-depth4-fallback",
+  "maxWordLength": 6,
+  "maxBytesPerModel": 2097152,
+  "maxTotalBytes": 20971520,
+  "totalBytes": 4190107,
+  "models": [
+    {
+      "id": "cube9",
+      "degree": 486,
+      "moves": 81,
+      "candidateWords": 32886,
+      "nonemptyTwoCycleWords": 15186,
+      "uniqueBeforeBudget": 9966,
+      "extendedDepth": 0,
+      "operations": 4767,
+      "omitted": 5199,
+      "bytes": 2095198,
+      "verifiedWords": 4767,
+      "exchangePairs": 1863,
+      "lengths": {
+        "1": 27,
+        "2": 1782,
+        "3": 1098,
+        "4": 1752,
+        "6": 108
+      },
+      "maxMovedNodes": 116
+    },
+    {
+      "id": "cube10",
+      "degree": 600,
+      "moves": 90,
+      "candidateWords": 40590,
+      "nonemptyTwoCycleWords": 18246,
+      "uniqueBeforeBudget": 12621,
+      "extendedDepth": 0,
+      "operations": 4679,
+      "omitted": 7942,
+      "bytes": 2094909,
+      "verifiedWords": 4679,
+      "exchangePairs": 2436,
+      "lengths": {
+        "1": 30,
+        "2": 1673,
+        "3": 1440,
+        "4": 1536
+      },
+      "maxMovedNodes": 140
+    }
+  ]
+}

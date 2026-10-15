@@ -35,16 +35,20 @@ for(const N of [5,6,7]){
   for(const move of [...moves].reverse())s=E.applyMove(s,E.invertMove(move));assert.equal(signature(s),homeSig);
  }
  const html=fs.readFileSync(path.join(root,`dist/games/cube${N}.html`),'utf8'),embedded=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1].trim());
- for(const [index,name] of [[1,'nxn-engine.js'],[2,'nxn-rings.js'],[4,'nxn-app.js']])assert.equal(embedded[index],fs.readFileSync(path.join(root,'dist/games',name),'utf8').trim(),'Embedded code drift: '+name);
+ const calibrated=s=>s.replace(/  \/\/ Balanced exact circle intersections; all moving paths fit the viewport\.\n/,'').replace(/const centers = \[[\s\S]*?\];/,'const centers = CALIBRATED;').replace(/const radii=[^;]+;/,'const radii=CALIBRATED;');
+ // Each size embeds its own optimized circle spacing. Compare all other
+ // geometry logic exactly, and verify the actual calibrated circles below.
+ for(const [index,name] of [[1,'nxn-engine.js'],[2,'nxn-rings.js'],[4,'nxn-app.js']]){const expected=fs.readFileSync(path.join(root,'dist/games',name),'utf8').trim();assert.equal(name==='nxn-rings.js'?calibrated(embedded[index]):embedded[index],name==='nxn-rings.js'?calibrated(expected):expected,'Embedded code drift: '+name);}
  const app=createHarness({htmlPath:path.join(root,`dist/games/cube${N}.html`),bundled:true,speed:5});
+ const actualGeometry=app.context.RingGeometry;const actualPoints=app.context.CubeEngine.makeSolved().map(sticker=>actualGeometry.position(sticker));assert(actualPoints.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)));assert.equal(new Set(actualPoints.map(p=>p.x.toFixed(7)+':'+p.y.toFixed(7))).size,6*N*N);for(const ring of actualGeometry.rings)for(const point of ring.slots)assert(Math.abs(Math.hypot(point.x-ring.cx,point.y-ring.cy)-ring.r)<1e-6,'calibrated nodes lie on their exact circle');
  assert.equal(app.context.PUZZLE_API.puzzle,'cube'+N);assert.equal(app.document.querySelectorAll('.ring-key').length,3*N);assert.equal(app.document.querySelectorAll('.notation-key').length,3*N);
  for(const face of Object.keys(E.configs)){app.select(face);app.click('cw');app.complete();app.click('ccw');app.complete();assert.equal(signature(app.snapshot().stickers),homeSig);}
- app.click('randomize');app.frame(50);app.click('pause');const paused=app.snapshot();app.frame(500);assert.equal(signature(app.snapshot().stickers),signature(paused.stickers));assert(app.snapshot().paused);app.click('pause');app.complete();const seed=app.snapshot().seed;assert(seed);assert.equal(app.snapshot().history.length,N*12);assert(!E.isSolved(app.snapshot().stickers));
+ app.context.PUZZLE_API.reset();app.click('randomize');app.frame(50);app.click('pause');const stopped=app.snapshot();app.frame(500);assert.equal(signature(app.snapshot().stickers),signature(stopped.stickers));assert.equal(app.snapshot().paused,false);assert.equal(app.snapshot().mode,'idle');assert.equal(app.snapshot().history.length,0);app.click('randomize');app.complete();const seed=app.snapshot().seed;assert(seed);assert.equal(app.snapshot().history.length,N*12);assert(!E.isSolved(app.snapshot().stickers));
  app.context.PUZZLE_API.runMoves(N%2?"R M E' S2 Ri2":"R Rii Fii' Uii2");app.complete();assert.equal(app.snapshot().userTurns,N%2?5:4);
  app.click('undo');app.complete();assert.equal(app.snapshot().userTurns,N%2?4:3);
  const length=app.snapshot().history.length;assertAutoSolveDelegates(app.context);assert.equal(app.snapshot().history.length,length);assert(!E.isSolved(app.snapshot().stickers));
  app.click('randomize');app.complete();assert.notEqual(app.snapshot().seed,seed);app.click('reset');assert.equal(signature(app.snapshot().stickers),homeSig);
- app.click('ringFocus');app.frame();assert.equal(app.elements.get('ringFocus').attributes['aria-pressed'],'true');
+ const focused=app.elements.get('ringFocus').attributes['aria-pressed'];app.click('ringFocus');app.frame();assert.equal(app.elements.get('ringFocus').attributes['aria-pressed'],focused==='true'?'false':'true');
  const view=app.snapshot().view;app.elements.get('cube').dispatch('wheel',{deltaY:-100});app.frame();assert(app.snapshot().view.zoom>view.zoom);assert.equal(signature(app.snapshot().stickers),homeSig);
- console.log(`${N}×${N}: ${3*N} moves, ${6*N*N} stickers, exact ring cycles, 100 seeded inverses, UI scramble/play/undo/pause/Auto Solve delegation passed`);
+ console.log(`${N}×${N}: ${3*N} moves, ${6*N*N} stickers, exact ring cycles, 100 seeded inverses, UI scramble/play/undo/Stop/Auto Solve delegation passed`);
 }

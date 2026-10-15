@@ -4,7 +4,7 @@ const {createPage}=require('./solver-dom.cjs');
 const games=path.join(__dirname,'../dist/games'),models=require('../solver-backend/data/manifest.json').models;
 const fetchAsset=async url=>({ok:true,text:async()=>fs.readFileSync(path.join(games,new URL(url).pathname.replace(/^\/games\//,'')),'utf8')});
 
-test('all 34 ring maps expose a working display toggle in normal and constrained modes without moving stickers',async()=>{
+test('all catalog ring maps expose a working display toggle in normal and constrained modes without moving stickers',async()=>{
  for(const {id}of models){
   const app=createPage(id,{globals:{fetch:fetchAsset}}),button=app.element('ringFocus');
   assert(button,id+' has the focus control');
@@ -12,7 +12,7 @@ test('all 34 ring maps expose a working display toggle in normal and constrained
   assert(['true','false'].includes(pressed));
   app.click('ringFocus');app.frame(0);
   assert.equal(button.getAttribute('aria-pressed'),String(pressed!=='true'),id+' toggles display');
-  assert.equal(button.textContent,pressed==='true'?'Focus selected rings':'Show all rings',id+' shows the next action');
+  assert.equal(button.textContent,pressed==='true'?'Focus rings':'Show all rings',id+' shows the next action');
   assert.equal(JSON.stringify(app.snapshot().stickers),before,id+' display toggle does not turn the puzzle');
   await app.context.ConstrainedSolverUI.setActive(true);await app.flush();
   assert.equal(app.context.ConstrainedSolverUI.state().active,true,id+' opens constrained mode');

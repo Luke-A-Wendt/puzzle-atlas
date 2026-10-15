@@ -1,3 +1,7 @@
+# Archived development notes
+
+These notes describe earlier releases, including the original 34-puzzle catalog. Counts, UI behavior, and solver budgets below are historical. See [RELEASE-NOTES.md](RELEASE-NOTES.md), the current in-app guides, and `solver-backend/` documentation for this release.
+
 # Puzzle Atlas
 
 A buildless static collection of thirty-three main ring-controlled puzzles and one secret Homer head puzzle.

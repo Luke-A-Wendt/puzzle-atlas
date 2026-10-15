@@ -20,12 +20,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,canvas:focus-visib
 .status.mixed{background:var(--violet-dim);border-color:#4c426c;color:#c7baff}
 .status.busy{background:#332c1b;border-color:#5b5031;color:#f5d580}
 .panel{border:1px solid var(--line);background:var(--panel);border-radius:12px;overflow:hidden}
-.workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;flex:1;min-height:420px}
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;flex:1;min-height:420px;min-height:min-content}
 .workspace>section{display:flex;flex-direction:column;min-width:0;min-height:0}
 .panel-head{height:34px;padding:7px 16px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-shrink:0}
 .panel-head h2{margin:0;font-size:12px;font-weight:650;letter-spacing:-.15px}
 .tag{font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
 .canvas-wrap{position:relative;overflow:hidden;isolation:isolate}
+/* Intrinsic bitmap sizes must not enlarge the flex minimum on resize. The
+   wrappers' explicit canvas minima reserve space; extra viewport space flexes. */
+.workspace>section>.canvas-wrap{contain:size}
 .ring-wrap,.cube-wrap{height:auto;flex:1 1 0;min-height:280px;max-height:none}
 .cube-wrap{background:radial-gradient(ellipse at 50% 55%,#29243a66,transparent 70%)}
 canvas{width:100%;height:100%;display:block;touch-action:none;user-select:none;cursor:grab}
@@ -147,9 +150,9 @@ footer .offline{display:none}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 
 /* Advanced shape-only play gives the entire workspace to the physical puzzle. */
-#ringPanel[hidden],#mirrorMode[hidden],#pieceLabels[hidden],#identityMetric[hidden]{display:none!important}
-.mirror-active .workspace{grid-template-columns:minmax(0,1fr)}
-.mirror-active .cube-wrap{min-height:340px}
+#ringPanel[hidden],#mirrorMode[hidden],#pieceLabels,#identityMetric[hidden]{display:none!important}
+.rings-unavailable .workspace{grid-template-columns:minmax(0,1fr)}
+.rings-unavailable .cube-wrap{min-height:340px}
 #mirrorMode[aria-pressed="true"]{color:#181622;background:#d9dbe5;border-color:#f0f1f7}
 .rings-collapsed #ringPanel{display:none!important}
 .rings-collapsed .workspace{grid-template-columns:minmax(0,1fr)}
@@ -170,6 +173,17 @@ footer .offline{display:none}
 #ringPanelHide[hidden],#ringPanelToggle[hidden]{display:none}
 @media(max-width:850px) and (orientation:portrait),(max-width:680px){.view-panel-controls button,.ring-panel-head button{min-height:32px}}
 .game-shape .cube-top{flex-wrap:wrap}
+.panel>.cube-top{position:static;inset:auto;display:flex;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:5px;min-width:0;padding:6px 10px;border-bottom:1px solid var(--border,#35333e);background:var(--panel,#191921)}
+.panel>.cube-top>button{max-width:100%;white-space:nowrap}
+.view-axis-turns{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-right:auto;padding:3px;border:1px solid #666772;border-radius:8px;background:#111219;color:#f3f3f5}
+.view-axis-caption{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:76px;max-width:140px;padding:0 4px;line-height:1.2;text-align:center}
+.view-axis-caption>span{font-size:8px;letter-spacing:.4px;text-transform:uppercase;color:#aaaab5}
+.view-axis-caption>strong{font-size:11px;font-weight:650;overflow-wrap:anywhere;color:#f3f3f5}
+.cube-top .view-axis-turn{width:31px;min-width:31px;height:31px;min-height:31px;padding:0;border:1px solid #92939c;border-radius:5px;background:#292a34;color:#fff;font-size:23px;line-height:1;box-shadow:none}
+.cube-top .view-axis-turn:hover:not(:disabled),.cube-top .view-axis-turn:focus-visible{background:#3c3d47;border-color:#fff}
+.turn-bar button:disabled,.cube-top .view-axis-turn:disabled{opacity:.33;filter:grayscale(1);background:#1b1c24;border-color:#53545e;color:#a7a8b0;cursor:not-allowed;box-shadow:none}
+.view-axis-turns[data-selected="false"] .view-axis-caption>strong{font-weight:500;color:#a7a8b0}
+@media(max-width:680px){.panel>.cube-top{padding:5px 8px;gap:4px}.panel>.cube-top>.small{min-height:30px;padding:4px 6px;font-size:10px}.view-axis-turns{padding:2px}.view-axis-caption{min-width:68px}.cube-top .view-axis-turn{min-width:32px;width:32px;min-height:32px;height:32px}}
 
 /* Spend the viewport on the live views; secondary help opens in the journal. */
 .app{padding:5px;gap:6px}
@@ -195,4 +209,164 @@ footer .offline{display:none}
  .log-tools label{display:none}
  .log-tools .small{min-height:28px;padding:3px 6px}
  .metric{gap:10px}.metric>div{gap:4px}.metric strong{font-size:15px}
+}
+
+/* Compact controls: help belongs in How to play, not in the play area. */
+.app{gap:5px}
+.workspace{gap:6px}
+.canvas-caption,.ring-hint,.notation-panel>p,.cube-footnote,.legacy-face-metric{display:none!important}
+.action-panel{display:grid;grid-template-columns:max-content max-content max-content 65px 64px max-content minmax(0,1fr) max-content;align-items:center;gap:5px;padding:4px 7px}
+.action-group{display:contents}
+.action-group>#randomize{grid-column:1;grid-row:1}
+.action-group>#solve{grid-column:2;grid-row:1}
+.action-group>.journal-transport{grid-column:3;grid-row:1}
+.action-group>.playback-speed-control{grid-column:4;grid-row:1}
+.action-group>#pause{grid-column:5;grid-row:1;width:100%;min-width:0;justify-content:center}
+.action-group>#reset{grid-column:6;grid-row:1}
+.action-group>#journalActivity{grid-column:7;grid-row:1}
+.action-meta{grid-column:8;grid-row:1;justify-content:flex-end;min-width:0}
+.action-meta .status{min-width:67px;text-align:center;padding:3px 5px;font-size:9px}
+.action-group>button{min-height:32px;min-width:0;padding:4px 8px;font-size:11px;line-height:1.15;white-space:normal;overflow-wrap:normal}
+/* Stop is a disabled control while idle; it never reserves an empty row. */
+.action-group>#pause[hidden]{display:inline-flex!important;align-items:center;opacity:.35;pointer-events:none;cursor:default}
+.playback-speed-control{min-width:0;display:flex;align-items:center;justify-content:center}
+.playback-speed-control label,.playback-speed-control>span{display:none}
+.playback-speed-control select{width:100%;min-width:0;height:32px;padding:3px 4px;border:1px solid var(--line);border-radius:7px;background:#23232d;color:var(--ink);font-size:11px;line-height:1.2;cursor:pointer}
+.panel>.cube-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px;padding:3px 7px}
+.view-primary-tools,.view-display-tools{display:flex;align-items:center;gap:4px;min-width:0;flex-wrap:wrap}
+.view-primary-tools{flex:0 1 auto}.view-display-tools{justify-content:flex-end;flex:1 1 auto}
+.panel>.cube-top .small,.panel>.cube-top .puzzle-display-control{min-height:28px;padding:3px 7px;font-size:10px;line-height:1.2;white-space:normal;text-align:center;overflow-wrap:normal}
+.view-axis-turns{margin:0;padding:2px;gap:3px;min-width:0;flex-shrink:1}
+.view-axis-caption{min-width:0;width:79px;max-width:110px;padding:0 2px}
+.view-axis-caption>span{font-size:7px;letter-spacing:.2px}
+.view-axis-caption>strong{font-size:10px;line-height:1.15;overflow-wrap:anywhere}
+.view-axis-turns[data-selected="false"] .view-axis-caption>span,.turn-selected[data-selected="false"]>span{display:none}
+.cube-top .view-axis-turn{width:28px;min-width:28px;height:28px;min-height:28px;font-size:22px}
+.view-display-tools>#viewLabelMode,.view-display-tools>#viewHighlightToggle,.view-display-tools>#pieceLabels,.view-display-tools>#mirrorMode{min-width:0;max-width:120px}
+.ring-controls{padding:0 9px 5px}
+.selector{gap:4px}
+.axis-row{padding:2px 3px;border-radius:6px}
+.axis-label{margin-bottom:0;line-height:1.1}
+.ring-key{min-height:27px;padding:2px 0}
+.turn-bar{margin-top:4px;gap:5px}
+.turn-bar button{min-height:32px;padding:3px 5px;font-size:10px}
+.turn-selected{width:90px;min-width:90px;line-height:1.1}
+.turn-selected strong{font-size:12px;line-height:1.15;color:var(--ink)}
+.turn-selected span{font-size:7px;line-height:1}
+.notation-panel{padding:4px 9px}
+.notation-heading{margin-bottom:3px;gap:6px;font-size:9px;line-height:1.2}
+.notation-panel .notation-buttons,.game-cubeNXN .notation-panel .notation-buttons{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.notation-pair{display:inline-flex;flex:0 0 auto;gap:2px;min-width:0}
+.notation-buttons .notation-pair .notation-key{flex:0 0 auto;width:28px;min-width:28px;height:28px;min-height:28px;padding:0;font-size:10px;line-height:1;aspect-ratio:1;border-radius:5px;overflow:hidden}
+.panel-head{padding-inline:9px}
+.log-panel{padding:2px 9px}
+.log-panel>.log-tools{position:absolute;right:9px;top:3px;margin:0;padding:0;border:0;min-height:26px}
+.log-panel .journal>summary{padding-right:88px;min-height:28px}
+.log-panel .log-tools .small{min-height:25px}
+@media(max-width:1000px){
+ .action-panel{gap:4px;grid-template-columns:max-content max-content max-content 60px 56px max-content minmax(0,1fr) max-content;padding-inline:5px}
+ .action-group>button{padding-inline:6px;font-size:10px}
+ .action-meta .status{min-width:59px;font-size:8px}
+ .action-panel .icon{display:none}
+}
+@media(max-width:850px) and (orientation:portrait),(max-width:680px){
+ .app{padding:3px;gap:5px}.workspace{gap:5px}
+ .action-panel{grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:34px 34px;gap:4px;padding:4px 5px}
+ .action-group>#randomize{grid-column:1/4;grid-row:1}
+ .action-group>#solve{grid-column:4/7;grid-row:1}
+ .action-group>.journal-transport{grid-column:7/13;grid-row:1;width:100%}
+ .action-group>.playback-speed-control{grid-column:1/4;grid-row:2}
+ .action-group>#pause{grid-column:4/7;grid-row:2}
+ .action-group>#reset{grid-column:7/10;grid-row:2}
+ .action-group>#journalActivity,.action-meta{grid-column:10/13;grid-row:2}
+ .action-group>#journalActivity{z-index:1}
+ .action-panel[data-journal-active="true"] .action-meta{visibility:hidden}
+ .action-group>button{height:34px;min-height:34px;padding:3px 4px;font-size:11px;line-height:1.15;overflow:hidden}
+ .playback-speed-control select{height:34px;font-size:12px}
+ .action-meta .status{min-width:0;width:100%;font-size:9px;padding:3px 2px;white-space:normal;line-height:1.15}
+ .panel>.cube-top{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding:3px 6px}
+ .view-primary-tools{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(2,minmax(0,1fr));gap:4px;width:100%}
+ .view-primary-tools>.view-axis-turns{grid-column:1;min-width:0;width:100%;padding:2px;gap:2px}
+ .view-primary-tools.without-face-view{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+ .panel>.cube-top .view-primary-tools>.small{min-width:0;width:100%;max-width:none;min-height:34px;height:34px;padding:3px 4px;font-size:10px;line-height:1.15;white-space:normal;overflow-wrap:normal}
+ .view-axis-caption{width:auto;flex:1 1 auto;min-width:0;max-width:none;padding:0 1px}
+ .view-axis-caption>strong{font-size:10px}.view-axis-caption>span{font-size:7px}
+ .cube-top .view-axis-turn{width:28px;min-width:28px;height:28px;min-height:28px}
+ .view-display-tools{display:flex;flex-wrap:nowrap;gap:4px;justify-content:stretch;width:100%}
+ .panel>.cube-top .view-display-tools>.small,.panel>.cube-top .view-display-tools>.guide-toggle{flex:1 1 0;min-width:0;max-width:none;min-height:34px;height:34px;padding:2px 4px;font-size:10px;line-height:1.15;white-space:normal;overflow-wrap:normal;text-align:center;justify-content:center}
+ .ring-controls{padding:0 8px 5px}.selector{gap:4px}.ring-key{min-height:32px;font-size:11px}
+ .game-cubeNXN .ring-controls .axis-row{gap:4px;padding:2px 4px}
+ .game-cubeNXN .ring-controls .axis-label{width:40px;max-width:40px;white-space:normal;line-height:1.1;font-size:8px}
+ .game-cubeNXN .ring-controls .ring-key{min-width:0;min-height:32px;font-size:11px}
+ .turn-bar{margin-top:4px;gap:4px}.turn-bar button{min-height:34px;font-size:10px;padding:3px}
+ .turn-selected{width:85px;min-width:85px}.turn-selected strong{font-size:11px}
+ .direction{margin-right:2px}
+ .notation-panel{padding:4px 8px}.notation-heading{font-size:9px}
+ .notation-buttons{gap:4px}
+ .notation-buttons .notation-pair .notation-key{width:28px;min-width:28px;height:28px;min-height:28px;font-size:10px}
+ .log-panel .journal>summary{min-height:32px;padding-right:83px}.log-panel>.log-tools{top:3px;right:7px;min-height:28px}.log-panel .log-tools .small{min-height:28px;font-size:10px}
+}
+@media(max-width:350px){
+ .action-group>button{font-size:10px;padding-inline:3px}
+ .selector{gap:3px}.axis-label{font-size:7px}.ring-key{font-size:10px}
+ .panel>.cube-top .view-primary-tools>.small,.panel>.cube-top .view-display-tools>.small{font-size:9px;padding-inline:2px}
+}
+
+.view-speed-control[hidden],.inverse-toggle[hidden],#speed[hidden]{display:none!important}
+
+.notation-buttons.notation-has-long-labels .notation-pair .notation-key{width:32px;min-width:32px;height:32px;min-height:32px;font-size:9.5px}
+
+/* The 3D view owns the selector and signed turn buttons. Native ring-map
+   controls stay connected for engine state without taking any layout space. */
+.view-native-actions,.view-native-camera{display:none!important}
+#ringPanel>.ring-controls{display:none!important}
+.panel>.view-ring-controls{margin:0;padding-top:4px}
+.view-ring-controls .turn-selected[data-selected="false"]>span{display:none}
+.view-ring-controls .turn-bar .direction{margin-right:0;margin-left:6px}
+.turn-bar button:disabled{opacity:.33;filter:grayscale(1);background:#1b1c24;border-color:#53545e;color:#a7a8b0;cursor:not-allowed;box-shadow:none}
+/* Both members of the active action flash together for each real primitive.
+   Alternating identical keyframes restart repeated moves without reflow. The
+   accent is visual only: busy controls remain disabled throughout playback. */
+#viewRingControls button[data-turn-active="true"]{opacity:1;filter:none;background:#dddde3;border-color:#fff;color:#101116;box-shadow:inset 0 0 0 1px #ffffff80}
+#viewRingControls button[data-turn-pulse="0"]{animation:puzzle-turn-flash-a .34s ease-out both}
+#viewRingControls button[data-turn-pulse="1"]{animation:puzzle-turn-flash-b .34s ease-out both}
+@keyframes puzzle-turn-flash-a{from{background:#fff;box-shadow:inset 0 0 0 2px #fff}to{background:#dddde3;box-shadow:inset 0 0 0 1px #ffffff80}}
+@keyframes puzzle-turn-flash-b{from{background:#fff;box-shadow:inset 0 0 0 2px #fff}to{background:#dddde3;box-shadow:inset 0 0 0 1px #ffffff80}}
+@media(prefers-reduced-motion:reduce){#viewRingControls button[data-turn-active="true"]{animation:none!important}}
+/* Keep native counter IDs connected for engine updates, without a metrics bar. */
+.cube-bottom,.cube-bottom.view-metrics{display:none!important}
+.action-meta .status{display:inline-flex;align-items:center;justify-content:center;min-height:32px;height:32px;padding:4px 8px;border-radius:7px;font-size:11px;line-height:1.15}
+@media(max-width:850px) and (orientation:portrait),(max-width:680px){
+ .panel>.cube-top{display:flex;flex-wrap:nowrap;padding:3px 6px;gap:4px}
+ .view-display-tools{width:auto;max-width:100%;justify-content:flex-start}
+ .panel>.cube-top .view-display-tools>.small{flex:0 1 auto;min-height:32px;height:32px;padding:3px 4px;font-size:10px;white-space:nowrap}
+ .panel>.view-primary-tools{display:flex;padding:4px 8px 0}
+ .view-primary-tools>.view-axis-turns{width:max-content;padding:0;gap:0}
+ .view-primary-tools .view-axis-turn,.view-primary-tools #faceView,.view-primary-tools #viewActionsToggle,.view-primary-tools #homeView{min-height:32px;height:32px}
+ .view-primary-tools #faceView,.view-primary-tools #viewActionsToggle,.view-primary-tools #homeView{padding-inline:3px}
+ .view-primary-tools .view-axis-caption{flex:0 0 auto;width:32px;min-width:32px;height:32px;max-width:none;padding:0}
+ .panel>.view-primary-tools{padding-bottom:4px}
+ .action-meta .status{min-height:34px;height:34px;padding:3px 2px;font-size:10px;white-space:normal}
+}
+@media(max-width:350px){.panel>.cube-top .view-display-tools>.small{padding-inline:4px;font-size:9px}}
+
+/* One compact header row reserves real space above the canvas. Each label
+   stays on one line; overflow is only a fallback for optional extra tools. */
+.panel>.cube-top.view-header-toolbar{position:static;display:flex;flex:0 0 auto;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:3px;height:auto;min-height:38px;padding:3px 6px;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.view-header-toolbar>h2{flex:0 0 auto;min-width:0;margin:0 auto 0 0;font-size:11px;line-height:1.2;white-space:nowrap;overflow:visible;text-overflow:clip}
+.view-header-toolbar>.view-display-tools,.view-header-toolbar>.view-panel-controls,.view-header-toolbar>.view-feature-tools{display:flex;flex:0 0 auto;align-items:center;gap:3px;width:auto;min-width:0;max-width:none;margin:0;flex-wrap:nowrap}
+.view-header-toolbar>.view-feature-tools[hidden]{display:none!important}
+.view-title-short,.view-guide-short{display:none}
+.panel>.cube-top.view-header-toolbar .small,.panel>.cube-top.view-header-toolbar .puzzle-display-control{flex:0 0 auto;width:auto;max-width:none;min-height:32px;height:32px;padding:3px 7px;font-size:11px;line-height:1.2;white-space:nowrap;overflow-wrap:normal;text-align:center}
+@media(max-width:850px) and (orientation:portrait),(max-width:680px){
+ .panel>.cube-top.view-header-toolbar{gap:3px;padding:3px 4px;min-height:38px}
+ .view-header-toolbar>h2{font-size:10px;line-height:1.2;width:auto;min-width:0;white-space:nowrap}
+ .view-title-full,.view-guide-full{display:none}.view-title-short,.view-guide-short{display:inline}
+ .view-header-toolbar>.view-display-tools,.view-header-toolbar>.view-panel-controls,.view-header-toolbar>.view-feature-tools{gap:3px}
+ .panel>.cube-top.view-header-toolbar .small,.panel>.cube-top.view-header-toolbar .puzzle-display-control{flex:0 0 auto;width:auto;min-width:0;max-width:none;min-height:32px;height:32px;padding:3px 7px;font-size:10px;letter-spacing:0;line-height:1.2;white-space:nowrap;overflow-wrap:normal}
+}
+/* A mirror control uses the heading's narrow-phone space, never the buttons'
+   padding. The heading remains available to assistive technology. */
+@media(max-width:380px){
+ .view-header-toolbar.has-mirror-toggle>h2{position:absolute;width:1px;min-width:0;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}
 }

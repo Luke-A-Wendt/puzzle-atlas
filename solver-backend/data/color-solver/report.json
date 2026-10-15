@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "algorithm": "single-double-conjugate-commutator-pair-powers-depth4-fallback",
-  "maxWordLength": 6,
-  "maxBytesPerModel": 2097152,
-  "maxTotalBytes": 20971520,
-  "totalBytes": 10495834,
+  "algorithm": "short-words-plus-complete-chain-sparse-double-swaps-plus-bounded-conjugacy",
+  "maxWordLength": 25,
+  "maxBytesPerModel": 3145728,
+  "maxTotalBytes": 25165824,
+  "totalBytes": 15506236,
   "models": [
     {
       "id": "masterpyraminx",
@@ -14,17 +14,23 @@
       "nonemptyTwoCycleWords": 96,
       "uniqueBeforeBudget": 96,
       "extendedDepth": 0,
-      "operations": 96,
+      "operations": 111,
       "omitted": 0,
-      "bytes": 20587,
-      "verifiedWords": 96,
-      "exchangePairs": 6,
+      "bytes": 26505,
+      "verifiedWords": 111,
+      "exchangePairs": 12,
       "lengths": {
         "2": 24,
         "4": 48,
-        "6": 24
+        "6": 24,
+        "20": 1,
+        "22": 6,
+        "24": 8
       },
-      "maxMovedNodes": 46
+      "maxMovedNodes": 46,
+      "addedSparseFallbacks": 10,
+      "addedConjugates": 5,
+      "shortenedConjugates": 3
     },
     {
       "id": "kilominx",
@@ -34,15 +40,19 @@
       "nonemptyTwoCycleWords": 240,
       "uniqueBeforeBudget": 240,
       "extendedDepth": 0,
-      "operations": 240,
+      "operations": 1736,
       "omitted": 0,
-      "bytes": 42297,
-      "verifiedWords": 240,
-      "exchangePairs": 180,
+      "bytes": 304723,
+      "verifiedWords": 1736,
+      "exchangePairs": 879,
       "lengths": {
-        "6": 240
+        "6": 240,
+        "8": 1496
       },
-      "maxMovedNodes": 24
+      "maxMovedNodes": 24,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 1496,
+      "shortenedConjugates": 0
     },
     {
       "id": "ghost",
@@ -52,19 +62,24 @@
       "nonemptyTwoCycleWords": 702,
       "uniqueBeforeBudget": 513,
       "extendedDepth": 0,
-      "operations": 513,
+      "operations": 1339,
       "omitted": 0,
-      "bytes": 302495,
-      "verifiedWords": 513,
-      "exchangePairs": 492,
+      "bytes": 575188,
+      "verifiedWords": 1339,
+      "exchangePairs": 900,
       "lengths": {
         "1": 6,
         "2": 135,
         "3": 72,
         "4": 192,
-        "6": 108
+        "6": 108,
+        "8": 96,
+        "10": 730
       },
-      "maxMovedNodes": 112
+      "maxMovedNodes": 112,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 826,
+      "shortenedConjugates": 0
     },
     {
       "id": "cube2",
@@ -74,18 +89,23 @@
       "nonemptyTwoCycleWords": 366,
       "uniqueBeforeBudget": 99,
       "extendedDepth": 0,
-      "operations": 99,
+      "operations": 693,
       "omitted": 0,
-      "bytes": 11974,
-      "verifiedWords": 99,
-      "exchangePairs": 108,
+      "bytes": 72397,
+      "verifiedWords": 693,
+      "exchangePairs": 252,
       "lengths": {
         "1": 6,
         "2": 15,
         "3": 30,
-        "6": 48
+        "5": 126,
+        "6": 48,
+        "7": 468
       },
-      "maxMovedNodes": 24
+      "maxMovedNodes": 24,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 594,
+      "shortenedConjugates": 0
     },
     {
       "id": "cube3",
@@ -95,19 +115,25 @@
       "nonemptyTwoCycleWords": 1500,
       "uniqueBeforeBudget": 825,
       "extendedDepth": 0,
-      "operations": 825,
+      "operations": 2825,
       "omitted": 0,
-      "bytes": 146425,
-      "verifiedWords": 825,
-      "exchangePairs": 219,
+      "bytes": 359375,
+      "verifiedWords": 2825,
+      "exchangePairs": 399,
       "lengths": {
         "1": 9,
         "2": 312,
         "3": 144,
         "4": 204,
-        "6": 156
+        "5": 444,
+        "6": 318,
+        "7": 1334,
+        "8": 60
       },
-      "maxMovedNodes": 40
+      "maxMovedNodes": 40,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 2000,
+      "shortenedConjugates": 0
     },
     {
       "id": "cube4",
@@ -117,19 +143,32 @@
       "nonemptyTwoCycleWords": 2820,
       "uniqueBeforeBudget": 1974,
       "extendedDepth": 0,
-      "operations": 1974,
+      "operations": 3833,
       "omitted": 0,
-      "bytes": 496897,
-      "verifiedWords": 1974,
-      "exchangePairs": 432,
+      "bytes": 650549,
+      "verifiedWords": 3833,
+      "exchangePairs": 588,
       "lengths": {
         "1": 12,
         "2": 570,
         "3": 288,
         "4": 672,
-        "6": 432
+        "6": 432,
+        "8": 5,
+        "10": 96,
+        "11": 1,
+        "12": 911,
+        "13": 6,
+        "14": 488,
+        "15": 82,
+        "16": 1,
+        "18": 16,
+        "20": 253
       },
-      "maxMovedNodes": 64
+      "maxMovedNodes": 64,
+      "addedSparseFallbacks": 128,
+      "addedConjugates": 1731,
+      "shortenedConjugates": 3
     },
     {
       "id": "cube5",
@@ -139,19 +178,30 @@
       "nonemptyTwoCycleWords": 4710,
       "uniqueBeforeBudget": 2988,
       "extendedDepth": 0,
-      "operations": 2988,
+      "operations": 4864,
       "omitted": 0,
-      "bytes": 1023457,
-      "verifiedWords": 2988,
-      "exchangePairs": 627,
+      "bytes": 1179978,
+      "verifiedWords": 4864,
+      "exchangePairs": 759,
       "lengths": {
         "1": 15,
         "2": 897,
         "3": 426,
         "4": 1074,
-        "6": 576
+        "5": 1,
+        "6": 1289,
+        "7": 16,
+        "8": 918,
+        "9": 30,
+        "10": 149,
+        "11": 9,
+        "12": 23,
+        "13": 17
       },
-      "maxMovedNodes": 88
+      "maxMovedNodes": 88,
+      "addedSparseFallbacks": 512,
+      "addedConjugates": 1364,
+      "shortenedConjugates": 149
     },
     {
       "id": "cube6",
@@ -161,19 +211,35 @@
       "nonemptyTwoCycleWords": 6450,
       "uniqueBeforeBudget": 4479,
       "extendedDepth": 0,
-      "operations": 4479,
+      "operations": 5984,
       "omitted": 0,
-      "bytes": 1970805,
-      "verifiedWords": 4479,
-      "exchangePairs": 972,
+      "bytes": 2107568,
+      "verifiedWords": 5984,
+      "exchangePairs": 1165,
       "lengths": {
         "1": 18,
         "2": 1305,
         "3": 648,
         "4": 1536,
-        "6": 972
+        "6": 972,
+        "8": 8,
+        "10": 144,
+        "11": 5,
+        "12": 1021,
+        "13": 22,
+        "14": 16,
+        "16": 84,
+        "17": 1,
+        "18": 12,
+        "19": 25,
+        "20": 38,
+        "21": 28,
+        "22": 101
       },
-      "maxMovedNodes": 120
+      "maxMovedNodes": 120,
+      "addedSparseFallbacks": 512,
+      "addedConjugates": 993,
+      "shortenedConjugates": 27
     },
     {
       "id": "cube7",
@@ -183,19 +249,28 @@
       "nonemptyTwoCycleWords": 9192,
       "uniqueBeforeBudget": 5955,
       "extendedDepth": 0,
-      "operations": 4667,
+      "operations": 5971,
       "omitted": 1288,
-      "bytes": 2095077,
-      "verifiedWords": 4667,
-      "exchangePairs": 1251,
+      "bytes": 2198224,
+      "verifiedWords": 5971,
+      "exchangePairs": 1475,
       "lengths": {
         "1": 21,
         "2": 1497,
         "3": 852,
         "4": 1661,
-        "6": 636
+        "5": 2,
+        "6": 970,
+        "7": 28,
+        "8": 702,
+        "9": 2,
+        "10": 221,
+        "11": 15
       },
-      "maxMovedNodes": 96
+      "maxMovedNodes": 96,
+      "addedSparseFallbacks": 512,
+      "addedConjugates": 792,
+      "shortenedConjugates": 40
     },
     {
       "id": "cube8",
@@ -205,19 +280,32 @@
       "nonemptyTwoCycleWords": 11592,
       "uniqueBeforeBudget": 8028,
       "extendedDepth": 0,
-      "operations": 4964,
+      "operations": 6368,
       "omitted": 3064,
-      "bytes": 2094680,
-      "verifiedWords": 4964,
-      "exchangePairs": 1512,
+      "bytes": 2226616,
+      "verifiedWords": 6368,
+      "exchangePairs": 1693,
       "lengths": {
         "1": 24,
         "2": 1305,
         "3": 864,
         "4": 1728,
-        "6": 1043
+        "6": 1043,
+        "8": 13,
+        "10": 240,
+        "11": 9,
+        "12": 911,
+        "13": 69,
+        "14": 26,
+        "16": 40,
+        "18": 64,
+        "19": 1,
+        "20": 31
       },
-      "maxMovedNodes": 96
+      "maxMovedNodes": 96,
+      "addedSparseFallbacks": 512,
+      "addedConjugates": 892,
+      "shortenedConjugates": 17
     },
     {
       "id": "mirror",
@@ -227,19 +315,25 @@
       "nonemptyTwoCycleWords": 1500,
       "uniqueBeforeBudget": 825,
       "extendedDepth": 0,
-      "operations": 825,
+      "operations": 2825,
       "omitted": 0,
-      "bytes": 146426,
-      "verifiedWords": 825,
-      "exchangePairs": 219,
+      "bytes": 359377,
+      "verifiedWords": 2825,
+      "exchangePairs": 399,
       "lengths": {
         "1": 9,
         "2": 312,
         "3": 144,
         "4": 204,
-        "6": 156
+        "5": 444,
+        "6": 318,
+        "7": 1334,
+        "8": 60
       },
-      "maxMovedNodes": 40
+      "maxMovedNodes": 40,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 2000,
+      "shortenedConjugates": 0
     },
     {
       "id": "homer",
@@ -249,18 +343,23 @@
       "nonemptyTwoCycleWords": 366,
       "uniqueBeforeBudget": 99,
       "extendedDepth": 0,
-      "operations": 99,
+      "operations": 693,
       "omitted": 0,
-      "bytes": 11974,
-      "verifiedWords": 99,
-      "exchangePairs": 108,
+      "bytes": 72397,
+      "verifiedWords": 693,
+      "exchangePairs": 252,
       "lengths": {
         "1": 6,
         "2": 15,
         "3": 30,
-        "6": 48
+        "5": 126,
+        "6": 48,
+        "7": 468
       },
-      "maxMovedNodes": 24
+      "maxMovedNodes": 24,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 594,
+      "shortenedConjugates": 0
     },
     {
       "id": "pyraminx",
@@ -270,16 +369,21 @@
       "nonemptyTwoCycleWords": 1416,
       "uniqueBeforeBudget": 768,
       "extendedDepth": 4,
-      "operations": 768,
+      "operations": 1862,
       "omitted": 0,
-      "bytes": 144087,
-      "verifiedWords": 768,
+      "bytes": 273485,
+      "verifiedWords": 1862,
       "exchangePairs": 66,
       "lengths": {
         "3": 24,
-        "4": 744
+        "4": 744,
+        "6": 408,
+        "8": 686
       },
-      "maxMovedNodes": 36
+      "maxMovedNodes": 36,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 1094,
+      "shortenedConjugates": 0
     },
     {
       "id": "tetraminx",
@@ -289,16 +393,21 @@
       "nonemptyTwoCycleWords": 648,
       "uniqueBeforeBudget": 576,
       "extendedDepth": 4,
-      "operations": 576,
+      "operations": 1776,
       "omitted": 0,
-      "bytes": 75526,
-      "verifiedWords": 576,
+      "bytes": 188935,
+      "verifiedWords": 1776,
       "exchangePairs": 66,
       "lengths": {
         "3": 24,
-        "4": 552
+        "4": 552,
+        "6": 408,
+        "8": 792
       },
-      "maxMovedNodes": 24
+      "maxMovedNodes": 24,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 1200,
+      "shortenedConjugates": 0
     },
     {
       "id": "megaminx",
@@ -308,15 +417,19 @@
       "nonemptyTwoCycleWords": 240,
       "uniqueBeforeBudget": 240,
       "extendedDepth": 0,
-      "operations": 240,
+      "operations": 1116,
       "omitted": 0,
-      "bytes": 73690,
-      "verifiedWords": 240,
-      "exchangePairs": 180,
+      "bytes": 340893,
+      "verifiedWords": 1116,
+      "exchangePairs": 768,
       "lengths": {
-        "6": 240
+        "6": 240,
+        "8": 876
       },
-      "maxMovedNodes": 42
+      "maxMovedNodes": 42,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 876,
+      "shortenedConjugates": 0
     },
     {
       "id": "jing",
@@ -326,17 +439,26 @@
       "nonemptyTwoCycleWords": 96,
       "uniqueBeforeBudget": 96,
       "extendedDepth": 0,
-      "operations": 96,
+      "operations": 543,
       "omitted": 0,
-      "bytes": 10625,
-      "verifiedWords": 96,
-      "exchangePairs": 6,
+      "bytes": 55248,
+      "verifiedWords": 543,
+      "exchangePairs": 12,
       "lengths": {
         "2": 24,
         "4": 48,
-        "6": 24
+        "6": 168,
+        "8": 288,
+        "10": 1,
+        "11": 1,
+        "12": 5,
+        "13": 5,
+        "14": 3
       },
-      "maxMovedNodes": 20
+      "maxMovedNodes": 20,
+      "addedSparseFallbacks": 12,
+      "addedConjugates": 435,
+      "shortenedConjugates": 0
     },
     {
       "id": "skewb",
@@ -346,17 +468,23 @@
       "nonemptyTwoCycleWords": 240,
       "uniqueBeforeBudget": 240,
       "extendedDepth": 0,
-      "operations": 240,
+      "operations": 285,
       "omitted": 0,
-      "bytes": 32046,
-      "verifiedWords": 240,
+      "bytes": 35742,
+      "verifiedWords": 285,
       "exchangePairs": 87,
       "lengths": {
         "2": 48,
         "4": 96,
-        "6": 96
+        "6": 96,
+        "8": 7,
+        "10": 34,
+        "12": 4
       },
-      "maxMovedNodes": 22
+      "maxMovedNodes": 22,
+      "addedSparseFallbacks": 41,
+      "addedConjugates": 4,
+      "shortenedConjugates": 0
     },
     {
       "id": "masterskewb",
@@ -366,17 +494,22 @@
       "nonemptyTwoCycleWords": 240,
       "uniqueBeforeBudget": 240,
       "extendedDepth": 0,
-      "operations": 240,
+      "operations": 1597,
       "omitted": 0,
-      "bytes": 58092,
-      "verifiedWords": 240,
-      "exchangePairs": 87,
+      "bytes": 321977,
+      "verifiedWords": 1597,
+      "exchangePairs": 123,
       "lengths": {
         "2": 48,
         "4": 96,
-        "6": 96
+        "6": 96,
+        "8": 624,
+        "10": 733
       },
-      "maxMovedNodes": 46
+      "maxMovedNodes": 46,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 1357,
+      "shortenedConjugates": 0
     },
     {
       "id": "ultimate",
@@ -386,17 +519,22 @@
       "nonemptyTwoCycleWords": 192,
       "uniqueBeforeBudget": 168,
       "extendedDepth": 0,
-      "operations": 168,
+      "operations": 1332,
       "omitted": 0,
-      "bytes": 37107,
-      "verifiedWords": 168,
-      "exchangePairs": 84,
+      "bytes": 300291,
+      "verifiedWords": 1332,
+      "exchangePairs": 120,
       "lengths": {
         "2": 48,
         "4": 48,
-        "6": 72
+        "6": 72,
+        "8": 240,
+        "10": 924
       },
-      "maxMovedNodes": 34
+      "maxMovedNodes": 34,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 1164,
+      "shortenedConjugates": 0
     },
     {
       "id": "diamond",
@@ -406,17 +544,21 @@
       "nonemptyTwoCycleWords": 336,
       "uniqueBeforeBudget": 276,
       "extendedDepth": 0,
-      "operations": 276,
+      "operations": 1143,
       "omitted": 0,
-      "bytes": 39475,
-      "verifiedWords": 276,
+      "bytes": 150318,
+      "verifiedWords": 1143,
       "exchangePairs": 24,
       "lengths": {
         "2": 96,
         "4": 120,
-        "6": 60
+        "6": 348,
+        "8": 579
       },
-      "maxMovedNodes": 24
+      "maxMovedNodes": 24,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 867,
+      "shortenedConjugates": 0
     },
     {
       "id": "fto",
@@ -426,17 +568,20 @@
       "nonemptyTwoCycleWords": 144,
       "uniqueBeforeBudget": 144,
       "extendedDepth": 0,
-      "operations": 144,
+      "operations": 1147,
       "omitted": 0,
-      "bytes": 37672,
-      "verifiedWords": 144,
+      "bytes": 301348,
+      "verifiedWords": 1147,
       "exchangePairs": 12,
       "lengths": {
         "2": 48,
-        "4": 48,
-        "6": 48
+        "4": 960,
+        "6": 139
       },
-      "maxMovedNodes": 40
+      "maxMovedNodes": 40,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 1003,
+      "shortenedConjugates": 0
     },
     {
       "id": "crystal",
@@ -446,17 +591,24 @@
       "nonemptyTwoCycleWords": 1080,
       "uniqueBeforeBudget": 1080,
       "extendedDepth": 0,
-      "operations": 1080,
+      "operations": 1509,
       "omitted": 0,
-      "bytes": 400849,
-      "verifiedWords": 1080,
+      "bytes": 435829,
+      "verifiedWords": 1509,
       "exchangePairs": 450,
       "lengths": {
         "2": 240,
         "4": 120,
-        "6": 720
+        "6": 720,
+        "8": 12,
+        "10": 168,
+        "12": 248,
+        "18": 1
       },
-      "maxMovedNodes": 54
+      "maxMovedNodes": 54,
+      "addedSparseFallbacks": 225,
+      "addedConjugates": 204,
+      "shortenedConjugates": 44
     },
     {
       "id": "dino",
@@ -466,15 +618,20 @@
       "nonemptyTwoCycleWords": 576,
       "uniqueBeforeBudget": 360,
       "extendedDepth": 4,
-      "operations": 360,
+      "operations": 1439,
       "omitted": 0,
-      "bytes": 37605,
-      "verifiedWords": 360,
-      "exchangePairs": 120,
+      "bytes": 125594,
+      "verifiedWords": 1439,
+      "exchangePairs": 132,
       "lengths": {
-        "4": 360
+        "4": 360,
+        "6": 504,
+        "8": 575
       },
-      "maxMovedNodes": 16
+      "maxMovedNodes": 16,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 1079,
+      "shortenedConjugates": 0
     },
     {
       "id": "rainbow",
@@ -484,15 +641,20 @@
       "nonemptyTwoCycleWords": 576,
       "uniqueBeforeBudget": 360,
       "extendedDepth": 4,
-      "operations": 360,
+      "operations": 1439,
       "omitted": 0,
-      "bytes": 67560,
-      "verifiedWords": 360,
-      "exchangePairs": 240,
+      "bytes": 211003,
+      "verifiedWords": 1439,
+      "exchangePairs": 264,
       "lengths": {
-        "4": 360
+        "4": 360,
+        "6": 504,
+        "8": 575
       },
-      "maxMovedNodes": 32
+      "maxMovedNodes": 32,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 1079,
+      "shortenedConjugates": 0
     },
     {
       "id": "rhombic",
@@ -502,19 +664,29 @@
       "nonemptyTwoCycleWords": 702,
       "uniqueBeforeBudget": 513,
       "extendedDepth": 0,
-      "operations": 513,
+      "operations": 2544,
       "omitted": 0,
-      "bytes": 101812,
-      "verifiedWords": 513,
-      "exchangePairs": 162,
+      "bytes": 302856,
+      "verifiedWords": 2544,
+      "exchangePairs": 186,
       "lengths": {
         "1": 6,
         "2": 135,
         "3": 72,
         "4": 192,
-        "6": 108
+        "6": 108,
+        "8": 96,
+        "10": 823,
+        "12": 27,
+        "14": 251,
+        "16": 832,
+        "18": 1,
+        "25": 1
       },
-      "maxMovedNodes": 40
+      "maxMovedNodes": 40,
+      "addedSparseFallbacks": 31,
+      "addedConjugates": 2000,
+      "shortenedConjugates": 0
     },
     {
       "id": "flatdiamond",
@@ -524,19 +696,24 @@
       "nonemptyTwoCycleWords": 606,
       "uniqueBeforeBudget": 417,
       "extendedDepth": 0,
-      "operations": 417,
+      "operations": 933,
       "omitted": 0,
-      "bytes": 380193,
-      "verifiedWords": 417,
-      "exchangePairs": 916,
+      "bytes": 653684,
+      "verifiedWords": 933,
+      "exchangePairs": 2068,
       "lengths": {
         "1": 6,
         "2": 135,
         "3": 72,
         "4": 96,
-        "6": 108
+        "6": 108,
+        "8": 60,
+        "10": 456
       },
-      "maxMovedNodes": 184
+      "maxMovedNodes": 184,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 516,
+      "shortenedConjugates": 0
     },
     {
       "id": "cornerocta",
@@ -546,19 +723,26 @@
       "nonemptyTwoCycleWords": 2916,
       "uniqueBeforeBudget": 774,
       "extendedDepth": 0,
-      "operations": 774,
+      "operations": 1537,
       "omitted": 0,
-      "bytes": 122118,
-      "verifiedWords": 774,
-      "exchangePairs": 108,
+      "bytes": 207240,
+      "verifiedWords": 1537,
+      "exchangePairs": 264,
       "lengths": {
         "1": 12,
         "2": 390,
         "3": 72,
-        "4": 192,
-        "6": 108
+        "4": 264,
+        "6": 752,
+        "8": 1,
+        "10": 9,
+        "12": 36,
+        "13": 1
       },
-      "maxMovedNodes": 32
+      "maxMovedNodes": 32,
+      "addedSparseFallbacks": 11,
+      "addedConjugates": 752,
+      "shortenedConjugates": 0
     },
     {
       "id": "trajber",
@@ -568,19 +752,26 @@
       "nonemptyTwoCycleWords": 798,
       "uniqueBeforeBudget": 609,
       "extendedDepth": 0,
-      "operations": 609,
+      "operations": 2628,
       "omitted": 0,
-      "bytes": 95628,
-      "verifiedWords": 609,
-      "exchangePairs": 124,
+      "bytes": 288776,
+      "verifiedWords": 2628,
+      "exchangePairs": 135,
       "lengths": {
         "1": 6,
         "2": 135,
         "3": 72,
         "4": 288,
-        "6": 108
+        "6": 1404,
+        "8": 704,
+        "18": 3,
+        "19": 2,
+        "20": 14
       },
-      "maxMovedNodes": 32
+      "maxMovedNodes": 32,
+      "addedSparseFallbacks": 19,
+      "addedConjugates": 2000,
+      "shortenedConjugates": 0
     },
     {
       "id": "jewel",
@@ -590,19 +781,28 @@
       "nonemptyTwoCycleWords": 702,
       "uniqueBeforeBudget": 513,
       "extendedDepth": 0,
-      "operations": 513,
+      "operations": 2524,
       "omitted": 0,
-      "bytes": 71014,
-      "verifiedWords": 513,
-      "exchangePairs": 96,
+      "bytes": 286150,
+      "verifiedWords": 2524,
+      "exchangePairs": 286,
       "lengths": {
         "1": 6,
         "2": 135,
         "3": 72,
         "4": 192,
-        "6": 108
+        "5": 660,
+        "6": 108,
+        "7": 1304,
+        "8": 1,
+        "10": 9,
+        "11": 1,
+        "12": 36
       },
-      "maxMovedNodes": 24
+      "maxMovedNodes": 24,
+      "addedSparseFallbacks": 11,
+      "addedConjugates": 2000,
+      "shortenedConjugates": 0
     },
     {
       "id": "pyramorphix",
@@ -612,19 +812,25 @@
       "nonemptyTwoCycleWords": 462,
       "uniqueBeforeBudget": 195,
       "extendedDepth": 0,
-      "operations": 195,
+      "operations": 1454,
       "omitted": 0,
-      "bytes": 26701,
-      "verifiedWords": 195,
-      "exchangePairs": 136,
+      "bytes": 185532,
+      "verifiedWords": 1454,
+      "exchangePairs": 280,
       "lengths": {
         "1": 6,
         "2": 15,
         "3": 30,
         "4": 96,
-        "6": 48
+        "5": 126,
+        "6": 372,
+        "7": 468,
+        "8": 341
       },
-      "maxMovedNodes": 32
+      "maxMovedNodes": 32,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 1259,
+      "shortenedConjugates": 0
     },
     {
       "id": "mastermorphix",
@@ -634,19 +840,23 @@
       "nonemptyTwoCycleWords": 798,
       "uniqueBeforeBudget": 609,
       "extendedDepth": 0,
-      "operations": 609,
+      "operations": 610,
       "omitted": 0,
-      "bytes": 153078,
-      "verifiedWords": 609,
+      "bytes": 156198,
+      "verifiedWords": 610,
       "exchangePairs": 232,
       "lengths": {
         "1": 6,
         "2": 135,
         "3": 72,
         "4": 288,
-        "6": 108
+        "6": 108,
+        "13": 1
       },
-      "maxMovedNodes": 56
+      "maxMovedNodes": 56,
+      "addedSparseFallbacks": 1,
+      "addedConjugates": 0,
+      "shortenedConjugates": 0
     },
     {
       "id": "helicopter",
@@ -656,18 +866,27 @@
       "nonemptyTwoCycleWords": 420,
       "uniqueBeforeBudget": 174,
       "extendedDepth": 0,
-      "operations": 174,
+      "operations": 1958,
       "omitted": 0,
-      "bytes": 17905,
-      "verifiedWords": 174,
-      "exchangePairs": 156,
+      "bytes": 170594,
+      "verifiedWords": 1958,
+      "exchangePairs": 312,
       "lengths": {
         "1": 12,
         "2": 90,
         "3": 48,
-        "6": 24
+        "5": 240,
+        "6": 24,
+        "7": 960,
+        "8": 79,
+        "10": 238,
+        "12": 262,
+        "14": 5
       },
-      "maxMovedNodes": 20
+      "maxMovedNodes": 20,
+      "addedSparseFallbacks": 177,
+      "addedConjugates": 1607,
+      "shortenedConjugates": 1
     },
     {
       "id": "diamondstyle",
@@ -677,19 +896,25 @@
       "nonemptyTwoCycleWords": 606,
       "uniqueBeforeBudget": 417,
       "extendedDepth": 0,
-      "operations": 417,
+      "operations": 2463,
       "omitted": 0,
-      "bytes": 35789,
-      "verifiedWords": 417,
-      "exchangePairs": 70,
+      "bytes": 191798,
+      "verifiedWords": 2463,
+      "exchangePairs": 94,
       "lengths": {
         "1": 6,
         "2": 135,
         "3": 72,
         "4": 96,
-        "6": 108
+        "5": 876,
+        "6": 801,
+        "7": 431,
+        "8": 46
       },
-      "maxMovedNodes": 16
+      "maxMovedNodes": 16,
+      "addedSparseFallbacks": 46,
+      "addedConjugates": 2000,
+      "shortenedConjugates": 0
     },
     {
       "id": "diamondcube",
@@ -699,19 +924,24 @@
       "nonemptyTwoCycleWords": 606,
       "uniqueBeforeBudget": 417,
       "extendedDepth": 0,
-      "operations": 417,
+      "operations": 933,
       "omitted": 0,
-      "bytes": 114168,
-      "verifiedWords": 417,
-      "exchangePairs": 304,
+      "bytes": 189848,
+      "verifiedWords": 933,
+      "exchangePairs": 592,
       "lengths": {
         "1": 6,
         "2": 135,
         "3": 72,
         "4": 96,
-        "6": 108
+        "6": 108,
+        "8": 60,
+        "10": 456
       },
-      "maxMovedNodes": 64
+      "maxMovedNodes": 64,
+      "addedSparseFallbacks": 0,
+      "addedConjugates": 516,
+      "shortenedConjugates": 0
     }
   ]
 }

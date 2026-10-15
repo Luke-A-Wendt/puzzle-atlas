@@ -42,13 +42,13 @@ test('user idle time is excluded, cumulative stages advance, and repeated budget
  for(const budgetMs of MANUAL_SEARCH_STAGES){const r=slow.advance({budgetMs});if(!r.search.canContinue)break;assert.equal(r.search.nextBudgetMs,MANUAL_SEARCH_STAGES.find(n=>n>budgetMs));}
 });
 
-test('resumed catalog scan does not recheck discarded operations and verifies its final word',()=>{
+test('indexed catalog skips unrelated operations and verifies its final word',()=>{
  const operations=Array.from({length:40},()=>({word:[0],support:[]}));operations.push({word:[0],support:[0,1,1,0,2,3,3,2]});
  const colorCache={schemaVersion:1,kind:'color-macros',degree:4,modelSignature:modelSignature(double),operations};
  let t=0;const s=new ManualSwapSession(double,colorQuery,{constructive:false,colorCache,_clock:()=>t++});
  let r,previous=0,calls=0;
  for(let budgetMs=20;budgetMs<1000;budgetMs+=20){r=s.advance({budgetMs});calls++;assert(r.stats.catalogOperations>=previous);previous=r.stats.catalogOperations;if(!r.search.canContinue)break;}
- assert(calls>1);assert.equal(r.status,'solved');assert.equal(r.stats.catalogOperations,41);assert.equal(r.verified,true);
+ assert.equal(r.status,'solved');assert.equal(r.stats.catalogOperations,1);assert.equal(r.verified,true);
  assert.equal(r.search.transitions,0);assert.deepEqual(r.moveIndices,[0]);
 });
 

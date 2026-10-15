@@ -15,18 +15,18 @@ function autoRequestFromSnapshot(model,snapshot){
  if(Object.keys(currentBySticker).length!==Object.keys(homeBySticker).length||Object.keys(homeBySticker).some(id=>!Object.hasOwn(currentBySticker,id)))throw Error('Snapshot contains a different set of sticker identities');
  return{currentBySticker:{...currentBySticker},homeBySticker:{...homeBySticker},occupiedNodes:mapping.occupiedNodes.slice(),...(model.colorBySticker?{colorBySticker:{...model.colorBySticker}}:{})};
 }
-function colorGoalEnabled(model,home){return model.colorRelaxationSafe===true&&!model.requiresOccupiedState&&Object.keys(home).length===model.degree&&model.colorBySticker&&Object.keys(home).every(id=>typeof model.colorBySticker[id]==='string'&&model.colorBySticker[id].length>0);}
+function colorGoalEnabled(model,home,snapshot){return !snapshot?.mirrorMode&&model.colorRelaxationSafe===true&&!model.requiresOccupiedState&&Object.keys(home).length===model.degree&&model.colorBySticker&&Object.keys(home).every(id=>typeof model.colorBySticker[id]==='string'&&model.colorBySticker[id].length>0);}
 function solvedProgress(model,snapshot){
  const {currentBySticker,homeBySticker}=autoRequestFromSnapshot(model,snapshot),solvedStickerIds=[],solvedNodes=[],remainingStickerIds=[];
- const colorGoal=colorGoalEnabled(model,homeBySticker),homeIdByNode=new Map(Object.entries(homeBySticker).map(([id,node])=>[node,id]));
+ const colorGoal=colorGoalEnabled(model,homeBySticker,snapshot),homeIdByNode=new Map(Object.entries(homeBySticker).map(([id,node])=>[node,id]));
  for(const [id,home]of Object.entries(homeBySticker)){const at=currentBySticker[id],solved=colorGoal?model.colorBySticker[id]===model.colorBySticker[homeIdByNode.get(at)]:at===home;if(solved){solvedStickerIds.push(id);solvedNodes.push(at);}else remainingStickerIds.push(id);}
- return{solvedStickerIds,solvedNodes,remainingStickerIds,solvedCount:solvedNodes.length,totalCount:model.stickerCount};
+ return{solvedStickerIds,solvedNodes,remainingStickerIds,exact:!colorGoal,solvedCount:solvedNodes.length,totalCount:model.stickerCount};
 }
 function verifyAutoPlan(model,snapshot,plan){
  try{
   if(plan?.status!=='solved'||!Array.isArray(plan.stages))return false;
   const {currentBySticker:current,homeBySticker:home}=autoRequestFromSnapshot(model,snapshot),byHome=new Map(Object.entries(home).map(([id,node])=>[node,id]));
-  const colors=plan.goalSemantics==='colors';if(colors&&!colorGoalEnabled(model,home))return false;
+  const colors=plan.goalSemantics==='colors';if(colors&&!colorGoalEnabled(model,home,snapshot))return false;
   let currentByNode=new Map(Object.entries(current).map(([id,node])=>[node,id]));
   const currentIdAt=n=>currentByNode.get(n),correct=n=>colors?model.colorBySticker[currentIdAt(n)]===model.colorBySticker[byHome.get(n)]:current[byHome.get(n)]===n;
   const locked=new Set(),flat=[],validNodes=nodes=>Array.isArray(nodes)&&new Set(nodes).size===nodes.length&&nodes.every(n=>Number.isInteger(n)&&byHome.has(n));

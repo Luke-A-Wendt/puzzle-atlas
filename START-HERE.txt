@@ -7,9 +7,10 @@ PUZZLE ATLAS — COMPLETE PORTABLE PROJECT
       python3 -m http.server 8000 --directory dist
    Then visit http://localhost:8000. No external server or internet is needed
    for local play. Do not double-click an HTML file; file:// blocks the solver.
-4. Before committing/deploying, run:
+4. No Node.js, npm install, or build step is needed to host or play dist/.
+   GitHub Actions automatically verifies the release before publishing.
+   Optional developer check, only if Node.js is already installed:
       node scripts/verify-release.cjs
-   This checks every website file and all solver fingerprints. No npm install.
 5. Replace your old dist folder as a unit. Include all new files in the commit
    (git add .), especially games/color-solver-caches/. Do not merge only pieces
    of different releases. Keep your .git folder; this ZIP contains no history.

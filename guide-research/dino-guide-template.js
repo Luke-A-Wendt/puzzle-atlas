@@ -10,7 +10,7 @@ function builder(id){return'<fieldset class="dino-move-builder" id="dino-'+id+'"
 const notation=[
  'The eight controls <strong>A–H</strong> turn around corners. Each letter means 120° clockwise looking inward along the labeled 3D axis; a prime means the opposite direction. The camera does not change the letters.',
  '<table><thead><tr><th>Control</th><th>Corner direction</th></tr></thead><tbody>'+data.axes.map(a=>'<tr><td>'+a.id+'</td><td>'+a.name+'</td></tr>').join('')+'</tbody></table>',
- 'In a slot such as <strong>UF</strong>, U and F mean the fixed up and front directions of the underlying cube frame. Two-letter names identify the twelve moving edge positions. They are slot names, not move instructions. Use the A–H Notation moves buttons for the sequences below.',
+ 'In a slot such as <strong>UF</strong>, U and F mean the fixed up and front directions of the underlying cube frame. Two-letter names identify the twelve moving edge positions. They are slot names, not move instructions. Select the stated A–H axis below either panel and use Turn left or Turn right; each arrow’s tooltip names its notation move.',
  'Finish the entire <strong>Set up → Turn → Restore</strong> sequence before checking progress. Setups temporarily disturb other pieces; the restore moves put every unselected edge back.'
 ];
 function make(type){const rainbow=type==='rainbow';return{

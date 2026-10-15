@@ -27,7 +27,7 @@ for(const type of ['ultimate','diamond','fto']){
  assert(api.move(type==='fto'?'A':'L'));assert.equal(api.move(type==='fto'?'B':'R'),false);tick(165);writeRender(type+'-midturn.png',els.cube);settle();assert(!api.snapshot().solved);assert.equal(api.snapshot().history.length,1);
  els.undo.events.click();settle();assert(api.snapshot().solved);assert.equal(api.snapshot().history.length,0);
  for(const side of (type==='fto'?['A','B','C','D','E','F','G','H','Am','Bm','Cm','Dm']:['L','R','D','B','l','r','d','b'])){api.reset();assert(api.select(side));api.move(side);settle();api.move(side+"'");settle();assert(api.snapshot().solved,side);}
- api.randomize();tick(165);els.pause.events.click();const before=JSON.stringify(api.snapshot().pieces);tick(3000);assert.equal(before,JSON.stringify(api.snapshot().pieces));assert(api.snapshot().paused);els.pause.events.click();settle();assert(!api.snapshot().solved);const seed=api.snapshot().seed;assert.equal(api.snapshot().history.length,24);
+ api.randomize();tick(165);els.pause.events.click();const before=JSON.stringify(api.snapshot().pieces),prefix=api.snapshot().history.length;tick(3000);assert.equal(before,JSON.stringify(api.snapshot().pieces));assert.equal(api.snapshot().paused,false);assert.equal(api.snapshot().mode,'idle');assert.equal(api.snapshot().history.length,prefix);api.reset();api.randomize();settle();assert(!api.snapshot().solved);const seed=api.snapshot().seed;assert.equal(api.snapshot().history.length,24);
  assert(api.runMoves(type==='fto'?"A B' C G Am Bm2":"L R' D b l R2"));settle();assert.equal(api.snapshot().history.length,30);assertAutoSolveDelegates(app.context);assert.equal(api.snapshot().history.length,30);
  api.randomize();settle();assert.notEqual(api.snapshot().seed,seed);api.reset();assert(api.snapshot().solved);assert.equal(api.snapshot().journal.length,0);
  assert.throws(()=>api.runMoves('U'));assert.equal(api.snapshot().history.length,0);
@@ -42,5 +42,5 @@ for(const type of ['ultimate','diamond','fto']){
   }
  }
  api.reset();api.select(type==='fto'?'Am':'R');tick();writeRender(type+'-focused-rings.png',els.rings);
- console.log(type+': all sides and slices, undo, fresh seeded scramble, pause/resume, manual+algorithm journal, Auto Solve delegation, reset, validation, ring selection/drag/focus and canvas drawing PASS');
+ console.log(type+': all sides and slices, undo, fresh seeded scramble, immediate Stop, manual+algorithm journal, Auto Solve delegation, reset, validation, ring selection/drag/focus and canvas drawing PASS');
 }

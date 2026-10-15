@@ -5,7 +5,7 @@ Object.assign(families,{diamondstyle:'ShapeEngine',diamondcube:'ShapeEngine'});
 function run(types=Object.keys(families)){for(const type of types){const engineName=families[type];
  const app=createHarness({htmlPath:path.join(__dirname,'../dist/games',type+'.html'),bundled:true,speed:5}),api=app.context.PUZZLE_API,inline=['pyraminx','tetraminx','megaminx'].includes(type),model=inline?app.context[engineName]:app.context[engineName].create(type),G=inline?app.context[type==='megaminx'?'MegaRings':'TetraRings']:app.context.FaceGroupedRings.create(model),configs=inline?Object.entries(model.configs).map(([id,c])=>({...c,id})):model.configs,canvas=app.elements.get('rings');
  const viewport=()=>G.render(canvas.getContext('2d'),{width:500,height:500,selected:app.snapshot().selected,state:inline?app.snapshot().stickers:undefined,focus:false}).viewport;
- assert.equal(app.elements.get('ringFocus').textContent,'Show all rings');app.click('ringFocus');assert.equal(app.elements.get('ringFocus').textContent,'Focus selected rings');app.click('ringFocus');
+ assert.equal(app.elements.get('ringFocus').textContent,'Show all rings');app.click('ringFocus');assert.equal(app.elements.get('ringFocus').textContent,'Focus rings');app.click('ringFocus');
  // A click on an exposed, previously unselected curve selects that curve's
  // axis. Dragging that same curve performs the actual axis move.
  let unselected=null;for(const c of configs){if(c.id===app.snapshot().selected)continue;const found=dragPath(G,c.id,1,app.snapshot().selected);if(found){unselected={face:c.id,path:found};break;}}

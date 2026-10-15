@@ -16,19 +16,19 @@ for(const type of ['mirror','flatdiamond','pyramorphix','mastermorphix']){
   }
   const before=stable(a.snapshot());assert(api.setMirrorMode(true));
   assert.equal(stable(a.snapshot()),before,type+' mirror toggle preserves live state');
-  assert.equal(a.elements.get('ringPanel').hidden,true);
+  assert.equal(a.elements.get('ringPanel').hidden,false);
   assert(a.document.body.classList.contains('mirror-active'));
   assert.equal(a.elements.get('mirrorMode').attributes['aria-pressed'],'true');
   if(type!=='mirror'){
-    assert.equal(a.elements.get('pieceLabels').hidden,true);
+    assert.equal(a.elements.get('pieceLabels').hidden,false);
     assert.equal(a.elements.get('identityMetric').hidden,true);
     assert.equal(a.elements.get('pieceInfo').textContent,'');
   }
   a.frame(350);b.frame(350);assert.equal(stable(a.snapshot()),stable(b.snapshot()),type+' toggling does not restart or consume animation');
   a.click('pause');b.click('pause');a.frame(4000);b.frame(4000);
-  const paused=stable(a.snapshot());api.setMirrorMode(false);assert.equal(stable(a.snapshot()),paused,type+' paused toggle preserves queue');
+  const paused=stable(a.snapshot());api.setMirrorMode(false);assert.equal(stable(a.snapshot()),paused,type+' stopped toggle preserves committed state');
   assert.equal(a.elements.get('ringPanel').hidden,false);assert(!a.document.body.classList.contains('mirror-active'));
-  a.click('pause');b.click('pause');a.complete();b.complete();
+  assert.equal(a.snapshot().mode,'idle');assert.equal(b.snapshot().mode,'idle');assert(api.runMoves("R U' F2"));assert(b.context.PUZZLE_API.runMoves("R U' F2"));a.complete();b.complete();
   assert.equal(stable(a.snapshot()),stable(b.snapshot()),type+' same final state and history');
   const mixed=stable(a.snapshot());a.click('mirrorMode');assert.equal(stable(a.snapshot()),mixed);a.click('mirrorMode');assert.equal(stable(a.snapshot()),mixed);
   assertAutoSolveDelegates(a.context);assert.equal(stable(a.snapshot()),mixed);api.reset();assert(a.snapshot().solved);assert.equal(a.snapshot().history.length,0);
@@ -45,9 +45,9 @@ for(const type of ['rhombic','cornerocta','trajber','jewel']){
   assert.equal(a.snapshot().mirrorMode,false);assert.equal(a.elements.get('mirrorMode').hidden,true);
 }
 const theme=fs.readFileSync(path.join(games,'game-theme.css'),'utf8');
-assert.match(theme,/\.mirror-active\s+\.workspace\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\)/);
+assert.doesNotMatch(theme,/\.mirror-active\s+\.workspace\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\)/);
 assert.match(theme,/#ringPanel\[hidden\][^{]*\{[^}]*display:\s*none!important/);
-console.log('Only shape-changing games expose mirror mode; hidden map frees the full 3D workspace PASS');
+console.log('Only shape-changing games expose mirror mode; silver map retains linked tile targets PASS');
 
 const Dino=require('../dist/games/dino-engine.js'),Rings=require('../dist/games/dino-rings.js');
 for(const type of ['dino','rainbow']){

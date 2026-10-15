@@ -4,7 +4,7 @@
   'use strict';
 
   const size = Number(root.CUBE_SIZE || 5);
-  if (!Number.isInteger(size) || size < 2 || size > 8) throw new Error('Unsupported cube size');
+  if (!Number.isInteger(size) || size < 2 || size > 10) throw new Error('Unsupported cube size');
   const extent = size - 1;
   const levels = Object.freeze(Array.from({length:size}, (_,i) => 2*i-extent));
   const axisFaces = [['L','R','M'],['D','U','E'],['B','F','S']];
@@ -14,7 +14,7 @@
     const base = layer < 0 ? negative : positive;
     const face = layer === 0 ? middle : base+'i'.repeat(depth);
     const turn = layer === 0 ? (axis === 2 ? -1 : 1) : -Math.sign(layer);
-    const label = layer === 0 ? faceWords[middle]+' slice' : faceWords[base]+(depth===0?' outer':depth===1?' inner':depth===2?' second inner':' third inner');
+    const label = layer === 0 ? faceWords[middle]+' slice' : faceWords[base]+(depth===0?' outer':depth===1?' inner':depth===2?' second inner':depth===3?' third inner':' fourth inner');
     return [face,Object.freeze({axis,layer,turn,inner:Math.abs(layer)!==extent,depth,label})];
   }))));
   const faceColors = Object.freeze({
@@ -27,17 +27,19 @@
 
   function normalizeMove(move) {
     if (typeof move === 'string') {
-      const match = /^([UDLRFB]i{0,3}|[MES])(2?)(['’′]?)$/.exec(move.trim());
-      if (!match || !configs[match[1]]) throw new Error('Invalid cube move: ' + move);
-      return { face: match[1], dir: match[3] ? -1 : 1, turns: match[2] ? 2 : 1 };
+      const match = /^([UDLRFB](?:i{0,4}|iv)|[MES])(2?)(['’′]?)$/.exec(move.trim());
+      const face = match?.[1].replace(/iv$/, 'iiii');
+      if (!match || !configs[face]) throw new Error('Invalid cube move: ' + move);
+      return { face, dir: match[3] ? -1 : 1, turns: match[2] ? 2 : 1 };
     }
-    if (!move || !configs[move.face]) throw new Error('Invalid cube move');
+    const face = typeof move?.face === 'string' ? move.face.replace(/iv$/, 'iiii') : undefined;
+    if (!move || !configs[face]) throw new Error('Invalid cube move');
     const dir = move.dir === undefined ? 1 : move.dir;
     const turns = move.turns === undefined ? 1 : move.turns;
     if ((dir !== 1 && dir !== -1) || (turns !== 1 && turns !== 2)) {
       throw new Error('Moves need dir +1/-1 and turns 1/2');
     }
-    return { face: move.face, dir: dir, turns: turns };
+    return { face, dir: dir, turns: turns };
   }
 
   function makeSolved() {
@@ -97,7 +99,7 @@
 
   function moveLabel(move) {
     const m = normalizeMove(move);
-    return m.face + (m.turns === 2 ? '2' : m.dir === -1 ? "'" : '');
+    return m.face.replace(/iiii$/, 'iv') + (m.turns === 2 ? '2' : m.dir === -1 ? "'" : '');
   }
 
   function isSolved(stickers) {

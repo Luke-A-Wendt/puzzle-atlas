@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "models": [
+    {
+      "id": "cube9",
+      "degree": 486,
+      "engineSha256": "00af779cf37f307250c0f1fbb66ed119197c2e0bdcbc0a010d61f09ff567a951",
+      "fullBytes": 8450433,
+      "fullStats": {
+        "schreierTests": 16445277,
+        "compositions": 71615207,
+        "rebuilds": 614,
+        "pairStates": 0,
+        "strongGenerators": 694,
+        "dagNodes": 411749,
+        "estimatedPeakBytes": 70727152,
+        "elapsedMs": 296078.017585,
+        "optimization": {
+          "elapsedMs": 60107.58031,
+          "changes": 1584,
+          "candidates": 203705,
+          "passes": 1,
+          "generators": 12000,
+          "unshortenedRepresentatives": 0,
+          "seed": 20261016,
+          "solutionLengthUpperBound": 6728
+        }
+      },
+      "color": {
+        "id": "cube9",
+        "degree": 486,
+        "moves": 81,
+        "candidateWords": 32886,
+        "nonemptyTwoCycleWords": 15186,
+        "uniqueBeforeBudget": 9966,
+        "extendedDepth": 0,
+        "operations": 4767,
+        "omitted": 5199,
+        "bytes": 2095198,
+        "verifiedWords": 4767,
+        "exchangePairs": 1863,
+        "lengths": {
+          "1": 27,
+          "2": 1782,
+          "3": 1098,
+          "4": 1752,
+          "6": 108
+        },
+        "maxMovedNodes": 116
+      },
+      "verifiedRepresentatives": 4375,
+      "verification": {
+        "completeSchreierClosure": true,
+        "allRepresentativeWordsReplayed": true,
+        "allPrefixStabilizersChecked": true,
+        "nativeFullScrambles": 3,
+        "nativeScrambleLength": 108,
+        "runtimeMemoryBudgetBytes": 67108864
+      }
+    },
+    {
+      "id": "cube10",
+      "degree": 600,
+      "engineSha256": "00af779cf37f307250c0f1fbb66ed119197c2e0bdcbc0a010d61f09ff567a951",
+      "fullBytes": 13486970,
+      "fullStats": {
+        "schreierTests": 32021538,
+        "compositions": 128600697,
+        "rebuilds": 841,
+        "pairStates": 0,
+        "strongGenerators": 930,
+        "dagNodes": 802489,
+        "estimatedPeakBytes": 128317312,
+        "elapsedMs": 621860.246055,
+        "optimization": {
+          "elapsedMs": 60148.86514000001,
+          "changes": 2498,
+          "candidates": 213372,
+          "passes": 1,
+          "generators": 12000,
+          "unshortenedRepresentatives": 0,
+          "seed": 20261016,
+          "solutionLengthUpperBound": 10557
+        }
+      },
+      "color": {
+        "id": "cube10",
+        "degree": 600,
+        "moves": 90,
+        "candidateWords": 40590,
+        "nonemptyTwoCycleWords": 18246,
+        "uniqueBeforeBudget": 12621,
+        "extendedDepth": 0,
+        "operations": 4679,
+        "omitted": 7942,
+        "bytes": 2094909,
+        "verifiedWords": 4679,
+        "exchangePairs": 2436,
+        "lengths": {
+          "1": 30,
+          "2": 1673,
+          "3": 1440,
+          "4": 1536
+        },
+        "maxMovedNodes": 140
+      },
+      "verifiedRepresentatives": 5602,
+      "verification": {
+        "completeSchreierClosure": true,
+        "allRepresentativeWordsReplayed": true,
+        "allPrefixStabilizersChecked": true,
+        "nativeFullScrambles": 3,
+        "nativeScrambleLength": 120,
+        "runtimeMemoryBudgetBytes": 67108864
+      }
+    }
+  ]
+}

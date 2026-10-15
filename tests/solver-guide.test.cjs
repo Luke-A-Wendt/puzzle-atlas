@@ -1,55 +1,78 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const dist=path.resolve(__dirname,'../dist'),read=f=>fs.readFileSync(path.join(dist,f.split(/[?#]/)[0]),'utf8');
-function load(){
+const dist=path.resolve(__dirname,'../dist'),read=f=>fs.readFileSync(path.join(dist,f.split(/[?#]/)[0]),'utf8').replace(/[?&]v=[a-f0-9]{20}(?=[\"'#&])/g,'');
+function load(common=false){
  const context={window:{},document:{addEventListener(){}},console};vm.createContext(context);
- for(const file of [...read('play.html').matchAll(/<script src="([^"]+)"/g)].map(m=>m[1]).filter(x=>x.split(/[?#]/)[0]!=='play.js'))vm.runInContext(read(file),context,{filename:file});
- const guides=Object.assign({},...Object.entries(context.window).filter(([k])=>k.endsWith('_GUIDES')).map(([,v])=>v));return {render:context.window.SOLVER_GUIDE.render,guides};
+ const files=[...read('play.html').matchAll(/<script src="([^"]+)"/g)].map(m=>m[1]).filter(x=>!['play.js','page-readiness.js','puzzle-frame-readiness.js'].includes(x));
+ if(common)files.unshift('solver-tech-group.js','solver-tech-manual.js','solver-technical.js');
+ for(const file of files)vm.runInContext(read(file),context,{filename:file});
+ const guides=Object.assign({},...Object.entries(context.window).filter(([k])=>k.endsWith('_GUIDES')).map(([,v])=>v));return {...context.window.SOLVER_GUIDE,guides};
 }
-test('All 34 guides retain specialized steps and receive complete, uniquely numbered bibliography links',()=>{
- const {render,guides}=load();assert.equal(Object.keys(guides).length,34);
+function bibliography(out){
+ const ids=[...out.referenceHTML.matchAll(/id="(guide-reference-\d+)"/g)].map(m=>m[1]);assert.equal(ids.length,out.referenceCount);assert.equal(new Set(ids).size,ids.length);
+ for(const id of [...((out.chapterHTML||'')+(out.puzzleHTML||'')).matchAll(/href="#(guide-reference-\d+)"/g)].map(m=>m[1]))assert(ids.includes(id),'missing '+id);
+}
+test('All 37 game guides retain specific axis-language recipes and puzzle-only references',()=>{
+ const {render,guides}=load();assert.equal(Object.keys(guides).length,37);
  for(const [key,guide]of Object.entries(guides)){
-  const result=render({key,name:guide.title,guide});assert(guide.steps.length>2,key+' specialized solution');
-  assert(result.chapterHTML.indexOf('Using the Constrained Solver')<result.chapterHTML.indexOf('General approach &amp; algorithm'));
-  assert(result.chapterHTML.includes('dashed white circle'));assert(result.chapterHTML.includes('Schreier generator'));assert(result.chapterHTML.includes('rightmost transformation first'));
-  const ids=[...result.referenceHTML.matchAll(/id="(guide-reference-\d+)"/g)].map(m=>m[1]);assert.equal(ids.length,result.referenceCount,key);assert.equal(new Set(ids).size,ids.length);
-  const citations=[...(result.chapterHTML+result.puzzleHTML).matchAll(/href="#(guide-reference-\d+)"/g)].map(m=>m[1]);
-  assert(citations.length>=4,key);for(const id of citations)assert(ids.includes(id),key+' missing '+id);
-  for(const source of guide.sources)assert(result.referenceHTML.includes(source.url.replaceAll('&','&amp;')),key+' lost original link '+source.url);
-  const equations=(result.chapterHTML.match(/<math /g)||[]).length;assert(equations>=7,key+' equations');
-  assert.equal((result.chapterHTML.match(/<\/math>/g)||[]).length,equations,key+' equation closure');
-  assert(!/Gold outlines|green outlines|recorded.*guaranteed recovery/.test(result.chapterHTML),key);
+  const out=render({key,name:guide.title,guide});assert(guide.steps.length>2,key+' specialized solution');
+  assert(guide.notation.length>0,key+' notation');assert(!/Show tile labels|Hide tile labels|Enable <strong>Tile labels|Turn on <strong>Tile labels/.test(JSON.stringify(guide)),key+' obsolete tile-label control');assert(!/Notation moves|Inverse.*checkbox|notation controls/.test(JSON.stringify(guide)),key+' obsolete move controls');assert(guide.steps.some(step=>step.body.includes('<code>')),key+' actual move sequences');
+  assert.equal(out.chapterHTML,'',key+' must not repeat the shared algorithms');
+  assert(!out.referenceHTML.includes('Computation with permutation groups'),key+' general group bibliography belongs in handbook');
+  assert(!out.referenceHTML.includes('An algorithm for solving the factorization problem'),key+' general factorization reference belongs in handbook');
+  assert(out.puzzleHTML.includes('A method for'),key+' specialized method scope');bibliography(out);
+  for(const source of guide.sources)assert(out.referenceHTML.includes(source.url.replaceAll('&','&amp;')),key+' lost original source '+source.url);
  }
 });
-test('Research notes keep scope and exactness qualifications',()=>{
+test('Puzzle research distinguishes exact mechanics, family background and shortest-solution claims',()=>{
  const {render,guides}=load(),out=key=>render({key,name:key,guide:guides[key]});
- assert(out('cube3').puzzleHTML.includes('classic fixed-center 3×3'));
+ assert(out('cube3').puzzleHTML.includes('classic fixed-center 3×3×3'));
  assert(out('cube7').puzzleHTML.includes('growing-size family'));
  assert(out('diamond').puzzleHTML.includes('disassembly and reassembly'));
  assert(out('helicopter').puzzleHTML.includes('does not solve the state-dependent jumbling'));
  assert(out('jing').puzzleHTML.includes('additional movable centers'));
- assert(out('homer').puzzleHTML.includes('eight-corner 2×2'));
- assert(out('cube2').chapterHTML.includes('legal state can remain unresolved'));
+ assert(out('homer').puzzleHTML.includes('eight-corner 2×2×2'));
+ assert(out('megaminx').referenceHTML.includes('Introducing the permutations R package'));
  const unsafe=render({key:'cube2',name:'<img src=x>',guide:guides.cube2});assert(!unsafe.puzzleHTML.includes('<img'));assert(unsafe.puzzleHTML.includes('&lt;img src=x&gt;'));
 });
-test('Specialized solution leads, supporting chapters collapse below, and no stale recovery claims remain',()=>{
- const html=read('play.html');assert(html.indexOf('id="guide-intro"')<html.indexOf('id="guide-steps"'));assert(html.indexOf('id="guide-steps"')<html.indexOf('id="solver-guide"'));assert(html.includes('<details class="solver-method-details">'));const {render,guides}=load();const chapter=render({key:'cube2',name:'Cube 2×2',guide:guides.cube2}).chapterHTML;assert(!/<details[^>]*\sopen(?:\s|>)/.test(chapter));assert(chapter.includes('lasso'));assert(chapter.includes('Bright dots have a stored, verified move sequence'));assert(chapter.includes('Moderately dim dots marked'));assert(chapter.includes('remain selectable but need a further check'));assert(chapter.includes('Strongly dim dots are proved unavailable'));assert(chapter.includes('Go</strong> plays the stored verified sequence'));assert(chapter.includes('Check &amp; solve'));assert(chapter.includes('success is not guaranteed'));for(const label of ['Select held','Go','Stop'])assert(chapter.includes('<strong>'+label+'</strong>'),label+' is documented');assert(!chapter.includes('Exit after step'));assert(chapter.includes('manual timer'));const scripts=[...html.matchAll(/<script src="([^"]+)"/g)].map(m=>m[1].split(/[?#]/)[0]);assert(scripts.includes('solver-guide.js')&&scripts.includes('play.js')&&scripts.indexOf('solver-guide.js')<scripts.indexOf('play.js'));
- assert(html.includes('guide-bibliography'));assert(!html.includes('guide-session-note'));
+test('Shared handbook preserves UI instructions, guarantees, equations and every technical chapter',()=>{
+ const {renderCommon}=load(true),out=renderCommon(),chapter=out.chapterHTML;bibliography(out);
+ for(const text of ['Using the Constrained Solver','General approach &amp; algorithm','Schreier generator','rightmost transformation first','legal state can remain unresolved','lasso','Bright dots have a stored, verified move sequence','Moderately dim dots marked','remain selectable but need a further check','Strongly dim dots are proved unavailable','Go</strong> plays the stored verified sequence','first begins a search','success is not guaranteed'])assert(chapter.includes(text),'missing '+text);
+ for(const label of ['Select held','Go','Stop','Stop now','Some labels','All labels','No labels','Hide highlights','Hide labels / Show labels','Rotate ↶','Rotate ↷','Show goal'])assert(chapter.includes('<strong>'+label+'</strong>'),'missing UI control '+label);
+ for(const text of ['temporarily exempt','original held locations remain held with their new colors','F = H ∖ {a,b}','rebinds persistent locations','Auto Solve’s secured-prefix invariant'])assert(chapter.includes(text),'missing endpoint hold contract '+text);
+ for(const text of ['Show goal is hidden in mirror mode','· split','Randomize seed','Reduced-motion','independent','last completed legal turn'])assert(chapter.includes(text),'missing current control contract '+text);
+ for(const text of ['flash together for each primitive turn','no separate axis-selector or rotation-button panel','a positive right-hand rotation','M uses L, E uses D, and S uses F','Both panels always share one selection','Each arrow’s tooltip names the corresponding notation move','disabled when no axis is selected','space rather than covering the puzzle','There is no tile-label control','only the occluded portions disappear','preserves your chosen labels and playback speed','switches directly to choosing endpoint 1','piece reference','hidden during solver operations and in Mirror mode','temporary disabled/enabled states','single-line button captions','manual move buttons are disabled','first click on the top','caption changes to','Manual mode keeps'])assert(chapter.includes(text),'missing revised presentation contract '+text);
+ for(const text of ['How to play — illustrated controls','½× or ¾×','1½× or 2×','current primitive turn','actual canvas renderer','primed inverse','arbitrary swap need not bring the puzzle closer'])assert(chapter.includes(text),'missing current illustrated help contract '+text);
+ for(const file of ['cube-guides.js','addition-guides.js'])assert(!read(file).includes('ring map is hidden'),'obsolete mirror guide: '+file);
+ assert(chapter.includes('The button names the next action, not the current mode'));assert(chapter.includes('secured nodes divided by total physical nodes'));assert(chapter.includes('Its secured count grows only after'));assert(!/manual timer|% solved|3D readout|00:00.00/.test(chapter));assert(!chapter.includes('More labels'));assert(!/Show actions|Hide actions|View axis|Reset view|inverse checkbox|notation buttons/.test(chapter));assert(!chapter.includes('Check &amp; solve'));assert(!chapter.includes('Select a node'));assert(chapter.includes('Select axis'));assert(!chapter.includes('They measure different things'));assert(!chapter.includes('Show tile labels'));assert(!chapter.includes('Some axis labels'));assert(!chapter.includes('Auto Solve suppresses 1/2'));assert(!chapter.includes('Suggest solve step'));assert(!chapter.includes('animation speed slider'));assert(!chapter.includes('at most one decimal'));assert(!chapter.includes('Exit after step'));assert(!/Gold outlines|green outlines|recorded.*guaranteed recovery/.test(chapter));
+ const equations=(chapter.match(/<math /g)||[]).length;assert(equations>=7);assert.equal((chapter.match(/<\/math>/g)||[]).length,equations);
+ const ids=[...chapter.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(new Set(ids).size,ids.length,'duplicate disclosure ID');
+ for(const id of ['tech-model','tech-chain','tech-search','tech-holds','tech-eligibility','tech-full','tech-guided-checkpoints','tech-shorten','tech-runtime','tech-reproduce'])assert(ids.includes(id),'missing '+id);
+ assert(!chapter.includes('solver-tech-nav'),'redundant purple chapter tiles removed');
+ assert.equal((chapter.match(/<details\b/g)||[]).length,(chapter.match(/<\/details>/g)||[]).length);assert(!/<details[^>]*\sopen(?:\s|>)/.test(chapter));
+ const blocks=[...chapter.matchAll(/<pre\b[^>]*><code>([\s\S]*?)<\/code><\/pre>/g)].map(m=>m[1]);assert(blocks.length>=20);
+ for(const block of blocks){assert(block.trim());assert(!/[<>]/.test(block),'unescaped pseudocode');}
+ assert(!chapter.includes('undefined'));assert(!chapter.includes('[object Object]'));
+ for(const key of ['THEN(p,q)','INVERSE_WORD','Schreier','unknown','ordered-pair','homeBySticker','modelSignature','EXPAND-SPARSE-CONJUGATES','BUILD-PAIR-INDEX and LOOKUP','exemptSwapEndpoints','297,638','285,800','70,014'])assert(chapter.includes(key),'missing reproducibility term '+key);
+ for(const title of ['Computation with permutation groups','A compact representation for permutation groups','An algorithm for solving the factorization problem','Finding optimal solutions','Algorithms for solving Rubik','Solving the Rubik’s Cube optimally is NP-complete'])assert(out.referenceHTML.includes(title),'missing general reference '+title);
+});
+test('Handbook is linked beside How to play; puzzle pages lead with their own solution',()=>{
+ const home=read('index.html'),html=read('play.html'),book=read('solver-handbook.html');
+ assert(home.includes('class="handbook-entry"'));assert(home.indexOf('class="handbook-entry"')>home.indexOf('id="how-to-play"'));assert(home.includes('href="solver-handbook.html"'));
+ assert(html.indexOf('id="guide-intro"')<html.indexOf('id="guide-steps"'));assert(html.indexOf('id="guide-steps"')<html.indexOf('solver-method-details'));
+ assert(html.includes('guide-handbook-link'));assert(html.includes('guide-bibliography'));assert(!html.includes('solver-tech-group.js'));assert(!html.includes('solver-technical.js'));
+ assert(book.includes('id="cube2-worked-example"'));assert(book.includes('href="#cube2-worked-example"'));assert(book.includes('id="handbook-bibliography"'));
+ const scripts=[...book.matchAll(/<script src="([^"]+)"/g)].map(m=>m[1]);
+ for(const file of ['solver-tech-group.js','solver-tech-manual.js','solver-technical.js'])assert(scripts.indexOf(file)<scripts.indexOf('solver-guide.js'));
+ assert(scripts.indexOf('cube2-case-data.js')<scripts.indexOf('cube2-case.js'));
  assert(!read('skewb-expansion-guides.js').includes('automatic Solve button retraces recorded moves'));
  assert(!read('edge-crystal-guides.js').includes('recorded <strong>Auto solve</strong> sequence provide guaranteed recovery'));
 });
-test('Technical specification has navigable chapters, escaped pseudocode and closed nested disclosures',()=>{
- const {render,guides}=load(),chapter=render({key:'cube2',name:'Cube 2×2',guide:guides.cube2}).chapterHTML;
- const ids=[...chapter.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(new Set(ids).size,ids.length,'duplicate disclosure ID');
- const links=[...chapter.matchAll(/class="solver-tech-jump" href="#([^"]+)"/g)].map(m=>m[1]);
- assert.equal(links.length,9);for(const id of links)assert(ids.includes(id),'missing technical chapter '+id);
- assert.equal((chapter.match(/<details\b/g)||[]).length,(chapter.match(/<\/details>/g)||[]).length);
- assert(!/<details[^>]*\sopen(?:\s|>)/.test(chapter));
- const blocks=[...chapter.matchAll(/<pre\b[^>]*><code>([\s\S]*?)<\/code><\/pre>/g)].map(m=>m[1]);
- assert(blocks.length>=20,'all algorithms include pseudocode');
- for(const block of blocks){assert(block.trim());assert(!/[<>]/.test(block),'unescaped pseudocode markup');}
- assert(!chapter.includes('undefined'));assert(!chapter.includes('[object Object]'));
- for(const key of ['THEN(p,q)','INVERSE_WORD','Schreier','unknown','ordered-pair','homeBySticker','modelSignature'])assert(chapter.includes(key),'missing reproducibility term '+key);
- const scripts=[...read('play.html').matchAll(/<script src="([^"]+)"/g)].map(m=>m[1].split(/[?#]/)[0]);
- for(const file of ['solver-tech-group.js','solver-tech-manual.js','solver-technical.js'])assert(scripts.includes(file)&&scripts.includes('solver-guide.js')&&scripts.indexOf(file)<scripts.indexOf('solver-guide.js'));
+
+
+test('Illustrated controls are packaged locally and every puzzle links to them',()=>{
+ const chapter=load(true).renderCommon().chapterHTML;
+ const figures=[...chapter.matchAll(/<img src="(assets\/help-[^"]+)"[^>]*alt="([^"]+)"/g)];assert.equal(figures.length,4);
+ for(const match of figures){const bytes=fs.readFileSync(path.join(dist,match[1]));assert(bytes.subarray(1,4).equals(Buffer.from('PNG')));assert.equal(bytes.readUInt32BE(16),500);assert.equal(bytes.readUInt32BE(20),500);assert(match[2].length>60,'useful visual description');}
+ for(const file of fs.readdirSync(path.join(dist,'games')).filter(f=>f.endsWith('.html'))){const html=read('games/'+file),help=/<details class="journal-help">([\s\S]*?)<\/details>/.exec(html);if(!help)continue;assert(help[1].includes('../solver-handbook.html#how-to-play'),file);assert(help[1].includes('id="cubeNote" hidden'),file+' preserves the engine compatibility element');assert(!help[1].includes('animation speed slider'));assert(!help[1].includes('complete current protected'));}
 });

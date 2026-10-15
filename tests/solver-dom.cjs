@@ -31,10 +31,20 @@ class Element extends LegacyElement {
   prepend(...els){for(const el of [...els].reverse())this.insertBefore(el,this.firstChild);}
   insertBefore(el,before){if(!before)return this.appendChild(el);if(el.parentNode)el.remove();const i=this.children.indexOf(before);if(i<0)throw Error('Missing reference child');el.parentNode=this;el.ownerDocument=this.ownerDocument;this.children.splice(i,0,el);return el;}
   replaceChildren(...els){for(const child of this.children||[])child.parentNode=null;this.children=[];this._text='';this.append(...els);}
+  cloneNode(deep=false){
+    // Browser clones preserve markup/reflected attributes, but do not copy
+    // listeners registered through addEventListener or a node's parent.
+    const clone=new Element(this.tagName.toLowerCase(),this.id);clone.ownerDocument=this.ownerDocument;
+    for(const [key,value]of Object.entries(this.attributes))clone.setAttribute(key,value);
+    for(const key of ['className','title','value','disabled','hidden','checked','tabIndex','type','name','role'])if(this[key]!==undefined)clone[key]=this[key];
+    clone.dataset={...this.dataset};clone.style={...this.style};clone._text=this._text;
+    if(deep)for(const child of this.children)clone.appendChild(child.cloneNode(true));
+    return clone;
+  }
   setAttribute(k,v){super.setAttribute(k,String(v));if(k==='id')this.id=String(v);if(k==='class')this.className=String(v);if(k==='value')this.value=String(v);if(k==='tabindex')this.tabIndex=Number(v);if(k==='hidden')this.hidden=true;if(k==='disabled')this.disabled=true;if(k==='checked')this.checked=true;if(k.startsWith('data-'))this.dataset[k.slice(5).replace(/-([a-z])/g,(_,x)=>x.toUpperCase())]=String(v);}
   getAttribute(k){if(k==='id')return this.id||null;if(k==='class')return this.className||null;return Object.hasOwn(this.attributes,k)?this.attributes[k]:null;}
   hasAttribute(k){return this.getAttribute(k)!==null;}
-  removeAttribute(k){delete this.attributes[k];if(k==='hidden')this.hidden=false;if(k==='disabled')this.disabled=false;}
+  removeAttribute(k){delete this.attributes[k];if(k==='id')this.id='';if(k==='class')this.className='';if(k==='hidden')this.hidden=false;if(k==='disabled')this.disabled=false;}
   contains(el){for(let n=el;n;n=n.parentNode)if(n===this)return true;return false;}
   closest(selector){for(let n=this;n;n=n.parentNode)if(n.matches(selector))return n;return null;}
   matches(selector){return selector.split(',').some(part=>{

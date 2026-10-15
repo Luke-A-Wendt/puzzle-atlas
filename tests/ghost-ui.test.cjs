@@ -13,7 +13,7 @@ test('Ghost page keeps mirror, live piece identities, exact move playback and so
  assert(api.runMoves("U F R2 L' B D2"));app.complete();assert(!app.snapshot().solved);
  const state=JSON.stringify(app.snapshot().pieces);
  app.click('pieceLabels');app.frame(0);assert.equal(app.elements.get('pieceLabels').attributes['aria-pressed'],'true');
- app.click('mirrorMode');app.frame(0);assert(app.snapshot().mirrorMode);assert(app.elements.get('ringPanel').hidden);
+ app.click('mirrorMode');app.frame(0);assert(app.snapshot().mirrorMode);assert(!app.elements.get('ringPanel').hidden);
  assert.equal(JSON.stringify(app.snapshot().pieces),state,'mirror preserves state');
  app.click('mirrorMode');app.frame(0);assert(!app.snapshot().mirrorMode);assert(!app.elements.get('ringPanel').hidden);
  api.reset();app.frame(0);assert(app.snapshot().solved);

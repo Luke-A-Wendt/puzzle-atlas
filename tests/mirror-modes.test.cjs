@@ -5,18 +5,18 @@ const {createHarness}=require('./game-harness.cjs');
 const base=path.join(__dirname,'../dist/games');
 const appFor=(name,search='')=>createHarness({htmlPath:path.join(base,name+'.html'),bundled:true,search});
 const state=s=>JSON.stringify({pieces:s.pieces,stickers:s.stickers,history:s.history,journal:s.journal,view:s.view,seed:s.seed,selected:s.selected,mode:s.mode,paused:s.paused,userTurns:s.userTurns,animating:s.animating});
-for(const name of ['mirror','flatdiamond','pyramorphix','mastermorphix']){
+for(const name of ['mirror','flatdiamond','pyramorphix','mastermorphix','ghost']){
  const app=appFor(name),api=app.context.PUZZLE_API;
  assert.equal(app.snapshot().mirrorMode,false,name+' starts colored');assert.equal(app.snapshot().mirrorEligible,true);
  app.click('mirrorMode');
- assert.equal(app.snapshot().mirrorMode,true);assert.equal(app.elements.get('ringPanel').hidden,true);assert(app.document.body.classList.contains('mirror-active'));
+ assert.equal(app.snapshot().mirrorMode,true);assert.equal(app.elements.get('ringPanel').hidden,false);assert(app.document.body.classList.contains('mirror-active'));
  assert.equal(app.elements.get('mirrorMode').attributes['aria-pressed'],'true');
- if(name!=='mirror'){assert(app.elements.get('pieceLabels').hidden);assert(app.elements.get('identityMetric').hidden);}
+ if(name!=='mirror'){assert(!app.elements.get('pieceLabels').hidden);assert(app.elements.get('identityMetric').hidden);}
  assert(api.move('R'));app.frame(30);const before=state(app.snapshot());assert(api.setMirrorMode(false));assert.equal(before,state(app.snapshot()),name+' toggles preserve moving state');app.complete();assert(!app.snapshot().solved);
- const settled=state(app.snapshot());api.setMirrorMode(true);assert.equal(settled,state(app.snapshot()),name+' toggles preserve history and view');assert.equal(app.elements.get('ringPanel').hidden,true);assertAutoSolveDelegates(app.context);app.click('undo');app.complete();assert(app.snapshot().solved);
- api.randomize();app.complete();assert(!app.snapshot().solved);assertAutoSolveDelegates(app.context);api.reset();assert(app.snapshot().solved);
+ const settled=state(app.snapshot());api.setMirrorMode(true);assert.equal(settled,state(app.snapshot()),name+' toggles preserve history and view');assert.equal(app.elements.get('ringPanel').hidden,false);assertAutoSolveDelegates(app.context);app.click('undo');app.complete();assert(app.snapshot().solved);
+ const turnsBeforeRandomize=app.snapshot().history.length;api.randomize();app.complete();assert(app.snapshot().history.length>turnsBeforeRandomize);assertAutoSolveDelegates(app.context,!app.snapshot().solved);api.reset();assert(app.snapshot().solved);
  api.setMirrorMode(false);assert(!app.elements.get('ringPanel').hidden);assert(!app.document.body.classList.contains('mirror-active'));
- const advanced=appFor(name,'?mirror=1');assert(advanced.snapshot().mirrorMode);assert(advanced.elements.get('ringPanel').hidden);
+ const advanced=appFor(name,'?mirror=1');assert(advanced.snapshot().mirrorMode);assert(!advanced.elements.get('ringPanel').hidden);
  console.log(name+': colored default, advanced mode, preserved state, controls, scramble/Undo/Auto Solve delegation, explicit URL PASS');
 }
 for(const name of ['rhombic','cornerocta','trajber','jewel']){
@@ -30,6 +30,6 @@ let solved=E.makeSolved();assert(E.isSolved(solved));assert(E.isShapeSolved(solv
 for(const move of ['R',"M'","L'"])solved=E.applyMove(solved,move);assert(E.isSolved(solved));assert(E.isShapeSolved(solved));
 const misoriented=E.makeSolved();const center=misoriented.find(s=>s.homeP[0]===0&&s.homeP[1]===1&&s.homeP[2]===0);center.frame=center.frame.map(v=>E.rotateVector(v,1,1));assert(E.isSolved(misoriented));assert(E.isShapeSolved(misoriented));
 assert.equal(appFor('mirror','?color=1').snapshot().mirrorMode,false);assert.equal(appFor('mirror','?color=0').snapshot().mirrorMode,true);
-const html=fs.readFileSync(path.join(base,'mirror.html'),'utf8');assert(!html.includes('rc.rect('),'mirror ring nodes must all be circular');assert(html.includes('rc.arc(p.x,p.y,5.8'));
-const css=fs.readFileSync(path.join(base,'game-theme.css'),'utf8');assert(css.includes('.mirror-active .workspace{grid-template-columns:minmax(0,1fr)}'));assert(css.includes('#ringPanel[hidden]'));
-console.log('Symmetric puzzles exclude mirror mode; mode-specific physical completion and one-column layout PASS');
+const html=fs.readFileSync(path.join(base,'mirror.html'),'utf8');assert(!html.includes('rc.rect('),'mirror ring nodes must all be circular');assert(html.includes('G.drawNode(rc,p,nodeColor,willMove,scale)'));
+const css=fs.readFileSync(path.join(base,'game-theme.css'),'utf8');assert(!css.includes('.mirror-active .workspace{grid-template-columns:minmax(0,1fr)}'));assert(css.includes('#ringPanel[hidden]'));
+console.log('Symmetric puzzles exclude mirror mode; mode-specific physical completion and retained ring map PASS');

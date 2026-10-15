@@ -5,7 +5,7 @@ window.TETRAMINX_GUIDES = {
     "intro": "Build the yellow base, then finish the upper layer’s three edges. Tetraminx uses the Pyraminx mechanism without the four small tips. This guide uses the game’s fixed ring letters.",
     "notation": [
       "U is the upper cut corner; L, R and B are the left, right and back cut corners in the starting view. Dragging the view does not rename these rings.",
-      "Each capital letter turns a main layer by 120°. A prime (′) reverses a turn. Use the Notation moves buttons; check Inverse for a prime. Ring arrows describe on-screen motion. This puzzle has no independent tip moves.",
+      "Each capital letter turns a main layer by 120°. A prime (′) reverses a turn. Select the named axis below either panel and use Turn left or Turn right; each arrow’s tooltip names its notation move. Ring arrows describe on-screen motion. This puzzle has no independent tip moves.",
       "An edge such as UL is the two-color piece between the U and L axes. The yellow face is opposite U. Its other three colored faces are green, blue and red. Each truncated corner has one three-color vertex piece; the dark triangular caps are not additional color faces."
     ],
     "steps": [

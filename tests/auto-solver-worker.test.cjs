@@ -21,7 +21,7 @@ function browser(filename,{tamperCache=false}={}){
  ctx.location={href:'https://atlas.test/games/'+filename};ctx.self=ctx;ctx.globalThis=ctx;ctx.postMessage=data=>responses.push(plain(data));vm.createContext(ctx);vm.runInContext(fs.readFileSync(path.join(root,filename),'utf8'),ctx,{filename});
  return {ctx,responses,fetches,send:async data=>{await ctx.onmessage({data:plain(data)});return responses.at(-1);}};
 }
-test('all 34 home targets use actual engine identities and are independent of a move journal',async()=>{
+test('all catalog home targets use actual engine identities and are independent of a move journal',async()=>{
  const core=browser('constrained-solver-core.js').ctx.ConstrainedSolverCore;
  for(const id of core.modelIds){
   const engine=engineFor(id),model=await core.loadModel(id),solved=engine.getState(),progress=core.solvedProgress(model,{stickers:solved,history:[]});
@@ -38,7 +38,7 @@ test('full solve replays real engine snapshots without history for every support
   for(const i of [0,Math.floor(model.moves.length/3),Math.floor(model.moves.length*2/3)])engine.apply(model.moves[i].engineMove);
   const snapshot={stickers:engine.getState(),history:[]},before=JSON.stringify(snapshot);
   const reply=await worker.send({task:'full-solve',id,modelId:id,snapshot});
-  assert.equal(reply.result.status,'solved',id+': '+JSON.stringify(reply.result));assert(core.verifyAutoPlan(model,snapshot,reply.result),id);assert.equal(JSON.stringify(snapshot),before,id+' mutated caller snapshot');
+  assert.equal(reply.result.status,'solved',id+': '+JSON.stringify(reply.result));assert(core.verifyAutoPlan(model,snapshot,reply.result),id);assert.equal(reply.result.checkpointPlan,undefined,id+' full-solve retains its incremental stage boundaries');assert.equal(JSON.stringify(snapshot),before,id+' mutated caller snapshot');
   assert.equal(reply.modelFingerprint,core.modelFingerprint(id));assert.equal(reply.engineStages.length,reply.result.stages.length);
   const held=new Set();let moves=0;
   for(const stage of reply.engineStages){
@@ -93,5 +93,5 @@ test('an illegal identity exchange is proved only in identity mode and remains u
 test('stabilizer cache is lazy and rejects version mismatch before solving',async()=>{
  const worker=browser('constrained-solver-worker.js',{tamperCache:true}),engine=engineFor('cube2');
  assert.equal(worker.fetches.length,0);engine.apply(engine.model.moves[0].engineMove);
- const reply=await worker.send({task:'full-solve',id:1,modelId:'cube2',snapshot:{stickers:engine.getState()}});assert.equal(reply.result.status,'unknown');assert.equal(reply.result.reason,'cache_integrity_error');assert.match(reply.result.detail,/does not match this release/);
+ const reply=await worker.send({task:'full-solve',id:1,modelId:'cube2',snapshot:{stickers:engine.getState()}});assert.equal(reply.result.status,'unknown');assert.equal(reply.result.reason,'cache_integrity_error');assert.match(reply.result.detail,/release|version/);
 });

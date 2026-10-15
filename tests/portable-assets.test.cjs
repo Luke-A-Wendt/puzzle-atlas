@@ -3,6 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {webcrypto}=require('node:crypto');
 const dist=path.resolve(__dirname,'../dist');
+const catalogIds=JSON.parse(fs.readFileSync(path.join(dist,'games/constrained-solver-models/manifest.json'),'utf8')).models.map(model=>model.id).sort();
 const origin='https://portable.test';
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(dir,e.name)):[path.join(dir,e.name)]);}
 const files=walk(dist);
@@ -50,7 +51,7 @@ test('runtime scripts contain no remote asset loaders or development-host refere
  }
 });
 
-test('all 34 models load with real integrity checks from the deployed project subdirectory',async()=>{
+test('all catalog models load with real integrity checks from the deployed project subdirectory',async()=>{
  const requests=[];
  const context={URL,performance,TextEncoder,AbortController,crypto:webcrypto,setTimeout,clearTimeout,console,
   document:{currentScript:{src:origin+'/puzzle-atlas/games/constrained-solver-core.js'}},
@@ -64,7 +65,7 @@ test('all 34 models load with real integrity checks from the deployed project su
  context.globalThis=context;vm.createContext(context);
  vm.runInContext(fs.readFileSync(path.join(dist,'games/constrained-solver-core.js'),'utf8'),context);
  const core=context.ConstrainedSolverCore;
- assert.equal(core.modelIds.length,34);
+ assert.deepEqual(Array.from(core.modelIds).sort(),catalogIds);
  assert.equal(core.assetBase,origin+'/puzzle-atlas/games/');
  for(const id of core.modelIds){
   const model=await core.loadModel(id);assert.equal(model.id,id);
@@ -74,5 +75,5 @@ test('all 34 models load with real integrity checks from the deployed project su
    assert(value&&typeof value==='object',`${folder}/${id}.json`);
   }
  }
- assert.equal(requests.length,34);
+ assert.equal(requests.length,catalogIds.length);
 });

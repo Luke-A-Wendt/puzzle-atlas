@@ -1,9 +1,9 @@
 /* Source-aligned documentation only. No solver or puzzle state is changed. */
 window.SOLVER_TECH_MANUAL = function ({section, subsection, code, math, table}) {
   const colorBody =
-    `<p><strong>The website protects colors at held locations.</strong> The strict routines below remain the constructive fallback; they are sufficient but no longer necessary for a successful manual request. Let Ω={0,…,N−1}, c:Ω→colors∪{empty} be the current color array, F⊆Ω be the held addresses, and a,b∈Ω∖F be distinct occupied addresses. A legal source-to-destination permutation g must exchange the selected stickers and restore every held location's color:</p>`+
+    `<p><strong>The website protects colors at held locations.</strong> The strict routines below remain the constructive fallback; they are sufficient but no longer necessary for a successful manual request. Let Ω={0,…,N−1}, c:Ω→colors∪{empty} be the current color array, H⊆Ω be the persistent held locations shown by the interface, a,b∈Ω be distinct occupied endpoints, and F=H∖{a,b} be the active held addresses sent to this request. Selecting a marked node as an endpoint suspends that hold for this exchange; it does not erase its held classification. A legal source-to-destination permutation g must exchange the selected stickers and restore every held location's color:</p>`+
     math('Exact endpoint color and selected-sticker constraints', '<mi>g</mi><mo>(</mo><mi>a</mi><mo>)</mo><mo>=</mo><mi>b</mi><mo>,</mo><mspace width=".5em"/><mi>g</mi><mo>(</mo><mi>b</mi><mo>)</mo><mo>=</mo><mi>a</mi><mo>,</mo><mspace width=".5em"/><mi>c</mi><mo>(</mo><msup><mi>g</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup><mo>(</mo><mi>f</mi><mo>)</mo><mo>)</mo><mo>=</mo><mi>c</mi><mo>(</mo><mi>f</mi><mo>)</mo><mspace width=".5em"/><mo>∀</mo><mi>f</mi><mo>∈</mo><mi>F</mi>')+
-    `<p>The backend option is <code>holdSemantics:'color'</code>, with <code>colorByNode</code> containing exactly N strings, finite numbers, or null entries. Equality is exact label equality, not a comparison of displayed RGB brightness. Null denotes an unoccupied geometric pose. The occupied-address set must agree with non-null entries, and holds/A/B must be occupied. Color semantics is supported for <code>protected_swap</code> with <code>endpoint</code> protection. The default backend request without this option retains <code>holdSemantics:'sticker'</code> for compatibility; the website explicitly requests colors.</p>
+    `<p>The backend option is <code>holdSemantics:'color'</code>, with <code>colorByNode</code> containing exactly N strings, finite numbers, or null entries. Equality is exact label equality, not a comparison of displayed RGB brightness. Null denotes an unoccupied geometric pose. The occupied-address set must agree with non-null entries, and holds/1/2 must be occupied. Color semantics is supported for <code>protected_swap</code> with <code>endpoint</code> protection. The default backend request without this option retains <code>holdSemantics:'sticker'</code> for compatibility; the website explicitly requests colors.</p>
     <p>The set of g preserving colors at only F generally fails closure under multiplication: one acceptable transformation can move a same-color donor out of reach of another. Therefore it is not substituted for a subgroup in Schreier–Sims. Instead, use bounded positive-witness methods and keep the strict pointwise subgroup as a safe sufficient route. No labeling of all interchangeable stickers and no global configuration graph is allocated.</p>`+
     subsection('tech-color-dispatch','One-shot backend dispatch and the limits of each proof',
       code('Color-aware manual request', `COLOR-SOLVE(model, F, a, b, c, budget):
@@ -22,28 +22,31 @@ window.SOLVER_TECH_MANUAL = function ({section, subsection, code, math, table}) 
   if relaxed is SOLVED or certified IMPOSSIBLE: return relaxed
   strict := original identity-hold solver with remaining request time
   if strict is SOLVED:
-    independently verify colors and A/B
+    independently verify colors and 1/2
     mark optimal only if its length meets the relaxed search lower bound
     return strict witness under color semantics
   return UNKNOWN // strict impossibility cannot exclude relaxed solutions`)+
-      `<p>The catalog is a supply of legal words, not a complete reachability table. Scan candidate operations containing the required A/B two-cycle, test their incoming colors on F, and choose the shortest accepted stored word. A catalog witness proves feasibility; failure proves nothing. A one-move witness is shortest because distinct A/B require a nonidentity action. Longer catalog words have no general minimum-length certificate. One- and two-move catalog witnesses return promptly; a longer one supplies an incumbent for a small attempt to improve it before playback.</p>
+      `<p>The catalog is a supply of legal words, not a complete reachability table. Scan candidate operations containing the required 1/2 two-cycle, test their incoming colors on F, and choose the shortest accepted stored word. A catalog witness proves feasibility; failure proves nothing. A one-move witness is shortest because distinct 1/2 require a nonidentity action. Longer catalog words have no general minimum-length certificate. One- and two-move catalog witnesses return promptly; a longer one supplies an incumbent for a small attempt to improve it before playback.</p>
       <p>This describes the retained one-shot <code>solveSync</code> API, not the resumable browser-session protocol below. Catalog inspection is capped at min(100 ms,total budget/8). An incumbent longer than two moves receives at most 150 ms of shorter-depth color search and, when time remains, at most 50 ms of strict bidirectional tuple search to compete with it. Without an incumbent, color search receives at most min(450 ms,configured short-search time,total budget/3,remaining time), with at most 25,000 stored tuples and 16 MiB estimated storage. Remaining time goes to the strict fallback. A successful strict fallback need not be shortest for the relaxed request, even if it was shortest under sticker holds. Only a lower bound proved for the relaxed request can certify that claim.</p>`)+
     subsection('tech-color-session','Progressive browser search: preserve work across Continue',
       `<p><code>ManualSwapSession</code> keeps one immutable normalized request and a retained projected search in a browser worker. Its <code>advance({budgetMs,onProgress})</code> operation receives a <em>cumulative</em> planning allowance. The UI uses 3,000, 10,000, 30,000 and 60,000 ms: after spending the full previous allowance, these permit approximately 7,000, 20,000 and 30,000 ms of additional planning. Asset download time and time spent waiting for another click do not consume that allowance. Runtime checks occur at checkpoints, so a slice can overrun slightly.</p>
-      <p>A session retains normalized holds, the full current color/occupancy arrays and A/B; primitive inverse arrays; the catalog scan cursor; and the BFS seen map, record queue, parent indices, incoming moves, depths, queue head, next primitive index and an optional already-tested transition awaiting storage. Retaining only a layer number or restarting BFS with a larger deadline would repeat work. The move cursor also matters: a pause in the middle of expanding a node resumes its next untested outgoing edge.</p>`+
+      <p>A session retains normalized holds, the full current color/occupancy arrays and 1/2; primitive inverse arrays; the pair-index candidate list and its scan cursor; and the BFS seen map, record queue, parent indices, incoming moves, depths, queue head, next primitive index and an optional already-tested transition awaiting storage. Retaining only a layer number or restarting BFS with a larger deadline would repeat work. The move cursor also matters: a pause in the middle of expanding a node resumes its next untested outgoing edge.</p>`+
       code('Resumable exact projected search', `CREATE-SESSION(model, request, limits):
   validate and copy the normalized request; treat it as immutable
   precompute primitive inverses
   root := held addresses followed by [a,b]
   records := [(root,parent=NONE,move=NONE,depth=0)]
   seen := {key(root)}; head := 0; nextMove := 0
-  catalogCursor := 0; elapsed := 0; terminal := NONE
+  catalogCandidates := pair-index list for {a,b}; catalogCursor := 0
+  elapsed := 0; terminal := NONE
 
 ADVANCE(cumulativeBudget):
   require the same immutable request; never replace it inside this session
   if terminal exists: return terminal without repeating work
   deadline := now + max(0,cumulativeBudget-elapsed)
-  continue the retained catalog scan; verify any returned witness
+  continue the retained indexed candidate scan; verify any returned witness
+  when the catalog is exhausted, advance the retained same-color
+    compensation scan for at most 250 ms and remaining time
   before the first cached attempt, advance this same BFS for
     at most min(150 ms, remaining time / 4)
   try the bounded cached strict construction when scheduled
@@ -61,7 +64,7 @@ ADVANCE(cumulativeBudget):
     j := nextMove
     next := componentwise inverse(P[j]) applied to row.tuple
     if key(next) not in seen:
-      test the exact requested color/identity and A/B endpoint goal
+      test the exact requested color/identity and 1/2 endpoint goal
       if goal holds:
         reconstruct [j] followed by parent moves toward the root
         enforce output bound; independently verify; return SOLVED
@@ -75,9 +78,83 @@ ADVANCE(cumulativeBudget):
   return IMPOSSIBLE only after the entire projected orbit is exhausted
   on every return, add only active planning time to elapsed`)+
       `<p>The cached strict constructor is a separate bounded shortcut. A successful prepared chain can be reused. Before the first cached attempt, the same retained BFS gets a probe of at most min(150 ms,remaining time/4), so an easy short solution need not wait for or expand a long constructive word. Only a constructor result with <code>time_limit</code> schedules another attempt. Its nominal allowances are 800, 2,500, 8,000 and 16,000 ms at the four stages, bounded by the actual time remaining. At the final 60-second stage, if BFS has already stopped at a hard limit, the constructor may use all remaining planning time rather than leaving it unused. The tuple frontier remains intact. Therefore BFS transitions are not replayed across continuations, but not every internal operation of a timed-out group construction is a resumable checkpoint. Strict impossibility never proves a color request impossible. Catalog or cached witnesses can be shorter to compute without being shortest in primitive turns.</p>
-      <p>The session stops offering Continue after the 60-second planning stage, or sooner when all remaining routes have stopped. A BFS memory/state limit can leave one useful continuation when a cached construction is still eligible for a longer attempt; a terminal limit with no such work remaining ends the session. The browser guards are 100,000 retained states, a 48 MiB combined working-storage estimate, depth 30 for projected BFS and 5,000 output moves. The BFS depth limit does not restrict a valid longer word from the constructive route; it limits which primitive paths BFS explores. The standalone session defaults its depth bound to the output bound when no depth is supplied. Each record is charged 256+40q bytes. Inverse arrays, initial metadata and one temporary/pending row are charged 2MN+16N+32q+(256+40q) bytes; retained cached preparation is additionally accounted. Before the first constructive attempt and while a timed-out attempt can be extended, BFS reserves at least half the storage allowance for construction, or the retained prepared-cache size if larger. If that reservation stops BFS, save the already-computed transition as a pending row. When construction stops permanently, release the extra reservation and enqueue that row if it fits; advance the move cursor without repeating the transition. Actual retained preparation remains charged. The constructor receives only the allowance left after current BFS storage. These are safeguards, not exact browser heap measurements. Terminal resource limits return <code>unknown</code> with a reason and leave the puzzle unchanged. Only full projected-orbit exhaustion justifies <code>impossible</code>. No incomplete frontier is treated as an impossibility proof.</p>
+      <p>The session stops offering Continue after the 60-second planning stage, or sooner when all remaining routes have stopped. A BFS memory/state limit can leave one useful continuation when a cached construction is still eligible for a longer attempt; a terminal limit with no such work remaining ends the session. The browser guards are 100,000 retained states, a 48 MiB combined working-storage estimate, depth 30 for projected BFS and 5,000 output moves. The BFS depth limit does not restrict a valid longer word from the constructive route; it limits which primitive paths BFS explores. The standalone session defaults its depth bound to the output bound when no depth is supplied. Each record is charged 256+40q bytes. Inverse arrays, initial metadata and one temporary/pending row are charged 2MN+16N+32q+(256+40q) bytes; retained cached preparation is additionally accounted. Before the first constructive attempt and while a timed-out attempt can be extended, BFS reserves at least half the storage allowance for construction, or the retained prepared-cache size if larger. If that reservation stops BFS, save the already-computed transition as a pending row. When construction stops permanently, release the extra reservation and enqueue that row if it fits; advance the move cursor without repeating the transition. Actual retained preparation remains charged. The constructor receives only the allowance left after current BFS storage. These are safeguards, not exact browser heap measurements. Loaded immutable move models and precomputed cache assets are separate from the bounded search-workspace estimate. Terminal resource limits return <code>unknown</code> with a reason and leave the puzzle unchanged. Only full projected-orbit exhaustion justifies <code>impossible</code>. No incomplete frontier is treated as an impossibility proof.</p>
       <p>Progress metadata includes the cumulative budget and planning time, retained-state and attempted-transition counts, whether work was resumed, whether another slice is allowed, the next budget and a terminal reason. Counts describe the bounded projected search, not the percentage of all puzzle configurations searched: the full search size is generally unknown. A newly created session can have a small initialization cost before its first progress update.</p>
-      <p>The main thread retains a paused worker only for that exact request and live sticker-address snapshot. Altering the holds, A, B, colors, occupied poses, puzzle state or mode invalidates the session and its continuation button. Cancel also disposes of it. Selecting a ready pair bypasses construction: retrieve its stored word and independently replay it before playback. If background eligibility later supplies a verified word for a previously unresolved pair, Go can become available without restarting its exhausted search. Neither a suggestion nor a failed check changes the puzzle. <strong>Suggest a swap</strong> selects from retained words that independently verify for the current request. It prefers different colors, compares color-goal improvement on a bounded shortlist, and then favors shorter words. This is a bounded presentation heuristic, not a search proof or a promise that every suggestion improves the puzzle. The UI previews the verified word length and waits for Go.</p>`)+
+      <p>The main thread retains a paused worker only for that exact request and live sticker-address snapshot. Altering the holds, endpoints 1 and 2, colors, occupied poses, puzzle state or mode invalidates the session and its continuation button. Cancel also disposes of it. Selecting a ready pair bypasses construction: retrieve its stored word and independently replay it before playback. If background eligibility later supplies a verified word for a previously unresolved pair, Go can become available without restarting its exhausted search. A failed check does not change the puzzle. Manual endpoint selection requests the exact exchange defined above, shows the move count, and waits for Go. There is no full-solution suggestion disguised as a two-node exchange. Auto Solve uses the separately described incremental stage playback below.</p>`)+
+    subsection('tech-guided-checkpoints','Incremental Auto Solve stages and progress measurements',
+      `<p>Auto Solve plays the independently verified stages returned by <code>solveFull</code>. Let S be the physical stickers, M=|S|, N the geometric addresses, h:S→{0,…,N−1} their injective home-address mapping, x:S→{0,…,N−1} their current-address mapping, and c(s) their immutable colors. Let C(x) contain home addresses occupied by their goal color and I(x) contain addresses occupied by their exact-home sticker. Empty hypothetical poses never count as physical stickers.</p>
+      <p>Let J(x)=|C(x)| for a color-safe fully occupied model outside mirror mode, and J(x)=|I(x)| when exact identities or poses define the goal. This overlap does not measure the minimum remaining move distance.</p>`+
+      math('Secured fraction equals secured physical addresses divided by physical sticker count', '<mi>q</mi><mo>=</mo><mfrac><mrow><mo>|</mo><mi>K</mi><mo>|</mo></mrow><mi>M</mi></mfrac>')+
+      `<p>During Auto Solve, the upper progress bar counts a nested set K of secured addresses. Initially K is <code>initialProtectedNodes</code>, not every accidentally correct color. Stage i declares H<sub>i</sub>=<code>protectedNodes</code> and Δ<sub>i</sub>=<code>newlySolvedNodes</code>. Require K⊆H<sub>i</sub>; its complete word restores every H<sub>i</sub> and Δ<sub>i</sub> according to the plan’s color or identity semantics. Then K←K∪H<sub>i</sub>∪Δ<sub>i</sub>. Each nonempty incremental stage expands the secured prefix. The upper bar updates at verified stage pauses; the lower bar counts primitive moves completed in this stage. Because C(x) can also include unprotected incidental matches, the goal overlap J(x) need not increase between stages even though |K| does. The solver preserves its original plan and stage boundaries.</p>`+
+      code('Verified incremental automatic playback', `AUTO-PLAY(snapshot, plan):
+  independently verify the complete legal plan from snapshot
+  K := set(plan.initialProtectedNodes)
+  publish secured progress |K| / M to the upper bar
+  for stage in plan.stages, in their existing order:
+    require expected identity mapping = live identity mapping
+    require K is a subset of stage.protectedNodes
+    require every declared protected address currently meets the goal
+    bind K to current occupants for held-node display
+    animate the stage's primitive word in chunks of at most 300 moves
+    verify each chunk against its predicted identity mapping
+    require all protected and newly solved addresses meet the plan goal
+    K := K union stage.protectedNodes union stage.newlySolvedNodes
+    update the upper bar to the verified |K| / M
+    pause 500 ms, then continue
+  require final color or exact-pose goal
+ON-FIRST-AUTO-STOP:
+  if loading or planning: cancel before playback
+  else: finish and verify the complete current stage, then exit
+  while that stage runs: label the enabled button Stop now
+ON-SECOND-AUTO-STOP-OR-MANUAL-STOP:
+  finish only the current primitive move; discard the unplayed queue
+  verify the completed prefix against its predicted permutation
+  clear held and numbered selections
+  discard remaining plan; partial endpoints need not restore holds`)+
+      `<p><strong>Why small boundaries matter.</strong> Protecting the whole C(x), rather than the declared secured set K, forces a later stage to restore every coincidental correct color too. The optional <code>groupGuidedPlan</code> backend helper concatenates stages until C(before)⊆C(after) and J(after)&gt;J(before). That preserves a monotonic goal count but can merge almost the entire solve into one long operation. Normal Auto Solve deliberately does not call it. It preserves the existing verified placement boundaries, which are incremental constructions, not globally shortest swaps. Suggest holds is a separate manual convenience selecting C(x); it does not promise a short or legal arbitrary pair exchange.</p>
+      <p><strong>Independent verification and cost.</strong> The verifier checks each primitive index, the source-to-target transport, inclusion of the earlier secured prefix, the protected and newly solved goals, equality of flattened and staged move lists, and the final goal. Identity-mode stages must fix the protected addresses pointwise; color-mode stages may substitute equal-colored stickers. For L primitive turns, M occupied stickers, N addresses, and B stages, replay costs O(L(N+M)) with additional node-set checks bounded conservatively by O(BN²); the plan uses O(L+BN+N+M) memory. No configuration graph is enumerated. The browser rejects stale live mappings and retains the 20,000-move full-plan limit. Stop verifies only the completed legal prefix, since a partially played stage does not have its endpoint guarantees.</p>`)+
+    subsection('tech-color-isolated','Exact two-address audit and same-color compensation',
+      `<p>Let T(a,b) denote the identity permutation with only a and b exchanged. The literal isolated-swap question is exactly T(a,b)∈G, where G is generated by the legal moves. This is stronger than holding all other visible colors: equal-colored stickers can exchange identities without changing those colors. In a pose-expanded model, the exact permutation also fixes every unused address.</p>
+      <p>The offline audit forms orbits of unordered address pairs under the primitive generators. Conjugation carries T(a,b) to T(g(a),g(b)), so membership is constant throughout one pair orbit. Test one representative against the existing complete stabilizer chain, then assign that proven result to its entire orbit. No configuration graph is constructed. The pre-Axis-Cube audit covered 34 models and 251,486 unordered address pairs; every literal isolated transposition in that audited set was excluded by the complete-chain test. This historical count does not include the subsequently added Axis Cube. These counts include unused hypothetical poses in expanded models, not only physical stickers.</p>`+
+      code('Exhaustive audit over pairs, not configurations', `AUDIT-EXACT-PAIRS(model, completeChain):
+  seen := empty unordered-pair set
+  for each 0 <= a < b < N:
+    if {a,b} is seen: continue
+    orbit := BFS from {a,b}, applying each primitive to both addresses
+    mark all pairs in orbit seen
+    membership := SIFT(T(a,b), completeChain)
+    assign membership to every pair in orbit
+  // Negative requires a validated COMPLETE chain for this exact move model.
+
+SIFT(target, completeChain):
+  residue := target; factors := []
+  for level in chain order:
+    image := residue[level.base]
+    if image == level.base: continue
+    if no transversal entry for image: return NOT_MEMBER
+    t := that entry
+    residue := execute residue, then inverse(t.permutation)
+    append t.word to factors
+  require residue == identity
+  return MEMBER with factors reversed`)+
+      `<p>A useful narrower color-preserving family is g=T(a,b)T(c,d), with four distinct occupied addresses and equal current colors at c and d. The selected stickers exchange exactly; the compensating pair exchanges identities but restores both colors; every other identity is fixed. Sifting this target either excludes that precise double swap or produces a factorization. Excluding every candidate in this family still does not exclude longer equal-color cycles or more complicated legal color-preserving permutations.</p>`+
+      code('Resumable same-color compensation fallback', `COMPENSATED-SWAP(model, a, b, colors, completeChain, budget):
+  retain cursor over disjoint occupied pairs {c,d}
+  first test T(a,b); subsequently test only colors[c] == colors[d]
+  while time remains and candidates remain:
+    target := T(a,b) T(c,d)
+    result := SIFT(target, completeChain)
+    if NOT_MEMBER: advance cursor; continue
+    try expanding reversed factors within time and output limits
+    replay every primitive independently
+    verify selected identities, held colors and occupancy
+    if verified: return SOLVED, optimal=false
+    if expansion exceeded a limit: remember the limitation; continue
+  retain cursor if paused
+  return UNKNOWN if this family is exhausted or any resource limit applies`)+
+      `<p>The browser session runs this optional scan after catalog inspection in slices of at most 250 ms. Its cursor, count and chain preparation survive Continue. Memory for lazy inverse transversals and word expansion is reserved before enabling it; tight budgets skip this optional route. It shares the existing 5,000-move output limit. A time- or output-limited expansion is not an impossibility proof. Cached strict construction and the retained projected search remain available independently.</p>
+      <p>The offline catalog additionally stores verified exact double-swap words taken from complete-chain transversals and short conjugations. The initial added family contained 2,760 words across 16 puzzles, using 227,360 additional bytes before audit metadata; later sparse conjugacy may add or shorten equivalent-support witnesses. Caps are 512 new operations and 512 KiB per puzzle, with at most 1,500 primitive turns per added word. Every word is replayed before export. Runtime catalog lookup checks the actual current colors and request again: the same word need not preserve colors after a different scramble. The cached family is deliberately incomplete, and no shortest-word claim is made.</p>
+      <p>For degree N and M primitive generators, the pair graph has N(N−1)/2 vertices and at most M outgoing transitions per vertex. Orbit construction costs O(MN²) time and O(N²) auxiliary storage. With R pair orbits, straightforward full-base sifting adds O(RN²) time, excluding the already-built chain and output expansion. An on-demand scan can examine O(N²) compensating pairs, each with O(N²) worst-case array sifting; it is therefore bounded in the browser rather than promised constant-time. Implementations: <code>permutation-membership.cjs</code>, <code>color-compensation.cjs</code>, and <code>tools/precompute-transpositions.cjs</code>.</p>`)+
     subsection('tech-color-tuple','Backward preimages: a sufficient projected state',
       `<p>Track q=|F|+2 preimages rather than the identities initially held. For t=(f₀,…,fₜ₋₁,a,b), define v(g)=(g⁻¹(t₀),…,g⁻¹(tq−1)). Start at v(I)=t. The goal test is c[vᵢ]=c[fᵢ] for each hold, vq−2=b and vq−1=a. The last two equations are equivalent to g(b)=a and g(a)=b. This tuple retains exactly the information needed for these endpoint constraints.</p>
       <p>Let Pⱼ be a source-to-destination primitive. Prepending that move to the chronological word changes g to g∘Pⱼ, hence (g∘Pⱼ)⁻¹=Pⱼ⁻¹∘g⁻¹. The transition is therefore componentwise v′ᵢ=Pⱼ⁻¹[vᵢ]. The tuple transition depends only on v, so deduplicating equal tuples is exact. Reading parent move indices from the found leaf toward the root already gives the chronological forward word; do not reverse that list.</p>`+
@@ -308,7 +385,7 @@ ADVANCE(cumulativeBudget):
     return IMPOSSIBLE for sticker holds, UNKNOWN for color holds
   concatenate action-word references along the selected parent route
   flatten once under primitive-output and expansion limits
-  independently replay every primitive; verify holds and A/B
+  independently replay every primitive; verify holds and 1/2
   return a concrete verified word, optimal=false`)+
       `<p>Dijkstra minimizes the sum of stored generator-word lengths on this chosen subgroup action graph. Final cancellation may shorten the expanded word, and different generators or color substitutions may do better. It is not a proof of minimum primitive distance. The ordered-pair graph has at most N(N−1) states; for s directed generator actions, its full traversal uses O(sN² log N) priority-queue work, before base reordering and word expansion. It does not enumerate full puzzle configurations.</p>
       <p>Standalone defaults are 3,000 ms, 5,000 output moves, a 48 MiB working-storage estimate, 100,000 pair states, and 300,000 DAG nodes. The one-shot request dispatcher gives this attempt at most min(800 ms,remaining time), after the strict projected search and before the legacy chain builder. The progressive browser session instead uses the scheduling specified above. A cached solved/impossible answer ends that strict attempt; an unknown or invalid cached attempt leaves any remaining time to the legacy fallback. The color wrapper still downgrades strict impossibility to unknown. No-holds transport uses the same ordered-pair method on primitive actions without loading a chain. No new precomputed table is required.</p>`);
@@ -317,24 +394,29 @@ ADVANCE(cumulativeBudget):
     `<p>Availability has two separate outputs: <strong>mathematical feasibility</strong> and <strong>executable readiness</strong>. A group-orbit proof can establish that a sequence exists without delivering it within the playback bound. Only a stored, independently verified primitive word makes a pair ready and bright. Feasible-but-not-ready and unchecked pairs remain selectable, moderately dim with a question mark; proved-impossible pairs are strongly dim and disabled.</p>
     <p>Feasibility combines three sound sources. An exchange impossible in the full legal group remains impossible under any holds. An exchange possible while fixing every held sticker remains possible while preserving their colors. A short operation whose held endpoint colors verify proves an additional positive and can also supply its executable word. A negative from the strict held subgroup is deliberately discarded.</p>`+
     subsection('tech-color-eligibility','Merge proof bounds without treating unknown as impossible',
-      code('COLOR-ELIGIBILITY', `initialize all candidate pairs UNKNOWN
-exclude held endpoints, empty poses, and equal endpoints
-for each verified primitive or catalog operation g:
-  if every held destination receives its original color:
-    for each actual two-cycle (a b) with candidate endpoints:
-      mark pair (a,b) and (b,a) FEASIBLE
-      retain g's verified legal word if within witness/output byte limits
-      mark only retained witnessed pairs READY
+      code('COLOR-ELIGIBILITY', `H := persistent held addresses from the UI request
+initialize all candidate pairs UNKNOWN
+exclude empty poses and equal endpoints
+if exemptSwapEndpoints is false: also exclude held endpoints
+for each primitive or catalog operation g:
+  D := held destinations whose incoming color differs from current color
+  reject operation if more than two held destinations change color
+  for each actual two-cycle (a b) with candidate endpoints:
+    require D is empty, or exemptSwapEndpoints and D is a subset of {a,b}
+    independently replay g's word and verify its complete support
+    mark pair (a,b) and (b,a) FEASIBLE
+    retain g's verified legal word if within witness/output byte limits
+    mark only retained witnessed pairs READY
 global := exact ordered-pair analysis with NO holds
           (up to 750 ms with holds; remaining request time with no holds)
-if F is empty: use all certified global answers
-else:
+copy certified global FEASIBLE for pairs whose H∖{a,b} is empty
+if H is nonempty:
   copy only certified global IMPOSSIBLE pairs
   strict := exact held-point-stabilizer analysis with remaining budget
   copy only strict FEASIBLE pairs
 compute firstStatus from feasibility and readyFirstStatus from readyPairs
 complete iff every candidate pair is classified; otherwise partial/unknown`)+
-      `<p>The total default allowance is 3 seconds. Concrete primitive/catalog witnesses have priority. With holds present, the subsequent full-group analysis is capped at 750 ms; with no holds it can use remaining time. Sparse catalog supports are accepted only when they match replay of their legal words; a memoized validation must be invalidated if either words or support changes. Missing or mismatched catalog data removes that source of ready sequences, but primitive operations remain usable and no negative proof follows from missing data.</p>
+      `<p>The website requests <code>exemptSwapEndpoints:true</code>. The persistent set H stays unchanged while evaluating candidates: each pair has its own active set F=H∖{a,b}. It is not necessary to rebuild a full table for each pair. Compute once per operation the changed-color held destinations D; that operation is acceptable for pair {a,b} exactly when D⊆{a,b}. More than two violations reject it for every pair. Without the option, holds are excluded from candidate endpoints and D must be empty. This flag is included in eligibility cache keys. To avoid per-operation Map/Set allocations, the implementation allocates five reusable length-N typed arrays for one eligibility scan: held and candidate masks (one byte each), source and destination epoch stamps (four bytes each), and destination mapping (four bytes). The total is 14N bytes, within the existing working-space estimate. Increment the epoch for each sparse operation; an entry belongs to that operation only when its stamp equals the current epoch. Clear both stamp arrays on integer wraparound. Reject repeated sources or destinations and require every moved source to appear among the destinations before using the map. Replay verification still checks all N addresses, treating unstamped addresses as fixed. Candidate ordering, output words, limits and mathematical guarantees are unchanged. The strict fallback fixes all of H, so its positive answers remain safe but need not discover choices that exempt a held endpoint; its negatives still cannot disable a relaxed choice.</p><p>The total default allowance is 3 seconds. Concrete primitive/catalog witnesses have priority. With holds present, the subsequent full-group analysis is capped at 750 ms; with no holds it can use remaining time. Sparse catalog supports are accepted only when they match replay of their legal words; a memoized validation must be invalidated if either words or support changes. Missing or mismatched catalog data removes that source of ready sequences, but primitive operations remain usable and no negative proof follows from missing data.</p>
       <p>A feasibility proof need not supply any explicit word. A ready witness supplies a legal word within the 5,000-move playback limit, but need not be shortest. Retaining the actual word avoids showing a bright choice and then rediscovering that its sequence cannot be constructed within the search budget. Catalog witnesses are collected with no holds too; global no-holds classification alone does not establish readiness. Fixed centers and odd-length cyclic orbits can still be proved impossible.</p>`)+
     subsection('tech-eligibility-pairs', 'Point orbits and complete ordered-pair orbit classification',
       `<p>This is the exact strict subroutine used twice by the wrapper above. First compute point orbits under the selected group generators. Nodes in different point orbits cannot exchange under that group. Use primitive generators for the full-group bound, or obtain held-stabilizer generators using the cached base-change method for strict positives. Under the explicit strict <code>throughout</code> backend option use only individually hold-preserving primitives. A strict held-subgroup negative must never be copied into the relaxed color table.</p>`+
@@ -383,7 +465,7 @@ FINALIZE:
       `<p>Initialize equal-endpoint pairs, held endpoints, and noncandidate endpoints as known infeasible. Initialize other pairs as unchecked. On a resource limit, retain already certified point-orbit exclusions and completed pair orbits, then finalize. <code>complete</code> means the table is fully classified; it does not mean every pair is feasible.</p>
       <p>Browser availability caps are 3,000 ms, 48 MiB estimated storage, 2,000 strong generators, 100,000,000 counted operations, and 50,000 adjacent base swaps. Operations are checked in batches, with time checks at orbit/base boundaries too. Missing complete cache, time, storage, operation, generator, or base-swap limits preserve unknown entries. Invalid models or malformed cache structure give <code>invalid</code>.</p>`)+
     subsection('tech-eligibility-ui', 'Selection updates, cache keys, and stale-result rejection',
-      `<p>Before dispatch, map selected nodes to current addresses and capture the complete color array. Holds designate locations whose endpoint colors must be restored; do not let a hold follow a same-colored replacement sticker to a different location. Choosing A again clears both endpoints and leaves holds; choosing B replaces only B. Changes to holds discard the previous manual solve result and recompute eligibility for the current colors. If A becomes held it is no longer a valid endpoint.</p>`+
+      `<p>Before dispatch, map selected nodes to current addresses and capture the complete color array. Holds designate locations whose endpoint colors must be restored; do not let a hold follow a same-colored replacement sticker to a different location. Choosing A again clears both endpoints and leaves holds; choosing B replaces only B. Changes to holds discard the previous manual solve result and recompute eligibility for the current colors. A held endpoint stays selected with a temporary exemption: the effective protected set is the held addresses minus the two current endpoints. Clearing or replacing an endpoint restores its hold immediately.</p>`+
       code('Availability scheduling and safe reuse', `ON-IDLE-SELECTION-CHANGE:
   map := current physical-sticker-ID -> address map
   fixed := sorted addresses of selected held sticker IDs
@@ -405,15 +487,16 @@ ON-RESULT(response):
   if feasibility status is 2: strongly dim and disable
   else if retained witness makes endpoint/pair ready: show bright
   else: moderately dim, show '?', and leave selectable
-  if selected pair is ready: label action Go
-  else if selected pair is not proved impossible: label action Check & solve
+  label the action Go in every readiness state
+  enable only for a complete pair not proved impossible
 ON-GO:
-  retrieve actual retained word for the selected pair
-  require identical colors/holds/occupancy and independent word verification
-  play the word directly; do not launch a fresh search
-ON-CHECK-AND-SOLVE:
-  create a retained search session for the full immutable request
-  run the initial time slice; play only a verified successful result
+  if a verified retained word is ready:
+    retrieve that word for the selected pair
+    require identical colors/holds/occupancy and independent verification
+    play directly; do not launch a fresh search
+  else:
+    create a retained search session for the full immutable request
+    run the initial time slice; play only a verified successful result
 ON-CONTINUE:
   require unchanged request, live identity snapshot and retained worker
   extend cumulative budget and resume pending work, without restarting
@@ -421,8 +504,8 @@ ON-CONTINUE:
   every non-solved result leaves the puzzle unchanged`)+
       `<p>While choosing A, use the first-endpoint feasibility and readiness arrays, never a stale B row. While choosing B with A selected, use A's corresponding pair-table rows. Helpers <code>eligibilityReady</code> and <code>eligibilityWitness</code> expose executable readiness and the retained word separately from <code>eligibilityStatus</code>. A 7,000 ms UI timeout for availability leaves choices unchecked rather than blocking interaction. A bright first endpoint means at least one partner is ready, not that every possible B is ready.</p>
       <p>Two monotonic shortcuts remain sound for an unchanged color state and occupied set: adding color holds can preserve an already-proved negative, and removing holds can preserve an already-proved positive. This follows from constraint inclusion, not subgroup closure. A change in any donor color invalidates that reuse; an arbitrary change both adding and removing holds supports neither inference.</p>
-      <p>The analyzer's normalized cache key includes <code>holdSemantics</code>, the full length-N <code>colorByNode</code>, holds, occupancy, candidates and protection. Its default least-recently-used cache is 2 MiB, capped at 8 MiB, and stores complete tables. Readiness word records have a separate 2 MiB cap and share the working-memory guard; charge each record max(JSON length,128+8·(word length+pair-list length)) bytes. A ready bit must never outlive its retained word. UI table caches and manual witness caches must include the full color state, not only colors on held nodes: an unheld donor can determine reachability. Prepared strict chain data remains model-dependent and reusable independently of colors.</p>
-      <p>Manual witness caches are separate: the page retains up to 1 MiB of verified solved or proved-impossible results; its worker result cache is 2 MiB. An unfinished search session is live working memory, not a result cache and not an impossibility proof. Selection or state changes destroy its frontier. Unknown results are not cached as impossibility. Reused words are independently replayed against the current color request and exact A/B mappings. A changed live identity snapshot during planning is rejected even when the displayed colors happen to match.</p>`);
+      <p>The analyzer's normalized cache key includes <code>holdSemantics</code>, the full length-N <code>colorByNode</code>, holds, occupancy, candidates, protection, and <code>exemptSwapEndpoints</code>. Its default least-recently-used cache is 2 MiB, capped at 8 MiB, and stores complete tables. Readiness word records have a separate 2 MiB cap and share the working-memory guard; charge each record max(JSON length,128+8·(word length+pair-list length)) bytes. A ready bit must never outlive its retained word. UI table caches and manual witness caches must include the full color state, not only colors on held nodes: an unheld donor can determine reachability. Prepared strict chain data remains model-dependent and reusable independently of colors.</p>
+      <p>Manual witness caches are separate: the page retains up to 1 MiB of verified solved or proved-impossible results; its worker result cache is 2 MiB. An unfinished search session is live working memory, not a result cache and not an impossibility proof. Selection or state changes destroy its frontier. Unknown results are not cached as impossibility. Reused words are independently replayed against the current color request and exact 1/2 mappings. A changed live identity snapshot during planning is rejected even when the displayed colors happen to match.</p>`);
 
   return {
     search: section('tech-search', 'Manual swaps: color freedom with a strict fallback', colorBody + subsection('tech-strict-search', 'Identity-hold fallback: complete specification', searchBody + searchDetails),

@@ -2,7 +2,293 @@
   "schemaVersion": 1,
   "models": [
     {
+      "id": "masterpyraminx",
+      "status": "verified",
+      "representatives": 119,
+      "wordNodes": 618,
+      "solutionLengthUpperBound": 208,
+      "samples": [
+        {
+          "moves": 110,
+          "stages": 18,
+          "planningMs": 3.4578970000000027
+        },
+        {
+          "moves": 131,
+          "stages": 19,
+          "planningMs": 1.2194040000000115
+        },
+        {
+          "moves": 112,
+          "stages": 19,
+          "planningMs": 1.9825839999999886
+        }
+      ],
+      "bytes": 30128,
+      "validationMs": 14.64261900000001
+    },
+    {
+      "id": "kilominx",
+      "status": "verified",
+      "representatives": 605,
+      "wordNodes": 915,
+      "solutionLengthUpperBound": 102,
+      "samples": [
+        {
+          "moves": 67,
+          "stages": 18,
+          "planningMs": 1.2107919999999979
+        },
+        {
+          "moves": 79,
+          "stages": 19,
+          "planningMs": 1.4328610000000026
+        },
+        {
+          "moves": 79,
+          "stages": 19,
+          "planningMs": 1.9125999999999976
+        }
+      ],
+      "bytes": 119168,
+      "validationMs": 14.40755200000001
+    },
+    {
+      "id": "ghost",
+      "status": "verified",
+      "representatives": 255,
+      "wordNodes": 1460,
+      "solutionLengthUpperBound": 368,
+      "samples": [
+        {
+          "moves": 231,
+          "stages": 21,
+          "planningMs": 1.948633000000001
+        },
+        {
+          "moves": 214,
+          "stages": 21,
+          "planningMs": 1.6041239999999988
+        },
+        {
+          "moves": 211,
+          "stages": 17,
+          "planningMs": 2.039698999999999
+        }
+      ],
+      "bytes": 163612,
+      "validationMs": 23.60627600000001
+    },
+    {
       "id": "cube2",
+      "status": "verified",
+      "representatives": 98,
+      "wordNodes": 219,
+      "solutionLengthUpperBound": 40,
+      "samples": [
+        {
+          "moves": 32,
+          "stages": 7,
+          "planningMs": 0.30875700000001416
+        },
+        {
+          "moves": 29,
+          "stages": 7,
+          "planningMs": 0.2935449999999946
+        },
+        {
+          "moves": 35,
+          "stages": 7,
+          "planningMs": 0.22039599999999382
+        }
+      ],
+      "bytes": 9876,
+      "validationMs": 4.221338000000003
+    },
+    {
+      "id": "cube3",
+      "status": "verified",
+      "representatives": 247,
+      "wordNodes": 674,
+      "solutionLengthUpperBound": 133,
+      "samples": [
+        {
+          "moves": 95,
+          "stages": 19,
+          "planningMs": 0.7281270000000006
+        },
+        {
+          "moves": 89,
+          "stages": 16,
+          "planningMs": 0.7218680000000006
+        },
+        {
+          "moves": 77,
+          "stages": 17,
+          "planningMs": 1.2710109999999872
+        }
+      ],
+      "bytes": 47618,
+      "validationMs": 6.430736000000024
+    },
+    {
+      "id": "cube4",
+      "status": "verified",
+      "representatives": 649,
+      "wordNodes": 2952,
+      "solutionLengthUpperBound": 525,
+      "samples": [
+        {
+          "moves": 319,
+          "stages": 44,
+          "planningMs": 3.075141000000002
+        },
+        {
+          "moves": 349,
+          "stages": 47,
+          "planningMs": 3.719715000000008
+        },
+        {
+          "moves": 345,
+          "stages": 46,
+          "planningMs": 1.982935000000026
+        }
+      ],
+      "bytes": 217619,
+      "validationMs": 26.10394199999999
+    },
+    {
+      "id": "cube5",
+      "status": "verified",
+      "representatives": 1073,
+      "wordNodes": 5287,
+      "solutionLengthUpperBound": 981,
+      "samples": [
+        {
+          "moves": 626,
+          "stages": 80,
+          "planningMs": 7.717612000000003
+        },
+        {
+          "moves": 633,
+          "stages": 76,
+          "planningMs": 5.685264000000018
+        },
+        {
+          "moves": 597,
+          "stages": 72,
+          "planningMs": 7.160826999999983
+        }
+      ],
+      "bytes": 592829,
+      "validationMs": 55.897154
+    },
+    {
+      "id": "cube6",
+      "status": "verified",
+      "representatives": 1750,
+      "wordNodes": 11068,
+      "solutionLengthUpperBound": 2035,
+      "samples": [
+        {
+          "moves": 1289,
+          "stages": 124,
+          "planningMs": 8.249288000000035
+        },
+        {
+          "moves": 1292,
+          "stages": 125,
+          "planningMs": 10.833983999999987
+        },
+        {
+          "moves": 1312,
+          "stages": 127,
+          "planningMs": 12.070723999999984
+        }
+      ],
+      "bytes": 1454689,
+      "validationMs": 99.02402800000002
+    },
+    {
+      "id": "cube7",
+      "status": "verified",
+      "representatives": 2449,
+      "wordNodes": 15944,
+      "solutionLengthUpperBound": 3141,
+      "samples": [
+        {
+          "moves": 2065,
+          "stages": 180,
+          "planningMs": 16.988692000000015
+        },
+        {
+          "moves": 1903,
+          "stages": 177,
+          "planningMs": 21.23243199999996
+        },
+        {
+          "moves": 1859,
+          "stages": 179,
+          "planningMs": 18.49350899999996
+        }
+      ],
+      "bytes": 2809908,
+      "validationMs": 175.827431
+    },
+    {
+      "id": "cube8",
+      "status": "verified",
+      "representatives": 3401,
+      "wordNodes": 24615,
+      "solutionLengthUpperBound": 4770,
+      "samples": [
+        {
+          "moves": 3048,
+          "stages": 246,
+          "planningMs": 50.22026200000005
+        },
+        {
+          "moves": 2960,
+          "stages": 245,
+          "planningMs": 30.947058999999967
+        },
+        {
+          "moves": 3019,
+          "stages": 242,
+          "planningMs": 24.609881000000087
+        }
+      ],
+      "bytes": 5157171,
+      "validationMs": 306.06734599999993
+    },
+    {
+      "id": "mirror",
+      "status": "verified",
+      "representatives": 247,
+      "wordNodes": 673,
+      "solutionLengthUpperBound": 134,
+      "samples": [
+        {
+          "moves": 91,
+          "stages": 18,
+          "planningMs": 0.6779730000000654
+        },
+        {
+          "moves": 89,
+          "stages": 16,
+          "planningMs": 14.116056000000071
+        },
+        {
+          "moves": 77,
+          "stages": 17,
+          "planningMs": 1.3597630000000436
+        }
+      ],
+      "bytes": 47614,
+      "validationMs": 24.363961000000018
+    },
+    {
+      "id": "homer",
       "status": "verified",
       "representatives": 98,
       "wordNodes": 212,
@@ -11,229 +297,47 @@
         {
           "moves": 32,
           "stages": 7,
-          "planningMs": 2.9360739999999907
+          "planningMs": 0.6036739999999554
         },
         {
           "moves": 29,
           "stages": 7,
-          "planningMs": 0.49627499999999714
+          "planningMs": 0.7206459999999879
         },
         {
-          "moves": 36,
+          "moves": 35,
           "stages": 7,
-          "planningMs": 0.36970700000000534
+          "planningMs": 0.5704240000000027
         }
       ],
-      "bytes": 9764,
-      "validationMs": 7.8794440000000066
-    },
-    {
-      "id": "cube3",
-      "status": "verified",
-      "representatives": 247,
-      "wordNodes": 745,
-      "solutionLengthUpperBound": 139,
-      "samples": [
-        {
-          "moves": 106,
-          "stages": 19,
-          "planningMs": 1.3046700000000016
-        },
-        {
-          "moves": 93,
-          "stages": 16,
-          "planningMs": 2.1836509999999976
-        },
-        {
-          "moves": 78,
-          "stages": 16,
-          "planningMs": 1.093539000000007
-        }
-      ],
-      "bytes": 48222,
-      "validationMs": 12.543696000000011
-    },
-    {
-      "id": "cube4",
-      "status": "verified",
-      "representatives": 649,
-      "wordNodes": 3612,
-      "solutionLengthUpperBound": 658,
-      "samples": [
-        {
-          "moves": 437,
-          "stages": 48,
-          "planningMs": 4.383776999999995
-        },
-        {
-          "moves": 398,
-          "stages": 45,
-          "planningMs": 3.485917999999998
-        },
-        {
-          "moves": 410,
-          "stages": 45,
-          "planningMs": 4.072324999999992
-        }
-      ],
-      "bytes": 224049,
-      "validationMs": 32.43909500000001
-    },
-    {
-      "id": "cube5",
-      "status": "verified",
-      "representatives": 1073,
-      "wordNodes": 7931,
-      "solutionLengthUpperBound": 1551,
-      "samples": [
-        {
-          "moves": 977,
-          "stages": 79,
-          "planningMs": 5.055369999999982
-        },
-        {
-          "moves": 1086,
-          "stages": 80,
-          "planningMs": 7.274694000000011
-        },
-        {
-          "moves": 1071,
-          "stages": 79,
-          "planningMs": 8.321372999999994
-        }
-      ],
-      "bytes": 618551,
-      "validationMs": 59.98222200000001
-    },
-    {
-      "id": "cube6",
-      "status": "verified",
-      "representatives": 1750,
-      "wordNodes": 21153,
-      "solutionLengthUpperBound": 3906,
-      "samples": [
-        {
-          "moves": 2337,
-          "stages": 129,
-          "planningMs": 12.795363000000009
-        },
-        {
-          "moves": 1944,
-          "stages": 121,
-          "planningMs": 8.248455999999976
-        },
-        {
-          "moves": 2369,
-          "stages": 122,
-          "planningMs": 18.12208499999997
-        }
-      ],
-      "bytes": 1564417,
-      "validationMs": 192.64685699999998
-    },
-    {
-      "id": "cube7",
-      "status": "verified",
-      "representatives": 2449,
-      "wordNodes": 42289,
-      "solutionLengthUpperBound": 9496,
-      "samples": [
-        {
-          "moves": 4813,
-          "stages": 186,
-          "planningMs": 22.549657000000025
-        },
-        {
-          "moves": 4616,
-          "stages": 178,
-          "planningMs": 24.44131100000004
-        },
-        {
-          "moves": 4688,
-          "stages": 176,
-          "planningMs": 17.020554999999945
-        }
-      ],
-      "bytes": 3095158,
-      "validationMs": 219.152828
-    },
-    {
-      "id": "mirror",
-      "status": "verified",
-      "representatives": 247,
-      "wordNodes": 750,
-      "solutionLengthUpperBound": 143,
-      "samples": [
-        {
-          "moves": 104,
-          "stages": 19,
-          "planningMs": 0.6854040000000623
-        },
-        {
-          "moves": 104,
-          "stages": 16,
-          "planningMs": 0.847735000000057
-        },
-        {
-          "moves": 78,
-          "stages": 16,
-          "planningMs": 0.4625540000000683
-        }
-      ],
-      "bytes": 48283,
-      "validationMs": 4.393476000000078
-    },
-    {
-      "id": "homer",
-      "status": "verified",
-      "representatives": 98,
-      "wordNodes": 214,
-      "solutionLengthUpperBound": 41,
-      "samples": [
-        {
-          "moves": 33,
-          "stages": 7,
-          "planningMs": 0.15536900000006426
-        },
-        {
-          "moves": 29,
-          "stages": 7,
-          "planningMs": 0.12109899999995832
-        },
-        {
-          "moves": 36,
-          "stages": 7,
-          "planningMs": 0.12092900000004647
-        }
-      ],
-      "bytes": 9793,
-      "validationMs": 0.8730719999999792
+      "bytes": 9791,
+      "validationMs": 3.382184999999936
     },
     {
       "id": "pyraminx",
       "status": "verified",
       "representatives": 49,
-      "wordNodes": 129,
+      "wordNodes": 128,
       "solutionLengthUpperBound": 65,
       "samples": [
         {
           "moves": 37,
           "stages": 9,
-          "planningMs": 0.1623700000000099
+          "planningMs": 0.7850119999999379
         },
         {
-          "moves": 32,
-          "stages": 8,
-          "planningMs": 0.18888899999990372
+          "moves": 21,
+          "stages": 6,
+          "planningMs": 0.6443040000000337
         },
         {
           "moves": 45,
           "stages": 10,
-          "planningMs": 0.2995730000000094
+          "planningMs": 1.3039800000000241
         }
       ],
-      "bytes": 7657,
-      "validationMs": 1.3772580000000971
+      "bytes": 7666,
+      "validationMs": 4.173396000000025
     },
     {
       "id": "tetraminx",
@@ -245,489 +349,541 @@
         {
           "moves": 44,
           "stages": 8,
-          "planningMs": 0.11064399999997931
+          "planningMs": 0.4575680000000375
         },
         {
           "moves": 29,
           "stages": 6,
-          "planningMs": 0.09601199999997334
+          "planningMs": 0.21050100000002203
         },
         {
           "moves": 47,
           "stages": 9,
-          "planningMs": 0.09971799999993891
+          "planningMs": 0.31992400000001453
         }
       ],
       "bytes": 4764,
-      "validationMs": 0.6677279999998973
+      "validationMs": 2.2500400000000127
     },
     {
       "id": "megaminx",
       "status": "verified",
       "representatives": 1502,
-      "wordNodes": 15959,
-      "solutionLengthUpperBound": 1365,
+      "wordNodes": 7294,
+      "solutionLengthUpperBound": 499,
       "samples": [
         {
-          "moves": 696,
-          "stages": 42,
-          "planningMs": 2.7434900000000653
+          "moves": 340,
+          "stages": 44,
+          "planningMs": 3.3576289999999744
         },
         {
-          "moves": 617,
-          "stages": 46,
-          "planningMs": 2.5135989999999993
+          "moves": 308,
+          "stages": 45,
+          "planningMs": 4.4151540000000296
         },
         {
-          "moves": 697,
+          "moves": 336,
           "stages": 48,
-          "planningMs": 2.2113930000000437
+          "planningMs": 2.047080000000051
         }
       ],
-      "bytes": 811704,
-      "validationMs": 27.912953000000016
+      "bytes": 719682,
+      "validationMs": 41.08246400000007
     },
     {
       "id": "jing",
       "status": "verified",
       "representatives": 44,
-      "wordNodes": 237,
-      "solutionLengthUpperBound": 72,
+      "wordNodes": 198,
+      "solutionLengthUpperBound": 51,
       "samples": [
         {
-          "moves": 65,
+          "moves": 47,
           "stages": 8,
-          "planningMs": 1.7286880000000338
+          "planningMs": 0.2067460000000665
         },
         {
-          "moves": 30,
+          "moves": 26,
           "stages": 5,
-          "planningMs": 0.2171610000000328
+          "planningMs": 0.17025200000000495
         },
         {
-          "moves": 43,
-          "stages": 6,
-          "planningMs": 0.3677539999999908
+          "moves": 27,
+          "stages": 5,
+          "planningMs": 0.09295799999995324
         }
       ],
-      "bytes": 6660,
-      "validationMs": 2.9998390000000654
+      "bytes": 6366,
+      "validationMs": 0.9662299999999959
     },
     {
       "id": "skewb",
       "status": "verified",
       "representatives": 52,
-      "wordNodes": 187,
-      "solutionLengthUpperBound": 69,
+      "wordNodes": 176,
+      "solutionLengthUpperBound": 60,
       "samples": [
         {
-          "moves": 62,
-          "stages": 11,
-          "planningMs": 0.3230079999999589
+          "moves": 45,
+          "stages": 10,
+          "planningMs": 0.16788899999994555
         },
         {
-          "moves": 31,
-          "stages": 6,
-          "planningMs": 0.45632499999999254
+          "moves": 49,
+          "stages": 8,
+          "planningMs": 0.14584500000000844
         },
         {
-          "moves": 43,
+          "moves": 41,
           "stages": 9,
-          "planningMs": 0.18891000000007807
+          "planningMs": 0.18555400000002464
         }
       ],
-      "bytes": 7285,
-      "validationMs": 2.2193439999999782
+      "bytes": 7223,
+      "validationMs": 1.1587050000000545
     },
     {
       "id": "masterskewb",
       "status": "verified",
       "representatives": 247,
-      "wordNodes": 2381,
-      "solutionLengthUpperBound": 725,
+      "wordNodes": 1859,
+      "solutionLengthUpperBound": 546,
       "samples": [
         {
-          "moves": 419,
+          "moves": 336,
+          "stages": 34,
+          "planningMs": 0.6756199999999808
+        },
+        {
+          "moves": 330,
+          "stages": 33,
+          "planningMs": 0.6102529999999433
+        },
+        {
+          "moves": 310,
           "stages": 31,
-          "planningMs": 2.017080000000078
-        },
-        {
-          "moves": 552,
-          "stages": 37,
-          "planningMs": 0.7142969999999877
-        },
-        {
-          "moves": 339,
-          "stages": 28,
-          "planningMs": 0.8157070000000886
+          "planningMs": 0.5708150000000387
         }
       ],
-      "bytes": 81426,
-      "validationMs": 6.880586999999991
+      "bytes": 76545,
+      "validationMs": 4.844639999999913
     },
     {
       "id": "ultimate",
       "status": "verified",
       "representatives": 71,
-      "wordNodes": 359,
-      "solutionLengthUpperBound": 101,
+      "wordNodes": 320,
+      "solutionLengthUpperBound": 89,
       "samples": [
         {
-          "moves": 76,
+          "moves": 67,
           "stages": 11,
-          "planningMs": 0.35351300000002084
+          "planningMs": 0.2114530000000059
         },
         {
-          "moves": 63,
-          "stages": 8,
-          "planningMs": 0.20565399999998135
+          "moves": 71,
+          "stages": 9,
+          "planningMs": 0.2142470000000003
         },
         {
-          "moves": 76,
-          "stages": 11,
-          "planningMs": 0.33302200000002813
+          "moves": 72,
+          "stages": 12,
+          "planningMs": 0.20402200000000903
         }
       ],
-      "bytes": 14751,
-      "validationMs": 1.7156389999998964
+      "bytes": 14448,
+      "validationMs": 1.4093460000000277
     },
     {
       "id": "diamond",
       "status": "verified",
       "representatives": 43,
-      "wordNodes": 153,
-      "solutionLengthUpperBound": 48,
+      "wordNodes": 139,
+      "solutionLengthUpperBound": 43,
       "samples": [
         {
-          "moves": 37,
-          "stages": 7,
-          "planningMs": 0.22095699999999852
+          "moves": 22,
+          "stages": 6,
+          "planningMs": 0.19289600000001883
         },
         {
           "moves": 18,
           "stages": 5,
-          "planningMs": 0.13627100000007886
+          "planningMs": 0.15965600000004088
         },
         {
-          "moves": 37,
+          "moves": 33,
           "stages": 8,
-          "planningMs": 0.19159300000001167
+          "planningMs": 0.12975200000005316
         }
       ],
-      "bytes": 6560,
-      "validationMs": 1.0018330000000333
+      "bytes": 6457,
+      "validationMs": 0.934172999999987
     },
     {
       "id": "fto",
       "status": "verified",
       "representatives": 228,
-      "wordNodes": 1781,
-      "solutionLengthUpperBound": 593,
+      "wordNodes": 1259,
+      "solutionLengthUpperBound": 360,
       "samples": [
         {
-          "moves": 281,
-          "stages": 26,
-          "planningMs": 0.6180749999999762
+          "moves": 225,
+          "stages": 27,
+          "planningMs": 0.6777829999999767
         },
         {
-          "moves": 312,
-          "stages": 33,
-          "planningMs": 0.9676520000000437
+          "moves": 236,
+          "stages": 32,
+          "planningMs": 0.8245299999999816
         },
         {
-          "moves": 371,
-          "stages": 29,
-          "planningMs": 0.6405280000000175
+          "moves": 289,
+          "stages": 32,
+          "planningMs": 0.6605670000000146
         }
       ],
-      "bytes": 67307,
-      "validationMs": 5.138404000000037
+      "bytes": 62389,
+      "validationMs": 5.3235389999999825
     },
     {
       "id": "crystal",
       "status": "verified",
       "representatives": 1502,
-      "wordNodes": 5522,
-      "solutionLengthUpperBound": 631,
+      "wordNodes": 4603,
+      "solutionLengthUpperBound": 376,
       "samples": [
         {
-          "moves": 274,
-          "stages": 45,
-          "planningMs": 2.6463549999999714
+          "moves": 214,
+          "stages": 42,
+          "planningMs": 1.536333999999897
         },
         {
-          "moves": 254,
-          "stages": 43,
-          "planningMs": 2.520809999999983
+          "moves": 239,
+          "stages": 41,
+          "planningMs": 1.4691840000000411
         },
         {
-          "moves": 232,
-          "stages": 43,
-          "planningMs": 2.203651000000036
+          "moves": 237,
+          "stages": 44,
+          "planningMs": 3.469374000000016
         }
       ],
-      "bytes": 628816,
-      "validationMs": 31.966910999999982
+      "bytes": 619763,
+      "validationMs": 18.01236599999993
     },
     {
       "id": "dino",
       "status": "verified",
       "representatives": 65,
-      "wordNodes": 115,
-      "solutionLengthUpperBound": 41,
+      "wordNodes": 113,
+      "solutionLengthUpperBound": 39,
       "samples": [
         {
           "moves": 17,
           "stages": 7,
-          "planningMs": 0.13880600000004506
+          "planningMs": 0.3250309999999672
         },
         {
           "moves": 16,
           "stages": 6,
-          "planningMs": 0.10827000000006137
+          "planningMs": 0.20033599999999296
         },
         {
-          "moves": 24,
+          "moves": 22,
           "stages": 8,
-          "planningMs": 0.24646399999994628
+          "planningMs": 0.31972299999995357
         }
       ],
-      "bytes": 6563,
-      "validationMs": 0.9085150000000795
+      "bytes": 6565,
+      "validationMs": 1.3787609999999404
     },
     {
       "id": "rainbow",
       "status": "verified",
       "representatives": 65,
-      "wordNodes": 115,
-      "solutionLengthUpperBound": 41,
+      "wordNodes": 113,
+      "solutionLengthUpperBound": 39,
       "samples": [
         {
           "moves": 17,
           "stages": 7,
-          "planningMs": 0.21803299999999126
+          "planningMs": 0.19358599999998205
         },
         {
           "moves": 16,
           "stages": 6,
-          "planningMs": 0.3180600000000595
+          "planningMs": 0.187137000000007
         },
         {
-          "moves": 24,
+          "moves": 22,
           "stages": 8,
-          "planningMs": 0.3530719999999974
+          "planningMs": 0.2964990000000398
         }
       ],
-      "bytes": 13708,
-      "validationMs": 1.7941949999999451
+      "bytes": 13709,
+      "validationMs": 1.7002559999999676
     },
     {
       "id": "rhombic",
       "status": "verified",
       "representatives": 179,
-      "wordNodes": 1001,
-      "solutionLengthUpperBound": 341,
+      "wordNodes": 910,
+      "solutionLengthUpperBound": 291,
       "samples": [
         {
-          "moves": 224,
-          "stages": 18,
-          "planningMs": 0.4366860000000088
+          "moves": 204,
+          "stages": 19,
+          "planningMs": 0.7582020000000966
         },
         {
-          "moves": 260,
+          "moves": 193,
           "stages": 20,
-          "planningMs": 0.47214899999994486
+          "planningMs": 0.7110430000000179
         },
         {
-          "moves": 187,
-          "stages": 18,
-          "planningMs": 0.5211820000000671
+          "moves": 140,
+          "stages": 16,
+          "planningMs": 0.34000299999991057
         }
       ],
-      "bytes": 42435,
-      "validationMs": 3.368374000000017
+      "bytes": 41706,
+      "validationMs": 4.187928000000056
     },
     {
       "id": "flatdiamond",
       "status": "verified",
       "representatives": 213,
-      "wordNodes": 1147,
-      "solutionLengthUpperBound": 304,
+      "wordNodes": 976,
+      "solutionLengthUpperBound": 235,
       "samples": [
         {
-          "moves": 144,
-          "stages": 18,
-          "planningMs": 1.7753870000000234
-        },
-        {
-          "moves": 148,
-          "stages": 18,
-          "planningMs": 1.1190259999999626
-        },
-        {
-          "moves": 128,
+          "moves": 89,
           "stages": 16,
-          "planningMs": 1.0536989999999378
+          "planningMs": 0.9112089999998716
+        },
+        {
+          "moves": 115,
+          "stages": 16,
+          "planningMs": 0.9000320000000102
+        },
+        {
+          "moves": 134,
+          "stages": 17,
+          "planningMs": 0.9180280000000494
         }
       ],
-      "bytes": 212829,
-      "validationMs": 8.975630999999908
+      "bytes": 211279,
+      "validationMs": 7.006939000000102
     },
     {
       "id": "cornerocta",
       "status": "verified",
       "representatives": 177,
-      "wordNodes": 503,
-      "solutionLengthUpperBound": 173,
+      "wordNodes": 457,
+      "solutionLengthUpperBound": 151,
       "samples": [
         {
-          "moves": 102,
-          "stages": 20,
-          "planningMs": 0.7572709999999461
+          "moves": 87,
+          "stages": 19,
+          "planningMs": 0.6197870000000876
         },
         {
-          "moves": 79,
-          "stages": 15,
-          "planningMs": 0.5921370000000934
+          "moves": 108,
+          "stages": 19,
+          "planningMs": 0.6426509999998871
         },
         {
-          "moves": 52,
+          "moves": 47,
           "stages": 11,
-          "planningMs": 0.4768550000000005
+          "planningMs": 0.45740699999987555
         }
       ],
-      "bytes": 44654,
-      "validationMs": 3.88493799999992
+      "bytes": 44307,
+      "validationMs": 3.411499000000049
     },
     {
       "id": "trajber",
       "status": "verified",
       "representatives": 185,
-      "wordNodes": 1423,
-      "solutionLengthUpperBound": 415,
+      "wordNodes": 1186,
+      "solutionLengthUpperBound": 334,
       "samples": [
         {
-          "moves": 290,
-          "stages": 23,
-          "planningMs": 0.9280029999999897
+          "moves": 197,
+          "stages": 18,
+          "planningMs": 0.38272699999993165
         },
         {
-          "moves": 213,
-          "stages": 20,
-          "planningMs": 0.47583399999996345
+          "moves": 169,
+          "stages": 18,
+          "planningMs": 0.3624560000000656
         },
         {
-          "moves": 219,
+          "moves": 186,
           "stages": 19,
-          "planningMs": 0.4934610000000248
+          "planningMs": 0.3613550000000032
         }
       ],
-      "bytes": 45176,
-      "validationMs": 4.410960999999929
+      "bytes": 42984,
+      "validationMs": 2.7790330000000267
     },
     {
       "id": "jewel",
       "status": "verified",
       "representatives": 159,
-      "wordNodes": 469,
-      "solutionLengthUpperBound": 159,
+      "wordNodes": 415,
+      "solutionLengthUpperBound": 137,
       "samples": [
         {
-          "moves": 95,
-          "stages": 13,
-          "planningMs": 0.2926429999999982
+          "moves": 69,
+          "stages": 12,
+          "planningMs": 0.2533650000000307
         },
         {
-          "moves": 103,
-          "stages": 16,
-          "planningMs": 0.42869500000006155
+          "moves": 90,
+          "stages": 15,
+          "planningMs": 0.2636999999999716
         },
         {
-          "moves": 89,
+          "moves": 78,
           "stages": 13,
-          "planningMs": 0.4392599999999902
+          "planningMs": 0.24774699999989025
         }
       ],
-      "bytes": 31427,
-      "validationMs": 2.4096549999999297
+      "bytes": 31010,
+      "validationMs": 1.8258429999998498
     },
     {
       "id": "pyramorphix",
       "status": "verified",
       "representatives": 86,
-      "wordNodes": 194,
+      "wordNodes": 193,
       "solutionLengthUpperBound": 65,
       "samples": [
         {
           "moves": 30,
           "stages": 7,
-          "planningMs": 0.17547000000001844
+          "planningMs": 0.15419900000006237
         },
         {
           "moves": 15,
           "stages": 5,
-          "planningMs": 0.14546499999994467
+          "planningMs": 0.11668199999985518
         },
         {
           "moves": 20,
           "stages": 5,
-          "planningMs": 0.5850750000000744
+          "planningMs": 0.11142399999994268
         }
       ],
-      "bytes": 10994,
-      "validationMs": 1.4662599999999202
+      "bytes": 11004,
+      "validationMs": 0.7653629999999794
     },
     {
       "id": "mastermorphix",
       "status": "verified",
       "representatives": 244,
-      "wordNodes": 1636,
-      "solutionLengthUpperBound": 544,
+      "wordNodes": 1314,
+      "solutionLengthUpperBound": 387,
       "samples": [
         {
-          "moves": 142,
-          "stages": 16,
-          "planningMs": 1.0613210000000208
-        },
-        {
-          "moves": 254,
-          "stages": 18,
-          "planningMs": 0.7059749999999667
-        },
-        {
-          "moves": 322,
+          "moves": 195,
           "stages": 21,
-          "planningMs": 0.8590910000000349
+          "planningMs": 0.42379699999992226
+        },
+        {
+          "moves": 196,
+          "stages": 18,
+          "planningMs": 0.45657600000004095
+        },
+        {
+          "moves": 211,
+          "stages": 20,
+          "planningMs": 0.484677000000147
         }
       ],
-      "bytes": 75240,
-      "validationMs": 6.440429999999992
+      "bytes": 72359,
+      "validationMs": 3.2265749999999116
     },
     {
       "id": "helicopter",
       "status": "verified",
       "representatives": 157,
-      "wordNodes": 663,
-      "solutionLengthUpperBound": 306,
+      "wordNodes": 488,
+      "solutionLengthUpperBound": 214,
       "samples": [
         {
-          "moves": 158,
-          "stages": 17,
-          "planningMs": 0.3724809999999934
-        },
-        {
-          "moves": 160,
-          "stages": 20,
-          "planningMs": 0.76572299999998
-        },
-        {
-          "moves": 116,
+          "moves": 86,
           "stages": 15,
-          "planningMs": 0.43587500000001
+          "planningMs": 0.3222870000001876
+        },
+        {
+          "moves": 138,
+          "stages": 21,
+          "planningMs": 0.2563289999998233
+        },
+        {
+          "moves": 114,
+          "stages": 18,
+          "planningMs": 0.23788200000012694
         }
       ],
-      "bytes": 29654,
-      "validationMs": 3.481892000000016
+      "bytes": 28247,
+      "validationMs": 1.8514599999998609
+    },
+    {
+      "id": "diamondstyle",
+      "status": "verified",
+      "representatives": 93,
+      "wordNodes": 376,
+      "solutionLengthUpperBound": 93,
+      "samples": [
+        {
+          "moves": 52,
+          "stages": 12,
+          "planningMs": 0.1491609999998218
+        },
+        {
+          "moves": 61,
+          "stages": 13,
+          "planningMs": 0.14723800000001575
+        },
+        {
+          "moves": 64,
+          "stages": 14,
+          "planningMs": 0.18064800000001924
+        }
+      ],
+      "bytes": 11353,
+      "validationMs": 1.0241660000001502
+    },
+    {
+      "id": "diamondcube",
+      "status": "verified",
+      "representatives": 239,
+      "wordNodes": 1119,
+      "solutionLengthUpperBound": 188,
+      "samples": [
+        {
+          "moves": 139,
+          "stages": 17,
+          "planningMs": 0.504566000000068
+        },
+        {
+          "moves": 110,
+          "stages": 15,
+          "planningMs": 0.41444300000011935
+        },
+        {
+          "moves": 130,
+          "stages": 16,
+          "planningMs": 0.41128900000012436
+        }
+      ],
+      "bytes": 73816,
+      "validationMs": 3.2702090000000226
     }
   ]
 }

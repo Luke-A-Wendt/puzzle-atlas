@@ -445,18 +445,18 @@ function autoRequestFromSnapshot(model,snapshot){
  if(Object.keys(currentBySticker).length!==Object.keys(homeBySticker).length||Object.keys(homeBySticker).some(id=>!Object.hasOwn(currentBySticker,id)))throw Error('Snapshot contains a different set of sticker identities');
  return{currentBySticker:{...currentBySticker},homeBySticker:{...homeBySticker},occupiedNodes:mapping.occupiedNodes.slice(),...(model.colorBySticker?{colorBySticker:{...model.colorBySticker}}:{})};
 }
-function colorGoalEnabled(model,home){return model.colorRelaxationSafe===true&&!model.requiresOccupiedState&&Object.keys(home).length===model.degree&&model.colorBySticker&&Object.keys(home).every(id=>typeof model.colorBySticker[id]==='string'&&model.colorBySticker[id].length>0);}
+function colorGoalEnabled(model,home,snapshot){return !snapshot?.mirrorMode&&model.colorRelaxationSafe===true&&!model.requiresOccupiedState&&Object.keys(home).length===model.degree&&model.colorBySticker&&Object.keys(home).every(id=>typeof model.colorBySticker[id]==='string'&&model.colorBySticker[id].length>0);}
 function solvedProgress(model,snapshot){
  const {currentBySticker,homeBySticker}=autoRequestFromSnapshot(model,snapshot),solvedStickerIds=[],solvedNodes=[],remainingStickerIds=[];
- const colorGoal=colorGoalEnabled(model,homeBySticker),homeIdByNode=new Map(Object.entries(homeBySticker).map(([id,node])=>[node,id]));
+ const colorGoal=colorGoalEnabled(model,homeBySticker,snapshot),homeIdByNode=new Map(Object.entries(homeBySticker).map(([id,node])=>[node,id]));
  for(const [id,home]of Object.entries(homeBySticker)){const at=currentBySticker[id],solved=colorGoal?model.colorBySticker[id]===model.colorBySticker[homeIdByNode.get(at)]:at===home;if(solved){solvedStickerIds.push(id);solvedNodes.push(at);}else remainingStickerIds.push(id);}
- return{solvedStickerIds,solvedNodes,remainingStickerIds,solvedCount:solvedNodes.length,totalCount:model.stickerCount};
+ return{solvedStickerIds,solvedNodes,remainingStickerIds,exact:!colorGoal,solvedCount:solvedNodes.length,totalCount:model.stickerCount};
 }
 function verifyAutoPlan(model,snapshot,plan){
  try{
   if(plan?.status!=='solved'||!Array.isArray(plan.stages))return false;
   const {currentBySticker:current,homeBySticker:home}=autoRequestFromSnapshot(model,snapshot),byHome=new Map(Object.entries(home).map(([id,node])=>[node,id]));
-  const colors=plan.goalSemantics==='colors';if(colors&&!colorGoalEnabled(model,home))return false;
+  const colors=plan.goalSemantics==='colors';if(colors&&!colorGoalEnabled(model,home,snapshot))return false;
   let currentByNode=new Map(Object.entries(current).map(([id,node])=>[node,id]));
   const currentIdAt=n=>currentByNode.get(n),correct=n=>colors?model.colorBySticker[currentIdAt(n)]===model.colorBySticker[byHome.get(n)]:current[byHome.get(n)]===n;
   const locked=new Set(),flat=[],validNodes=nodes=>Array.isArray(nodes)&&new Set(nodes).size===nodes.length&&nodes.every(n=>Number.isInteger(n)&&byHome.has(n));
@@ -485,6 +485,95 @@ function verifyAutoPlan(model,snapshot,plan){
  }catch{return false;}
 }
 module.exports={targetMapping,autoRequestFromSnapshot,solvedProgress,verifyAutoPlan};
+
+},
+"./guided-plan.cjs":function(module,exports,require){
+'use strict';
+/* Guided play derives monotonically improving checkpoints from a legal full
+ * witness. It never treats a general placement as a two-sticker transposition.
+ * A checkpoint preserves every previously correct color, including coincidental
+ * correct locations outside the stabilizer prefix. Grouping may therefore join
+ * several full-solver stages, in the extreme the entire verified solution. */
+const {autoRequestFromSnapshot}=require('./auto-adapter.cjs');
+function problem(model,request,exactProgress=false){
+ const home=request?.homeBySticker??model.homeBySticker,current=request?.currentBySticker;
+ if(!home||!current)throw Error('current_and_home_mapping_required');
+ const ids=Object.keys(home),colors=request?.colorBySticker??model.colorBySticker;
+ const valid=n=>Number.isInteger(n)&&n>=0&&n<model.degree;
+ if(!ids.length||ids.length!==Object.keys(current).length||ids.some(id=>!valid(home[id])||!valid(current[id])||typeof colors?.[id]!=='string')||new Set(Object.values(home)).size!==ids.length||new Set(Object.values(current)).size!==ids.length)throw Error('invalid_guided_mapping');
+ const homeAt=new Map(ids.map(id=>[home[id],id])),colorGoal=!exactProgress&&model.colorRelaxationSafe===true&&!model.requiresOccupiedState&&ids.length===model.degree;
+ return{model,home,ids,colors,homeAt,colorGoal,progressIndex:colorGoal?0:1};
+}
+function inspect(p,current){
+ const at=new Map(p.ids.map(id=>[current[id],id])),correct=[],identity=[];
+ for(const [node,id]of p.homeAt){if(p.colors[at.get(node)]===p.colors[id])correct.push(node);if(current[id]===node)identity.push(node);}
+ return{at,correct,identity,metric:[correct.length,identity.length],done:p.colorGoal?correct.length===p.ids.length:identity.length===p.ids.length};
+}
+// Displayed progress uses the actual goal: colors only where identities are
+// interchangeable; otherwise exact tile poses. Never clamp a regressing state.
+function improves(p,before,after){return after.metric[p.progressIndex]>before.metric[p.progressIndex];}
+function replay(p,current,indices,permutation){
+ for(const index of indices){if(!Number.isInteger(index)||!p.model.moves[index])throw Error('invalid_guided_move');const move=p.model.moves[index].perm;for(const id of p.ids)current[id]=move[current[id]];if(permutation)for(let i=0;i<permutation.length;i++)permutation[i]=move[permutation[i]];}
+}
+function sameSet(a,b){return Array.isArray(a)&&a.length===b.length&&new Set(a).size===a.length&&a.every(n=>b.includes(n));}
+function pickMarkers(p,before,after,permutation){
+ const newlyColor=after.correct.filter(n=>!before.correct.includes(n)),newlyIdentity=after.identity.filter(n=>!before.identity.includes(n));
+ const candidates=[...newlyColor,...newlyIdentity];let sourceNode,targetNode;
+ for(const target of candidates){const source=permutation.indexOf(target);if(source!==target&&before.at.has(source)){sourceNode=source;targetNode=target;if(before.at.has(target))break;}}
+ if(sourceNode===undefined)throw Error('guided_progress_has_no_moved_target');
+ // Pose-expanded shape targets can currently be empty. In that case mark two
+ // participating visible stickers, while retaining the actual target address.
+ const displayNodes=[sourceNode];
+ if(before.at.has(targetNode)&&targetNode!==sourceNode)displayNodes.push(targetNode);
+ else for(const n of before.at.keys())if(n!==sourceNode&&permutation[n]!==n){displayNodes.push(n);break;}
+ return{sourceNode,targetNode,displayNodes,displayKind:displayNodes[1]===targetNode?'placement':'participants'};
+}
+function groupGuidedPlan(model,request,baseline,options={}){
+ if(baseline?.status!=='solved')return baseline;
+ const started=performance.now(),fail=reason=>({status:'unknown',reason,optimal:false,verified:false,stages:[],moveIndices:[]});
+ try{
+  const p=problem(model,request,options.exactProgress),current={...request.currentBySticker},first=inspect(p,current),requested=options.protectedNodes??[];
+  if(!Array.isArray(requested)||requested.some(n=>!Number.isInteger(n)||!first.at.has(n)))return fail('invalid_guided_holds');
+  const conflicts=requested.filter(n=>!first.correct.includes(n));
+  if(conflicts.length)return{...fail('guided_holds_conflict'),conflictingNodes:conflicts};
+  const result={status:'solved',guided:true,goalSemantics:p.colorGoal?'colors':'identity',protectionSemantics:'colors',progressSemantics:p.progressIndex?'identity':'colors',initialProtectedNodes:first.correct.slice(),finalProtectedNodes:[...p.homeAt.keys()],stages:[],moveIndices:[],optimal:false,verified:true,method:'monotone_guided_checkpoints'};
+  if(first.done)return{...result,optimal:true,stats:{moves:0,stages:0,guidedGroupingMs:performance.now()-started}};
+  let before=first,segment=[],permutation=Array.from({length:model.degree},(_,i)=>i);
+  for(const stage of baseline.stages){
+   segment.push(...stage.moveIndices);replay(p,current,stage.moveIndices,permutation);const after=inspect(p,current),correct=new Set(after.correct);
+   if(!before.correct.every(n=>correct.has(n))||!improves(p,before,after))continue;
+   const markers=pickMarkers(p,before,after,permutation);
+   result.stages.push({...markers,moveIndices:segment,protectedNodes:before.correct.slice(),newlySolvedNodes:after.correct.filter(n=>!before.correct.includes(n)),newlyPlacedNodes:after.identity.filter(n=>!before.identity.includes(n)),progressBefore:before.metric.slice(),progressAfter:after.metric.slice(),goalSemantics:result.goalSemantics,progressSemantics:result.progressSemantics,guided:true});
+   result.moveIndices.push(...segment);segment=[];before=after;permutation=Array.from({length:model.degree},(_,i)=>i);
+   if(after.done)break;
+  }
+  if(!before.done||segment.length)return fail('guided_checkpoint_verification_failed');
+  result.stats={...baseline.stats,moves:result.moveIndices.length,stages:result.stages.length,baselineStages:baseline.stages.length,guidedGroupingMs:performance.now()-started};
+  return result;
+ }catch(e){return fail(e.message);}
+}
+function checkStep(p,current,stage){
+ const before=inspect(p,current);
+ if(!stage||stage.guided!==true||!Array.isArray(stage.moveIndices)||!stage.moveIndices.length||stage.moveIndices.length>20000||!sameSet(stage.protectedNodes,before.correct))return false;
+ if(!Array.isArray(stage.progressBefore)||stage.progressBefore.length!==2||stage.progressBefore.some((v,i)=>v!==before.metric[i]))return false;
+ const permutation=Array.from({length:p.model.degree},(_,i)=>i);replay(p,current,stage.moveIndices,permutation);const after=inspect(p,current),correct=new Set(after.correct);
+ if(!before.correct.every(n=>correct.has(n))||!improves(p,before,after)||stage.goalSemantics!==(p.colorGoal?'colors':'identity')||stage.progressSemantics!==(p.progressIndex?'identity':'colors'))return false;
+ if(!Array.isArray(stage.progressAfter)||stage.progressAfter.length!==2||stage.progressAfter.some((v,i)=>v!==after.metric[i]))return false;
+ if(!sameSet(stage.newlySolvedNodes,after.correct.filter(n=>!before.correct.includes(n)))||!sameSet(stage.newlyPlacedNodes,after.identity.filter(n=>!before.identity.includes(n))))return false;
+ const markers=pickMarkers(p,before,after,permutation);
+ return markers.sourceNode===stage.sourceNode&&markers.targetNode===stage.targetNode&&markers.displayKind===stage.displayKind&&Array.isArray(stage.displayNodes)&&markers.displayNodes.length===stage.displayNodes.length&&markers.displayNodes.every((n,i)=>n===stage.displayNodes[i]);
+}
+function verifyGuidedStep(model,snapshot,stage){try{const request=autoRequestFromSnapshot(model,snapshot),p=problem(model,request,!!snapshot?.mirrorMode);return checkStep(p,{...request.currentBySticker},stage);}catch{return false;}}
+function verifyGuidedPlan(model,snapshot,plan){
+ try{
+  if(plan?.status!=='solved'||plan.guided!==true||plan.protectionSemantics!=='colors'||!Array.isArray(plan.stages)||!Array.isArray(plan.moveIndices)||plan.moveIndices.length>20000)return false;
+  const request=autoRequestFromSnapshot(model,snapshot),p=problem(model,request,!!snapshot?.mirrorMode),current={...request.currentBySticker},initial=inspect(p,current);
+  if(plan.progressSemantics!==(p.progressIndex?'identity':'colors')||plan.goalSemantics!==(p.colorGoal?'colors':'identity')||!sameSet(plan.initialProtectedNodes,initial.correct)||!sameSet(plan.finalProtectedNodes,[...p.homeAt.keys()]))return false;
+  const flat=[];for(const stage of plan.stages){if(!checkStep(p,current,stage))return false;flat.push(...stage.moveIndices);if(flat.length>20000)return false;}
+  return flat.length===plan.moveIndices.length&&flat.every((n,i)=>n===plan.moveIndices[i])&&inspect(p,current).done;
+ }catch{return false;}
+}
+module.exports={groupGuidedPlan,verifyGuidedPlan,verifyGuidedStep};
 
 },
 "./full-solve.cjs":function(module,exports,require){
@@ -828,6 +917,7 @@ module.exports={eligibilityStatus,eligibilityReady,eligibilityWitness};
 // an impossibility certificate: color transporters are not point stabilizers.
 const {modelSignature}=require('./full-solve.cjs');
 const {search}=require('./search.cjs');
+const {pairOperations}=require('./macro-index.cjs');
 
 function verifyColorWitness(model,request,word){
  const d=model.degree,p=Array.from({length:d},(_,i)=>i);
@@ -846,12 +936,14 @@ function catalogWitness(model,request,cache,{deadline,maxOutputMoves=5000}={}){
  if(!cache||cache.kind!=='color-macros'||cache.schemaVersion!==1||cache.degree!==model.degree||cache.modelSignature!==modelSignature(model)||!Array.isArray(cache.operations))return done({status:'unknown',reason:'color_catalog_unavailable'});
  const [a,b]=request.swap,held=new Set(request.protected),colors=request.colorByNode;
  let best=null;
- for(const op of cache.operations){
+ // The first valid entry is the shortest catalog witness: pair lists are
+ // sorted by move count. Failed words are not trusted merely by their support.
+ for(const op of pairOperations(cache,a,b)){
   if((stats.catalogOperations++&63)===0&&performance.now()>=deadline)break;
   if(!op||!Array.isArray(op.word)||!op.word.length||op.word.length>maxOutputMoves||best&&op.word.length>=best.length||!Array.isArray(op.support)||op.support.length%2)continue;
   let pa=a,pb=b,colorsMatch=true;
   for(let i=0;i<op.support.length;i+=2){const source=op.support[i],dest=op.support[i+1];if(source===a)pa=dest;if(source===b)pb=dest;if(held.has(dest)&&colors[source]!==colors[dest]){colorsMatch=false;break;}}
-  if(colorsMatch&&pa===b&&pb===a&&verifyColorWitness(model,request,op.word)){best=op.word.slice();if(best.length===1)break;}
+  if(colorsMatch&&pa===b&&pb===a&&verifyColorWitness(model,request,op.word)){best=op.word.slice();break;}
  }
  return done(best?{status:'solved',moveIndices:best,optimal:best.length===1,lowerBound:1,method:'color_hold_short_catalog'}:{status:'unknown',reason:'no_catalog_color_witness'});
 }
@@ -926,6 +1018,33 @@ function solveColors(model,request,options,strictSolve){
 module.exports={catalogWitness,searchColors,solveColors,verifyColorWitness};
 
 },
+"./macro-index.cjs":function(module,exports,require){
+'use strict';
+// Index algebraic witnesses by the two-cycles in their sparse support. This is
+// O(sum support sizes) once per loaded catalog, not O(number of configurations).
+// The catalog is immutable application data; callers replacing it get a new
+// index. A support declaration is only a lookup hint: every returned solution
+// is still independently replayed against the actual move permutations.
+const indexes=new WeakMap();
+function macroIndex(cache){
+ if(!cache||!Array.isArray(cache.operations))return null;
+ const previous=indexes.get(cache);
+ if(previous&&previous.operations===cache.operations&&previous.count===cache.operations.length)return previous;
+ const degree=cache.degree,byPair=new Map();let entries=0,invalid=0;
+ for(const op of cache.operations){
+  if(!op||!Array.isArray(op.word)||!op.word.length||!Array.isArray(op.support)||op.support.length%2){invalid++;continue;}
+  const mapping=new Map();let valid=true;
+  for(let k=0;k<op.support.length;k+=2){const a=op.support[k],b=op.support[k+1];if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||a>=degree||b<0||b>=degree||a===b||mapping.has(a)){valid=false;break;}mapping.set(a,b);}
+  if(!valid){invalid++;continue;}
+  for(const [a,b]of mapping)if(a<b&&mapping.get(b)===a){const key=a*degree+b,list=byPair.get(key)??[];list.push(op);byPair.set(key,list);entries++;}
+ }
+ for(const list of byPair.values())list.sort((a,b)=>a.word.length-b.word.length||a.support.length-b.support.length);
+ const result={operations:cache.operations,count:cache.operations.length,byPair,entries,invalid,estimatedBytes:entries*16+byPair.size*96};indexes.set(cache,result);return result;
+}
+function pairOperations(cache,a,b){const index=macroIndex(cache);return index?.byPair.get(Math.min(a,b)*cache.degree+Math.max(a,b))??[];}
+module.exports={macroIndex,pairOperations};
+
+},
 "./color-eligibility.cjs":function(module,exports,require){
 'use strict';
 
@@ -961,7 +1080,9 @@ function normalize(model,request){
   else if(c!==null)throw Error('Unoccupied addresses must have null colors');
  }
  const heldSet=new Set(held);
- return {protectedNodes:held,occupiedNodes:occupied,candidateNodes:occupied.filter(x=>!heldSet.has(x)),protection,colorByNode:colors.slice(),holdSemantics:'color'};
+ if(request.exemptSwapEndpoints!==undefined&&typeof request.exemptSwapEndpoints!=='boolean')throw Error('exemptSwapEndpoints must be boolean');
+ const exemptSwapEndpoints=request.exemptSwapEndpoints===true;
+ return {protectedNodes:held,occupiedNodes:occupied,candidateNodes:exemptSwapEndpoints?occupied.slice():occupied.filter(x=>!heldSet.has(x)),protection,colorByNode:colors.slice(),holdSemantics:'color',...(exemptSwapEndpoints?{exemptSwapEndpoints:true}:{})};
 }
 function initResult(d,req){
  const bytes=Math.ceil(d*d/8),result={degree:d,...req,knownPairs:new Uint8Array(bytes),feasiblePairs:new Uint8Array(bytes),firstStatus:new Uint8Array(d).fill(2),readyPairs:new Uint8Array(bytes),readyFirstStatus:new Uint8Array(d),readyWitnesses:[]},candidates=new Set(req.candidateNodes);
@@ -1038,7 +1159,7 @@ class ColorEligibilityAnalyzer{
    for(const a of req.candidateNodes)for(const b of req.candidateNodes){
     if(a===b)continue;const s=eligibilityStatus(unrestricted,a,b);
     if(s===2){mark(result,a,b,false);ctx.stats.globalExcludedPairs++;}
-    else if(s===1&&!req.protectedNodes.length)mark(result,a,b,true);
+    else if(s===1&&(!req.protectedNodes.length||req.exemptSwapEndpoints&&req.protectedNodes.every(x=>x===a||x===b)))mark(result,a,b,true);
    }
    if(!req.protectedNodes.length)return this.finish(result,ctx,key,unrestricted.reason);
    // This is a conservative fallback, not an impossibility oracle for colors.
@@ -1066,7 +1187,15 @@ class ColorEligibilityAnalyzer{
   return final;
  }
  macroWitnesses(result,ctx){
-  const d=this.model.degree,held=new Set(result.protectedNodes),candidates=new Set(result.candidateNodes),colors=result.colorByNode;
+  const d=this.model.degree,colors=result.colorByNode;
+  // Reuse bounded O(d) scratch arrays for every sparse macro instead of
+  // allocating Maps/Sets for each candidate. Epoch stamps avoid clearing a
+  // degree-sized array between macros. The existing degree*25 working-space
+  // estimate covers these 14 bytes/address of scratch storage.
+  const held=new Uint8Array(d),candidates=new Uint8Array(d),sourceEpoch=new Uint32Array(d),destinationEpoch=new Uint32Array(d),mapping=new Uint32Array(d);
+  for(const x of result.protectedNodes)held[x]=1;
+  for(const x of result.candidateNodes)candidates[x]=1;
+  let epoch=0;
   const primitive=this.compiled.moves.map(move=>({word:[move.index],support:Array.from(move.perm).flatMap((dst,src)=>src===dst?[]:[src,dst]),trusted:true}));
   const cache=this.colorCache;
   let operations=[];
@@ -1074,33 +1203,40 @@ class ColorEligibilityAnalyzer{
    if(cache.schemaVersion===1&&cache.kind==='color-macros'&&cache.degree===d&&cache.modelSignature===this.signature&&Array.isArray(cache.operations))operations=cache.operations;
    else ctx.stats.colorCacheError='color_macro_cache_mismatch';
   }
-  for(const op of [...primitive,...operations]){
+  for(let opIndex=0;opIndex<primitive.length+operations.length;opIndex++){
+   const isPrimitive=opIndex<primitive.length,op=isPrimitive?primitive[opIndex]:operations[opIndex-primitive.length];
    ctx.check();ctx.stats.macroTests++;
    if(!op||!Array.isArray(op.word)||!op.word.length||op.word.length>5000||!Array.isArray(op.support)||op.support.length%2||op.support.length>d*2){ctx.stats.invalidMacros++;continue;}
-   const mapping=new Map(),destinations=new Set();let valid=true,preserves=true;
+   epoch=(epoch+1)>>>0;
+   if(!epoch){sourceEpoch.fill(0);destinationEpoch.fill(0);epoch=1;}
+   const violations=[];let valid=true;
    for(let i=0;i<op.support.length;i+=2){
     ctx.tick();const a=op.support[i],b=op.support[i+1];
-    if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||a>=d||b<0||b>=d||a===b||mapping.has(a)||destinations.has(b)){valid=false;break;}
-    mapping.set(a,b);destinations.add(b);if(held.has(b)&&colors[a]!==colors[b])preserves=false;
+    if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||a>=d||b<0||b>=d||a===b||sourceEpoch[a]===epoch||destinationEpoch[b]===epoch){valid=false;break;}
+    sourceEpoch[a]=destinationEpoch[b]=epoch;mapping[a]=b;
+    if(held[b]&&colors[a]!==colors[b])violations.push(b);
    }
-   if(!valid||mapping.size!==destinations.size||[...mapping.keys()].some(x=>!destinations.has(x))){ctx.stats.invalidMacros++;continue;}
-   if(!preserves)continue;
-   const pairs=[];
-   for(const [a,b]of mapping)if(a<b&&mapping.get(b)===a&&candidates.has(a)&&candidates.has(b)&&!eligibilityReady(result,a,b))pairs.push([a,b]);
+   if(valid)for(let i=0;i<op.support.length;i+=2)if(destinationEpoch[op.support[i]]!==epoch){valid=false;break;}
+   if(!valid){ctx.stats.invalidMacros++;continue;}
+   if(violations.length&&!result.exemptSwapEndpoints||violations.length>2)continue;
+   let pairs=[];
+   const preservesPair=(a,b)=>violations.every(x=>x===a||x===b);
+   for(let i=0;i<op.support.length;i+=2){const a=op.support[i],b=op.support[i+1];if(a<b&&sourceEpoch[b]===epoch&&mapping[b]===a&&candidates[a]&&candidates[b]&&!eligibilityReady(result,a,b)&&preservesPair(a,b))pairs.push([a,b]);}
    if(!pairs.length)continue;
    const memo=this.verifiedOperations.get(op);
-   let verified=op.trusted===true&&primitive.includes(op)?true:
+   let verified=isPrimitive?true:
     memo&&memo.word.length===op.word.length&&memo.support.length===op.support.length&&memo.word.every((x,i)=>x===op.word[i])&&memo.support.every((x,i)=>x===op.support[i])?memo.valid:undefined;
    if(verified===undefined){
     ctx.stats.macroVerifications++;let p=identity(d);
     for(const move of op.word){ctx.tick(d);if(!Number.isInteger(move)||move<0||move>=this.compiled.moves.length){valid=false;break;}p=compose(p,this.compiled.moves[move].perm);}
-    verified=valid&&p.every((dst,src)=>dst===(mapping.get(src)??src));this.verifiedOperations.set(op,{valid:verified,word:op.word.slice(),support:op.support.slice()});
+    verified=valid&&p.every((dst,src)=>dst===(sourceEpoch[src]===epoch?mapping[src]:src));this.verifiedOperations.set(op,{valid:verified,word:op.word.slice(),support:op.support.slice()});
    }
    if(!verified){ctx.stats.invalidMacros++;continue;}
    if(result.protection==='throughout'){
     let current=colors.slice();
-    for(const move of op.word){ctx.tick(d);const next=new Array(d),perm=this.compiled.moves[move].perm;for(let x=0;x<d;x++)next[perm[x]]=current[x];current=next;if(result.protectedNodes.some(x=>current[x]!==colors[x])){preserves=false;break;}}
-    if(!preserves)continue;
+    for(const move of op.word){ctx.tick(d);const next=new Array(d),perm=this.compiled.moves[move].perm;for(let x=0;x<d;x++)next[perm[x]]=current[x];current=next;for(const x of result.protectedNodes)if(current[x]!==colors[x]&&!violations.includes(x))violations.push(x);if(violations.length>2||violations.length&&!result.exemptSwapEndpoints)break;}
+    if(violations.length&&!result.exemptSwapEndpoints)continue;
+    pairs=pairs.filter(([a,b])=>preservesPair(a,b));if(!pairs.length)continue;
    }
    for(const [a,b]of pairs){mark(result,a,b,true);mark(result,b,a,true);ctx.stats.macroWitnessPairs+=2;}
    retainWitness(result,op.word,pairs,ctx);
@@ -1199,6 +1335,91 @@ function solveCachedSwap(model,request,options={}){try{return new CachedSwapSolv
 module.exports={solveCachedSwap,CachedSwapSolver};
 
 },
+"./permutation-membership.cjs":function(module,exports,require){
+'use strict';
+
+// Exact membership against the existing, COMPLETE stabilizer chain. Source ->
+// destination convention: compose(a,b) means execute a and then b. A rejection
+// certifies only this precise permutation, never its color-equivalence class.
+const {identity, inverse, compose, compileModel, Words, makeContext, Limit}=require('./group.cjs');
+const {modelSignature}=require('./full-solve.cjs');
+class PermutationMembership {
+ constructor(model,cache){
+  if(cache?.schemaVersion!==1||cache.status!=='ready'||cache.complete!==true||cache.degree!==model.degree||cache.modelSignature!==modelSignature(model)||cache.base.length!==model.degree||new Set(cache.base).size!==model.degree)throw Error('Complete matching stabilizer cache required');
+  this.model=model;this.cache=cache;
+  this.levels=cache.levels.map((level,i)=>{
+   if(level.base!==cache.base[i])throw Error('Stabilizer cache base mismatch');
+   return {base:level.base,entries:new Map(level.entries.map(e=>[e[0],{word:e[1],perm:e[2]}]))};
+  });
+ }
+ factor(target){
+  const d=this.model.degree;if(target.length!==d||new Set(target).size!==d||Array.from(target).some(x=>!Number.isInteger(x)||x<0||x>=d))throw Error('Invalid target permutation');
+  let remainder=Uint32Array.from(target);const parts=[];
+  for(const level of this.levels){
+   const image=remainder[level.base];if(image===level.base)continue;
+   const entry=level.entries.get(image);if(!entry)return {member:false,proof:'complete_stabilizer_chain',failedBase:level.base};
+   entry.inverse??=inverse(entry.perm);remainder=compose(remainder,entry.inverse);parts.push(entry.word);
+  }
+  if(!remainder.every((x,i)=>x===i))throw Error('Incomplete stabilizer residue');
+  // target t1^-1 ... tk^-1 = I, so target = tk ... t1.
+  return {member:true,parts:parts.reverse(),proof:'complete_stabilizer_chain'};
+ }
+ expand(parts,{maxMs=2000,maxOutputMoves=5000}={}){
+  const compiled=compileModel(this.model),words=new Words(compiled.moves,makeContext({maxMs,maxOutputMoves,maxDagNodes:Math.max(300000,this.cache.words.length+1000)}));
+  words.nodes=[null];
+  for(let i=1;i<this.cache.words.length;i++){
+   const row=this.cache.words[i];words.nodes.push(row.length===1?{move:row[0],len:1}:{a:row[0],b:row[1],len:Math.min(Number.MAX_SAFE_INTEGER,words.length(row[0])+words.length(row[1]))});
+  }
+  return words.flatten(words.list(parts));
+ }
+}
+function transposition(degree,a,b){const p=identity(degree);p[a]=b;p[b]=a;return p;}
+module.exports={PermutationMembership,transposition,Limit};
+
+},
+"./color-compensation.cjs":function(module,exports,require){
+'use strict';
+
+// A small additional exact family: swap the selected identities and, if
+// necessary, exchange ONE disjoint pair of equal-colored stickers. Every
+// other identity is fixed. Failure in this family is NOT general impossibility.
+const {PermutationMembership,transposition,Limit}=require('./permutation-membership.cjs');
+const {verify}=require('./index.cjs');
+class ColorCompensationSearch {
+ constructor(model,request,cache,{maxOutputMoves=5000}={}){
+  this.model=model;this.request=request;this.maxOutputMoves=maxOutputMoves;
+  this.membership=new PermutationMembership(model,cache);this.a=0;this.b=1;
+  this.tests=0;this.done=false;this.result=null;this.triedSingle=false;
+  this.occupied=request.occupiedNodes??Array.from({length:model.degree},(_,i)=>i);
+ }
+ advance({maxMs=100}={}){
+  const deadline=performance.now()+maxMs,d=this.model.degree,req=this.request;
+  while(!this.done&&performance.now()<deadline){
+   let pair=null;
+   if(!this.triedSingle)this.triedSingle=true;
+   else{
+    while(this.a<this.occupied.length-1){
+     const a=this.occupied[this.a],b=this.occupied[this.b++];
+     if(this.b===this.occupied.length){this.a++;this.b=this.a+1;}
+     if(req.swap.includes(a)||req.swap.includes(b)||req.colorByNode[a]!==req.colorByNode[b])continue;
+     pair=[a,b];break;
+    }
+    if(!pair){this.done=true;break;}
+   }
+   const p=transposition(d,...req.swap);if(pair){p[pair[0]]=pair[1];p[pair[1]]=pair[0];}
+   this.tests++;const factor=this.membership.factor(p);if(!factor.member)continue;
+   try{
+    const word=this.membership.expand(factor.parts,{maxMs:Math.max(1,Math.ceil(deadline-performance.now())),maxOutputMoves:this.maxOutputMoves});
+    if(!verify(this.model,req,word))throw Error('Compensated swap verification failed');
+    this.result={status:'solved',moveIndices:word,optimal:false,verified:true,method:'same_color_compensated_transposition',compensatingPair:pair};this.done=true;
+   }catch(error){if(!(error instanceof Limit))throw error;this.limited=true;}
+  }
+  return {result:this.result,done:this.done,tests:this.tests,limited:!!this.limited};
+ }
+}
+module.exports={ColorCompensationSearch};
+
+},
 "./manual-session.cjs":function(module,exports,require){
 'use strict';
 
@@ -1209,6 +1430,8 @@ module.exports={solveCachedSwap,CachedSwapSolver};
 const {normalize,verify,permutation,validateOptions}=require('./index.cjs');
 const {modelSignature}=require('./full-solve.cjs');
 const {CachedSwapSolver}=require('./cached-swap.cjs');
+const {ColorCompensationSearch}=require('./color-compensation.cjs');
+const {pairOperations,macroIndex}=require('./macro-index.cjs');
 const STAGES=[3000,10000,30000,60000],MAX_MS=60000;
 
 class ManualSwapSession {
@@ -1219,6 +1442,7 @@ class ManualSwapSession {
   this.completedRadius=0;this.catalogIndex=0;this.catalogOperations=0;this.catalogBest=null;
   this.cachedAttempts=0;this.cachedLastBudget=0;this.cachedReason=null;this.cachedRetry=false;
   this.initialized=false;this.catalogDone=false;this.bfsStopped=null;this.result=null;
+  this.compensation=null;this.compensationBytes=0;this.compensationDone=true;
   const started=this.clock();
   try{
    validateOptions(options);this.request=normalize(model,request);
@@ -1237,12 +1461,12 @@ class ManualSwapSession {
  }
  _retainedCacheBytes(){
   const p=this.cachedSolver?.prepared;
-  return p?(p.cacheStorage+p.generators.length*(this.model.degree*4+128)):0;
+  return this.compensationBytes+(p?(p.cacheStorage+p.generators.length*(this.model.degree*4+128)):0);
  }
  _bytes(){return (this.inverseBytes??0)+this.records.length*(this.bytesPerState??0);}
- _stats(){return {method:'resumable_preimage_tuple_bfs',searchStates:this.records.length,transitions:this.transitions,completedRadius:this.completedRadius,bytesPerState:this.bytesPerState,estimatedBytes:this._bytes()+this._retainedCacheBytes(),catalogOperations:this.catalogOperations,cachedAttempts:this.cachedAttempts,cachedReason:this.cachedReason};}
+ _stats(){return {method:'resumable_preimage_tuple_bfs',searchStates:this.records.length,transitions:this.transitions,completedRadius:this.completedRadius,bytesPerState:this.bytesPerState,estimatedBytes:this._bytes()+this._retainedCacheBytes(),catalogOperations:this.catalogOperations,cachedAttempts:this.cachedAttempts,cachedReason:this.cachedReason,compensationTests:this.compensation?.tests??0,compensationComplete:this.compensationDone};}
  _metadata(resumed,terminalReason){
-  const canContinue=!this.result&&this.budgetMs<MAX_MS&&(!this.bfsStopped||!this.catalogDone||this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry));
+  const canContinue=!this.result&&this.budgetMs<MAX_MS&&(!this.bfsStopped||!this.catalogDone||!this.compensationDone||this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry));
   return {budgetMs:this.budgetMs,elapsedMs:this.elapsedMs,states:this.records.length,transitions:this.transitions,completedRadius:this.completedRadius,canContinue,nextBudgetMs:canContinue?(STAGES.find(n=>n>this.budgetMs)??MAX_MS):null,resumed,...(terminalReason?{terminalReason}:{})};
  }
  _finish(result){
@@ -1267,11 +1491,21 @@ class ManualSwapSession {
   else {this.records.push({tuple:this.initial,parent:-1,move:-1,depth:0});this.seen.add(this.initial.join(','));}
   const c=this.catalog;
   if(!c||c.kind!=='color-macros'||c.schemaVersion!==1||c.degree!==d||c.modelSignature!==modelSignature(this.model)||!Array.isArray(c.operations))this.catalogDone=true;
+  else{this.catalogCandidates=pairOperations(c,...req.swap);this.catalogIndexBytes=macroIndex(c).estimatedBytes;}
+  const cache=this.options.fullCache;
+  if(this.options.constructive!==false&&req.holdSemantics==='color'&&req.protection==='endpoint'&&cache?.complete===true&&Array.isArray(cache.levels)){
+   // Reserve the worst-case lazy inverse tables and a word expansion workspace
+   // before retaining this optional fallback. Small memory budgets simply skip it.
+   const bytes=cache.levels.reduce((n,l)=>n+l.entries.length*(d*4+160),0)+cache.words.length*96+d*64;
+   if(bytes+this._bytes()+this.bytesPerState<this.maxBytes/2){
+    try{this.compensation=new ColorCompensationSearch(this.model,req,cache,{maxOutputMoves:this.maxOutputMoves});this.compensationBytes=bytes;this.compensationDone=false;}catch(_){}
+   }
+  }
  }
  _catalogStep(){
   const req=this.request,c=this.catalog;
-  if(this.catalogIndex>=c.operations.length){this.catalogDone=true;return;}
-  const op=c.operations[this.catalogIndex++];this.catalogOperations++;
+  if(this.catalogIndex>=this.catalogCandidates.length){this.catalogDone=true;return;}
+  const op=this.catalogCandidates[this.catalogIndex++];this.catalogOperations++;
   if(!op||!Array.isArray(op.word)||!op.word.length||op.word.length>this.maxOutputMoves||this.catalogBest&&op.word.length>=this.catalogBest.length||!Array.isArray(op.support)||op.support.length%2)return;
   const [a,b]=req.swap,held=new Set(req.protected);let pa=a,pb=b,matches=true;
   for(let i=0;i<op.support.length;i+=2){
@@ -1280,7 +1514,7 @@ class ManualSwapSession {
    if(req.holdSemantics==='color'?held.has(dest)&&req.colorByNode[source]!==req.colorByNode[dest]:held.has(source)&&source!==dest){matches=false;break;}
   }
   if(matches&&pa===b&&pb===a&&verify(this.model,req,op.word)){
-   this.catalogBest=op.word.slice();if(op.word.length===1)this.catalogDone=true;
+   this.catalogBest=op.word.slice();this.catalogDone=true;
   }
  }
  _goal(tuple){
@@ -1341,6 +1575,12 @@ class ManualSwapSession {
    else if(r.status==='impossible'&&!(this.request.holdSemantics==='color'&&this.request.protected.length))this._finish(r);
   }catch(error){this.cachedReason='cached_backend_error';this.cachedRetry=false;}
  }
+ _compensationAttempt(availableMs){
+  if(this.compensationDone||availableMs<1)return;
+  const scan=this.compensation.advance({maxMs:Math.min(250,availableMs)});
+  this.compensationDone=scan.done;
+  if(scan.result)this._finish(scan.result);
+ }
  advance({budgetMs=STAGES[0],onProgress}={}){
   if(!Number.isSafeInteger(budgetMs)||budgetMs<1||budgetMs>MAX_MS)throw Error('budgetMs must be an integer from 1 to 60000');
   const resumed=this.advances++>0;this.budgetMs=Math.max(this.budgetMs,budgetMs);
@@ -1359,6 +1599,9 @@ class ManualSwapSession {
     progress(true);
     while(!this.result&&!this.catalogDone&&remaining()>0){this._catalogStep();progress(false);}
     if(!this.result&&this.catalogDone&&this.catalogBest)this._finish({status:'solved',moveIndices:this.catalogBest,optimal:this.catalogBest.length===1,lowerBound:1,method:'manual_short_catalog'});
+    // This persistent scan checks only O(d^2) same-color compensators against
+    // the complete group chain, never full configurations. A miss stays unknown.
+    if(!this.result&&this.catalogDone&&!this.compensationDone&&remaining()>0){this._compensationAttempt(remaining());progress(false);}
     // Try short primitive solutions before expanding a potentially long cache
     // word. This probe uses exactly the same persistent frontier as later work.
     if(!this.result&&this.catalogDone&&this.cachedPossible&&!this.cachedAttempts&&!this.bfsStopped&&remaining()>0){
@@ -1375,7 +1618,7 @@ class ManualSwapSession {
   let terminalReason;
   if(this.result)terminalReason=this.result.status==='solved'?'solved':this.result.status==='impossible'?'exhausted':this.result.reason;
   else if(this.budgetMs>=MAX_MS){terminalReason=this.bfsStopped??'time_limit';this._finish({status:'unknown',reason:terminalReason});}
-  else if(this.bfsStopped&&this.catalogDone&&!(this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry))){terminalReason=this.bfsStopped;this._finish({status:'unknown',reason:terminalReason});}
+  else if(this.bfsStopped&&this.catalogDone&&this.compensationDone&&!(this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry))){terminalReason=this.bfsStopped;this._finish({status:'unknown',reason:terminalReason});}
   const metadata=this._metadata(resumed,terminalReason);
   return {...(this.result??{status:'unknown',reason:'manual_search_paused',optimal:false}),lowerBound:this.result?.lowerBound??this.completedRadius+1,stats:{...this.result?.stats,...this._stats(),totalMs:this.elapsedMs},search:metadata};
  }
@@ -1390,10 +1633,10 @@ const loaded={};function require(name){if(!factories[name])throw Error("Unknown 
 const core=require('./index.cjs'),bridge=require('./atlas-adapter.cjs'),autoBridge=require('./auto-adapter.cjs');
 const assetBase=new URL('.',self.location.href);
 
-const assetRelease="fd3b55f4802864f376bf";
-const fingerprints={"masterpyraminx":"d3a63fd98bd5060bf92000e304f4db3f431d4937b87a8769b91f17ddb6b2839d","kilominx":"acfe96e01d7f2d427577ef2e59ebf09db0cf42eae45eda2d62fdd55aabc38f49","ghost":"87dd812f7b68fc4b6e0701aa1bf4ea5262f987530c77a2e58e95c23cfd12bc54","cube2":"bd6300422f4d20a2dd194d73a6316b39a31c8eeba580035c4e6dcfe0615d1835","cube3":"25d166c42a1a4214118235c74ee3a8a24621bb2c9a24c73f8a1f76629820f36f","cube4":"4e277a978c084547292e65cee3f4d41fe087cf06645400faac7424852607bdce","cube5":"287fda505a904724f2ce48f4cbfdf1974aa34f00de76c07011edcd02f517a05b","cube6":"85921581eb10c230283d4b67ce212485f1616d610c8c180be27a34dd901184d8","cube7":"f3e758412c8b4b2635e89d3942f798d5af4df3c0c5de57a780e23f3ea9532fb3","cube8":"e42ad273705ff414744840ad6cae0106e6925855193d4fd0b60796f6f0737c19","mirror":"605272ef0ef9ef50aeb651314936b79d9fbff4356518922edaf4a4961c152c7d","homer":"bff3dc966520d46f933654912282bdc86259910c698a4a8df412d342685b29d2","pyraminx":"3e524378a1b02b44b669dea6379847a8187cbd46ae249d4f2169db2140534a46","tetraminx":"1b570c6119b6413f2f4a5256ab86ec60b97030ac0de42f4e4a2866f9357e8a06","megaminx":"097de06949700d957161a1291a154f4a9cc1ffb5d85d4fed620cd7aa1565598b","jing":"03d4ea9509a1a72b192f1b47daf80b575174c512068487aa986edeee96c26d0c","skewb":"a3653e612115769511a43416165b8f3851e2e4ecd14fe35ded8195651904a293","masterskewb":"381158edb4b9e602bc9648f393ca9387daf5ad69522ab41d0c42a7efb6d641f2","ultimate":"040287ae2057b9058be2f5e55e2819aa506bd962b55dc9367a9527f5a26d8371","diamond":"399d3929c7360a902c58778354e82317695d0e4596b2291655f3300c36b7106e","fto":"8dc5763c64af80e7db332227755febc1fe49b8a8fbab42270152076c7451a1f4","crystal":"0dbd962e9441fc787c0340c10d69161e63433dcfab1f279699b96f3d58e0e6c6","dino":"2a7230bbe7f2e5213018e683b44bcfd0ec6deedfa5955f4926366412cdd8782b","rainbow":"fbb0d9d73a826e741408bb771c3e36cbf32a023ce656f83f61d66da76931d9ea","rhombic":"4a439255f4f0949440a0af7493b1aaf1a27f42a8d53fa6c17f23440262a0ab68","flatdiamond":"b2517a2ec399f56e3f1b2060ad222e867531fb107825a9e284ebf854b58fcdfc","cornerocta":"fcb965d8edf9997db266fd28cbe3531864ecd96265a99c534ac2494999880635","trajber":"f4dfa236869f9da9d813864a3616eb461b1422521e5656fe94dc758442410ce1","jewel":"cc09570517865afd844d571bacadd74473ed39bb966eafbab0a404328863654a","pyramorphix":"5d4d35c4bd3efb49dff96f2388eaa40391466a4687b3786140182f90effba86c","mastermorphix":"299861503a765d14ae3f1f2f5ddfb851e22732906e74b16aba69c5183bfb83a5","helicopter":"400b3ab0ba258044c30c81e995b6c942a1ddafd50fc993c9f56c3b741416ee7e","diamondstyle":"8d70b934930c34f5c581522567daa12eba8880110a6e5ca78d6abf6536f0f67a","diamondcube":"5c5c4509433ab3b1e325da59d954531b7800295bf3f8def1e9a92ff8c8628572"};
-const fullCacheFingerprints={"masterpyraminx":"d88b12fefdb6a47d55669832af4cac98cbd3b125f007d621ef8db5adf792c86f","kilominx":"b30e412cce55ffac0dff53813a12eb6d7279c643a2427e24673d6e44bc606d75","ghost":"b54e9cddde3a3f0ad172d0f8289a2d1275ff211cbc39fda1bf23632d68a0c2cd","cube2":"977a35446c3fa849d1dcb68bb61df7e3b9aa49cf5e80c0954aa4370e97ddff31","cube3":"7515e1dcf06572d1dd9e00ec9e0ffdfc9b245ed50931ed98cb901303f400f9cf","cube4":"8f9c0282338e84cbbeee20545990cdc1cc89e868f1e71f20055e2160cfedc05e","cube5":"6f035a12eb1c68eb0ce7d3f17ce8994d26338a53f488337fd5d0bbc3ff3d7700","cube6":"32e4f9766af8d711f8132a9826f8206068257ffbe0dc79a8c5ed9733446991f2","cube7":"91945aa70ae285b58efd3b3a33cd6746b4d02b468f723e803e49f59032d54150","cube8":"b562db8820e9edc8686e7421a4e91b4d6d821ec3238ec5ef41128a4e24a4c018","mirror":"d44467f7e7c921715134669d6009cf40b658c694e7689814d33174962c95db67","homer":"fd1c506be6c64f76d484449b2fdb726a11ebaf9805d0428266c35d9a798cb1ec","pyraminx":"f60a67d1130ef8de2ccbf63850b137534d6b9f4b5c838bd63c11c81d7c25a9e5","tetraminx":"f917ae48b97fabceebcc56d18f3d51554f5e369ac47decaa7b9f90db784a09dd","megaminx":"2053a94fec1193b320b38e973c2745b228c4c825ffe0a072c0dcadf2d79a140c","jing":"6a7f7b10ae82142126b2eae16eb6a8b9562d739473308a475c4b93c7baeff8c7","skewb":"947e459a820302317fb5d06b426049039537745d58d24db5dc0df27710b2f4dc","masterskewb":"099919d52776a9f50b46bde86e1bde4d7578dcddb425aa92dd2ce09da6304972","ultimate":"474c205d35d96a2aaf79f7a9098b244bee678100f6a2d411859ec462d1e783bd","diamond":"e14bbda3e373f0bfb80f0089d025cae0a114f70a5ba2e85abcb4b84121c64dfd","fto":"9654c4371149252eb2f0a59f632dc66b6e99ef969a869d723345025cdc38a6c2","crystal":"be9018f81efde1d2adc841d2daafe3508dc1379b747af564bd4668fb8419ff6a","dino":"9dd4948295c376d46832b9a7bc78024bf91d106e2fc7f2c883b546fb4c22a591","rainbow":"ebbab89e9ed9c72ab4f0fb04ac04349f65fd7c10879616f64bbaa7b66ad3bf10","rhombic":"01bddce752356192e235ea58591ffa0257e145cace3c89162df39356c8e7666a","flatdiamond":"49d53fa0447601c43552a0203c00bc6d6fd2632cf7164b7e4c653b771d4b3eed","cornerocta":"46c1e3ffced843db805bdac0d094c228f20d162e01410c9056ae345901f47c98","trajber":"89cf86b6037bef38086d96926f2cc434d672d780028272d59bcf5b5a41b51359","jewel":"91d2a4b3982f449eb8a03bdb3e5e4435aa5fa004f0d6678b3abe54a47107da0a","pyramorphix":"e360403344bcf463ba5f21f316a1ad159c9b17e116703c161d9ba8d0b5985ad4","mastermorphix":"0a59d3f11bb191c3ea75e3af0d0c8fdca69d919809234825ffe6e1a2dcc99a19","helicopter":"1bcff6e508493030c7fd8b2dde4ec156423145d7ff04d20f904bbd71ebee3273","diamondstyle":"eb2aaa82ebd9d87601e483d8b2149d3e4a2f9c056e6874d6db20920f8112ede7","diamondcube":"cf6c990cc3f5f919cecb81fa237ff4ce7f13fb938b4e9215ce4a7ebd72d4e60c"};
-const colorCacheFingerprints={"masterpyraminx":"a6e3b9e4c1790cdca6b659c797b4700a529c9701c1271ca2c2caed856ef0e229","kilominx":"7ac44addfdd39664cfea809b2dc4dcad28cfe31d564d735b46cb403dd8fc9c7f","ghost":"af8ae54b6b31b84a7f749a0b9bcd460799f2e1737108cc1f3fd74e12bdb02622","cube2":"663f73bddbf42e339f15a73b819a813632dbe27409197f4792692ca90e5cd1d2","cube3":"d0bccf7c5d9ea458ee35ac419c2dbcfb878c85a069af75ee8307d1734c2995b7","cube4":"c78607124b0ebf34eaaeba40ffaef20e611d66a657dc30effec4e4a3b61649a5","cube5":"ef56d77e0dfd4791b4e7dfd922a72a76b238025ea09f0d8bda9830d2d08ed0a8","cube6":"4ba179b11c7d844fbaba525deec8f4c377b7ccb45f5f35cfc4dc83ac7745a533","cube7":"f34014372ec42a085ba1cf649b99aa02694a824568e19c527330a9b3608a2b06","cube8":"a7bd593b8b256f4c5a487381c97ce6aa9a2fc12d06520b8a27b53bfc266ef7fa","mirror":"26a6564de7d317095f1222979fe2956365220476bf0fbf2255366c0870873a60","homer":"af832db4bd6af68a9343968137d4ef4ddfdb4d99be804cabe1b1f1fcbc9e436f","pyraminx":"58191c5c2e1c803c86c26f08efc4b3d1c4f1e57454c2f364a2df6971182be632","tetraminx":"8008f489849479f52382d9886288ee4fbf7a07085c97cbe7768e861dec708926","megaminx":"adaa8aa42f6e32aa1227d2093f38efbba52fd8bc118ea781b70209adf2e429d0","jing":"4d1702a9bb39824cfa783fbddf42c0c48a54c729c07242129d1aa39ad1b01f28","skewb":"3177d5ff634605379b464166ba44c8b23ef5120563f3b58e708001e044622138","masterskewb":"876fa58b75d4a943d3082caabc8bb417a22f86139c1bba45501ce4df569881b4","ultimate":"36a1069a012658c52636a04f710f13871937f54185a0ebc523557d3c82edd9be","diamond":"e2a5ec6f1ce13b912da7d684d13c6c40c0c7d699bf8c0017466b81846b3936f9","fto":"6aaf6995fe69cbec65ab1e6c919b0a6242ca89c37bf6f49d1d81439a5558912b","crystal":"419c09ba6b58d3e567be3169693e03098ddf1f040fd4a6d7801a33b0254a07f2","dino":"c68b04a106f3221f072953690edffe627a365bb9e1671467f5ebc005e396d38e","rainbow":"710a9cf9174e9d878c7c5fdb7c989d8e6913bc9df859672bddb096b9c8ce4fae","rhombic":"b4dab2cd92a3091bee06b1608e35ecf3f01f2fc6460ec0f3959ae68b8bbdde30","flatdiamond":"ba4044e30050fbe9fb52fbced7853c5af744ee2a1e6022aa88714a87b6fb3876","cornerocta":"3777cb745e7787af85a1c2340fc472a977739cc02e420e433d35c3cfe410854d","trajber":"41d61094c19408d78733b585a06156f851d7b43fb76cf18d06e0b5f1f02b7378","jewel":"c74dc90c144304faeb4cca3d21c0f99a2f89ef41e1cbfed19ddcb75166ccc4f9","pyramorphix":"a4b1ad65c10d966327afefc084a6198752378ea981d167f5d6e632df4c4c6086","mastermorphix":"699e188553ea5e24116b39d33f0dc8b336e8fdf1c04dcdc83716d0970ef6b5a3","helicopter":"89c123da883ec5ccf72371016dc9d9bd2054aaa2ffef0221a87413c66aab2a5e","diamondstyle":"274912ece675031ef72f48eba7d12571681ac9a3eeb6fbebe7f2d7cb41a0a41e","diamondcube":"cde5e8aaa0ff7b644633a2aff553346a1631d010c33d5d6a868b4ac48b739536"};
+const assetRelease="a0fca67e4f7c1fd80e4d";
+const fingerprints={"axis":"f1eac5262dbf73df9b77c45c5cd41198828b66bb98de9e486b918589c65a3b66","masterpyraminx":"d3a63fd98bd5060bf92000e304f4db3f431d4937b87a8769b91f17ddb6b2839d","kilominx":"acfe96e01d7f2d427577ef2e59ebf09db0cf42eae45eda2d62fdd55aabc38f49","ghost":"87dd812f7b68fc4b6e0701aa1bf4ea5262f987530c77a2e58e95c23cfd12bc54","cube2":"bd6300422f4d20a2dd194d73a6316b39a31c8eeba580035c4e6dcfe0615d1835","cube3":"25d166c42a1a4214118235c74ee3a8a24621bb2c9a24c73f8a1f76629820f36f","cube4":"4e277a978c084547292e65cee3f4d41fe087cf06645400faac7424852607bdce","cube5":"287fda505a904724f2ce48f4cbfdf1974aa34f00de76c07011edcd02f517a05b","cube6":"85921581eb10c230283d4b67ce212485f1616d610c8c180be27a34dd901184d8","cube7":"f3e758412c8b4b2635e89d3942f798d5af4df3c0c5de57a780e23f3ea9532fb3","cube8":"e42ad273705ff414744840ad6cae0106e6925855193d4fd0b60796f6f0737c19","cube9":"02049d95b0826833ec2b83bd9b4cec83c385a850e973f93e72488d5581fe21d3","cube10":"1d3ab56b23b637bd5f7fc812d49e215f0bfd10e013403ecf81bd2169bb687c89","mirror":"605272ef0ef9ef50aeb651314936b79d9fbff4356518922edaf4a4961c152c7d","homer":"bff3dc966520d46f933654912282bdc86259910c698a4a8df412d342685b29d2","pyraminx":"3e524378a1b02b44b669dea6379847a8187cbd46ae249d4f2169db2140534a46","tetraminx":"1b570c6119b6413f2f4a5256ab86ec60b97030ac0de42f4e4a2866f9357e8a06","megaminx":"097de06949700d957161a1291a154f4a9cc1ffb5d85d4fed620cd7aa1565598b","jing":"03d4ea9509a1a72b192f1b47daf80b575174c512068487aa986edeee96c26d0c","skewb":"a3653e612115769511a43416165b8f3851e2e4ecd14fe35ded8195651904a293","masterskewb":"381158edb4b9e602bc9648f393ca9387daf5ad69522ab41d0c42a7efb6d641f2","ultimate":"040287ae2057b9058be2f5e55e2819aa506bd962b55dc9367a9527f5a26d8371","diamond":"399d3929c7360a902c58778354e82317695d0e4596b2291655f3300c36b7106e","fto":"8dc5763c64af80e7db332227755febc1fe49b8a8fbab42270152076c7451a1f4","crystal":"0dbd962e9441fc787c0340c10d69161e63433dcfab1f279699b96f3d58e0e6c6","dino":"2a7230bbe7f2e5213018e683b44bcfd0ec6deedfa5955f4926366412cdd8782b","rainbow":"fbb0d9d73a826e741408bb771c3e36cbf32a023ce656f83f61d66da76931d9ea","rhombic":"4a439255f4f0949440a0af7493b1aaf1a27f42a8d53fa6c17f23440262a0ab68","flatdiamond":"b2517a2ec399f56e3f1b2060ad222e867531fb107825a9e284ebf854b58fcdfc","cornerocta":"fcb965d8edf9997db266fd28cbe3531864ecd96265a99c534ac2494999880635","trajber":"f4dfa236869f9da9d813864a3616eb461b1422521e5656fe94dc758442410ce1","jewel":"cc09570517865afd844d571bacadd74473ed39bb966eafbab0a404328863654a","pyramorphix":"5d4d35c4bd3efb49dff96f2388eaa40391466a4687b3786140182f90effba86c","mastermorphix":"299861503a765d14ae3f1f2f5ddfb851e22732906e74b16aba69c5183bfb83a5","helicopter":"400b3ab0ba258044c30c81e995b6c942a1ddafd50fc993c9f56c3b741416ee7e","diamondstyle":"8d70b934930c34f5c581522567daa12eba8880110a6e5ca78d6abf6536f0f67a","diamondcube":"5c5c4509433ab3b1e325da59d954531b7800295bf3f8def1e9a92ff8c8628572"};
+const fullCacheFingerprints={"axis":"bbfa140b65e9893ac3a499e9e876f9047f05e304af16ea330e5666ff401b735c","masterpyraminx":"d88b12fefdb6a47d55669832af4cac98cbd3b125f007d621ef8db5adf792c86f","kilominx":"b30e412cce55ffac0dff53813a12eb6d7279c643a2427e24673d6e44bc606d75","ghost":"b54e9cddde3a3f0ad172d0f8289a2d1275ff211cbc39fda1bf23632d68a0c2cd","cube2":"977a35446c3fa849d1dcb68bb61df7e3b9aa49cf5e80c0954aa4370e97ddff31","cube3":"7515e1dcf06572d1dd9e00ec9e0ffdfc9b245ed50931ed98cb901303f400f9cf","cube4":"e6d6a5efbfaa96d92b8d114131e495e9b533d414a90b0728fb552754ce88b517","cube5":"db8fbc940625aba464d9d1d7dbe75732bd1e33c67fc496ae75ce8928f444496c","cube6":"5106d449e8787fd2b429745411cf3e7c3c6fdc41ae5c4e05ce78b39cd93ef351","cube7":"6288df41e07f2c3af0bba888c1b789f24c7373bd2d8a40c3f364c01fbaff3a49","cube8":"7587fff6e07085daf9cf537923ee78a7302e2498ad32d17aa9a1db1f33550711","cube9":"f69d260a3b3d75780b7aadaad8ed7caf3d6034591eab72443857582b9621896d","cube10":"8412d34813ef2cff8bce01dfd4292aa385d6cd81c92026ffcaaec9dfdda5ae7b","mirror":"d44467f7e7c921715134669d6009cf40b658c694e7689814d33174962c95db67","homer":"fd1c506be6c64f76d484449b2fdb726a11ebaf9805d0428266c35d9a798cb1ec","pyraminx":"f60a67d1130ef8de2ccbf63850b137534d6b9f4b5c838bd63c11c81d7c25a9e5","tetraminx":"f917ae48b97fabceebcc56d18f3d51554f5e369ac47decaa7b9f90db784a09dd","megaminx":"0ffc128fffce9cafaf65f82783437562dfdb9d75c8edbacbd367ef62e81b6603","jing":"6a7f7b10ae82142126b2eae16eb6a8b9562d739473308a475c4b93c7baeff8c7","skewb":"947e459a820302317fb5d06b426049039537745d58d24db5dc0df27710b2f4dc","masterskewb":"c8440670a0435b57a23e09161688db39f46d90d1dfb985dd0bfa15226a1b846d","ultimate":"474c205d35d96a2aaf79f7a9098b244bee678100f6a2d411859ec462d1e783bd","diamond":"e14bbda3e373f0bfb80f0089d025cae0a114f70a5ba2e85abcb4b84121c64dfd","fto":"04da5b1d511fb8d8d6dbd3de1cede3e813a6c08de28e8c53f2531893076f88f1","crystal":"be9018f81efde1d2adc841d2daafe3508dc1379b747af564bd4668fb8419ff6a","dino":"9dd4948295c376d46832b9a7bc78024bf91d106e2fc7f2c883b546fb4c22a591","rainbow":"ebbab89e9ed9c72ab4f0fb04ac04349f65fd7c10879616f64bbaa7b66ad3bf10","rhombic":"01bddce752356192e235ea58591ffa0257e145cace3c89162df39356c8e7666a","flatdiamond":"49d53fa0447601c43552a0203c00bc6d6fd2632cf7164b7e4c653b771d4b3eed","cornerocta":"46c1e3ffced843db805bdac0d094c228f20d162e01410c9056ae345901f47c98","trajber":"f72e0f026fb30df04120c5a75dfbe5bf675d7a1e4ba1689dfb9e7dee9763e8cb","jewel":"91d2a4b3982f449eb8a03bdb3e5e4435aa5fa004f0d6678b3abe54a47107da0a","pyramorphix":"e360403344bcf463ba5f21f316a1ad159c9b17e116703c161d9ba8d0b5985ad4","mastermorphix":"b717310183692be7a6e94f547439a75565441f6666809623033544001e28ce1b","helicopter":"1bcff6e508493030c7fd8b2dde4ec156423145d7ff04d20f904bbd71ebee3273","diamondstyle":"eb2aaa82ebd9d87601e483d8b2149d3e4a2f9c056e6874d6db20920f8112ede7","diamondcube":"304c3c927a1ab3493d949bc4c3ec37ce413506dc6acf2b703356d69fa1e2e6fc"};
+const colorCacheFingerprints={"axis":"7dd2206ff43dd04f2aff99c05e3e5e4581bcee6f23268e7757c42c80302f7af7","masterpyraminx":"60e5c3bf363de34e6f4aecb6416c5933a1da814c728ccf099b41cffedd176a4e","kilominx":"0571c7ad4e74467ce745ade7d1c9afbaa82cd9b902973145c10f572babc2136f","ghost":"11e2c6153887a7ecf745b8a66c3b01726c8c479144b71d4df5981bfe2b193804","cube2":"23f383447e6a98ad2b206696724c480c006a8e8cebbe9d1f31bba7081b1d539f","cube3":"7cbde073547d1789f5927a324abc2efcd7cc5a9ab3e39f0604635ae5521d5ab2","cube4":"1c27ea1c537f1e2781ba39e08678de9b521521019ca211133c9ac89a16856959","cube5":"92fdf81de7f3a6a349dccb201cbdfd853390933200cd127bab585db4610d399d","cube6":"edc0b88fd51fa92fd6aee928f25b3ac8cfb878ffba54017794eabd0b16555958","cube7":"fa279efa1e11ee5359e94dc9a97135c62d56908344d087d2a0d9f0d6edc153d3","cube8":"5e28b289a35d2672acb6f7134af99601e9a5a42f3179018f282b66e6c259430e","cube9":"a1e91eb90e5ad9240419f66972dbc02cce1979d2d402e5223f6c97c433e28a03","cube10":"0abd47fef987d7489920a5ca40251b3d5793023bc22c698257b2e0a2f112882b","mirror":"bbdbcb0941caa4e4a60b7755b69fec9ce993bd1dfc837e79de73ad5ad90a838e","homer":"add236ae624b07403cd049cc77e7e4cea47f61c057f45718d466c4d0b2d72725","pyraminx":"a9a847f0fdc7f39c2974851ff1964f245d023691320a87c3b1976b9080d06a0b","tetraminx":"ba0c175a10e4a575daaf61fa67eaee31c9b6231b3e6c33a23d6882c639affee1","megaminx":"314781409e5c978b1e5fda3e3723dfa2539ae9a465b05687e2935a3c972fb798","jing":"c32d72980f7ce65feadbe00d46fbe3514e38d9428f2ba128e5d0c0761f69dedb","skewb":"40bd0d5f384cbdaf3edc914026e76f2ff27e75531f07f4133b7b2f85cc9fde90","masterskewb":"e8d73a67b8e2f0a1b3b727173c568fed573f39780518e1b1c7ffc6f4bed1f183","ultimate":"a183d9a23e278198b062de9671346d0b67a15ff66c617f484ad40145698e01d1","diamond":"cbf4970dbb5e44422f1b890d30d8c31f64364303cc93c19a01475543bb73819a","fto":"ed4a8821c1f5fb45e5981d69fd31918ee47927313eadf8f7c58c39b95ee1560a","crystal":"034bfc3cfb1e85f2132b5a009efc98bda768cc0ed4ffe702382f6b3bcf682dc7","dino":"806746584f7e3af3d8589e96f77fddc3c21228c9622bad49bb77e04c91468569","rainbow":"48cc4a8b5f4f87917c57471fece1e7e01b79a8d5c6ada377f3aa2ec3326d5f4f","rhombic":"450df243761c9ca70a3848b637972a4325328f4c492ffedd896e838c5478ca6b","flatdiamond":"0b0bc9b2120e87ed5f5559038f3b18892bdec0c98a96dd629706e864dccf0d12","cornerocta":"df2a487b4a8adddf5ac48db88d2f3af912d0442157f064a49d7c1fe0dfa93a91","trajber":"a87d65ebb54b20bba793ad7e60aa84d06afe137154c444e853002b187ad7b8fd","jewel":"181d3cdd5e2619df5f82a454baa1df71e2c41cadf16539212c95f7032bc9ac09","pyramorphix":"c5334721a1b26bb6bd8893ee808ba2d3b1e3f76eb4697b3ee8b3404a88d2d2b2","mastermorphix":"015eefa6737c4803093c601313d768f9505f1c0191df25dc71a289cd67548892","helicopter":"b7d00af3568453c10fb450b51f4c4d4cdf889077e2018d2a4fd33fa790982965","diamondstyle":"59d01877ed1cd61c9d9e95ed3dae1c09dc92b2532b194adb141c560518510c4a","diamondcube":"540c57ce86c678030f6a0903411bdd92e4014f83cef0f2d769cd29f73ed6ae2c"};
 const modelCache=new Map();
 function modelFingerprint(modelOrId){return fingerprints[typeof modelOrId==='string'?modelOrId:modelOrId?.id]??null;}
 function assetError(kind,reason,message){const error=new Error(message);error.code=kind+'_'+reason;return error;}
@@ -1486,6 +1729,7 @@ function manualOptionsFor(raw={}){
 function cacheResult(key,result){if(!['solved','impossible'].includes(result.status))return;const text=JSON.stringify(result),bytes=text.length*2;if(bytes>cacheLimit)return;while(cacheBytes+bytes>cacheLimit&&resultCache.size){const k=resultCache.keys().next().value;cacheBytes-=resultCache.get(k).length*2;resultCache.delete(k);}resultCache.set(key,text);cacheBytes+=bytes;}
 self.onmessage=async event=>{
  const message=event.data||{},id=message.id;
+ if(message.expectedRelease&&message.expectedRelease!==assetRelease){self.postMessage({id,type:'result',workerRelease:assetRelease,result:{status:'unknown',reason:'release_mismatch',detail:'This puzzle tab and its solver are from different releases. Reload the puzzle to use the current release; no moves were made.',optimal:false}});return;}
  if(busy){self.postMessage({id,type:'result',result:{status:'unknown',reason:'worker_busy',optimal:false}});return;}
  busy=true;
  try{
@@ -1497,7 +1741,7 @@ self.onmessage=async event=>{
    const mapping=bridge.mapSnapshot(model,message.snapshot),selection=message.selection??{};
    const ids=selection.protectedStickerIds??[];if(!Array.isArray(ids))throw Error('Protected sticker IDs must be an array');
    const held=ids.map(id=>{const n=mapping.stickerToNode[String(id)];if(n===undefined)throw Error('Unknown current sticker '+id);return n;});
-   const request={protected:held,occupiedNodes:mapping.occupiedNodes,mode:selection.mode??'protected_swap',protection:selection.protection??'endpoint',...(selection.holdSemantics==='color'?{holdSemantics:'color',colorByNode:bridge.colorsFromSnapshot(model,message.snapshot,mapping)}:{})},options=eligibilityOptionsFor(message.options);
+   const request={protected:held,occupiedNodes:mapping.occupiedNodes,mode:selection.mode??'protected_swap',protection:selection.protection??'endpoint',...(selection.holdSemantics==='color'?{holdSemantics:'color',colorByNode:bridge.colorsFromSnapshot(model,message.snapshot,mapping),...(selection.exemptSwapEndpoints!==undefined?{exemptSwapEndpoints:selection.exemptSwapEndpoints}:{})}:{})},options=eligibilityOptionsFor(message.options);
    if(!eligibilityAnalyzer||eligibilityAnalyzer.model!==model)eligibilityAnalyzer=new EligibilityAnalyzer(model,null,{cacheBytes:2*1024*1024});
    let cacheError;
    if(held.length&&request.protection==='endpoint'&&!eligibilityAnalyzer.cache){try{eligibilityAnalyzer.setCache(await loadFullCache(model.id));}catch(e){cacheError=e.message;}}
@@ -1506,7 +1750,7 @@ self.onmessage=async event=>{
    if(cacheError)result.detail=cacheError;
    self.postMessage({id,type:'result',result,modelFingerprint:modelFingerprint(model.id)});return;
   }
-  if(message.task==='full-solve'){
+  if(message.task==='full-solve'||message.task==='guided-solve'){
    const request=autoBridge.autoRequestFromSnapshot(model,message.snapshot),options=autoOptionsFor(message.options);
    progress('loading-cache');
    let cache;try{cache=await loadFullCache(model.id);}catch(e){self.postMessage({id,type:'result',result:{status:'unknown',reason:e.code||'cache_unavailable',detail:e.message,optimal:false}});return;}
@@ -1514,6 +1758,15 @@ self.onmessage=async event=>{
    let result=fullSolver.solveFull(model,request,{...options,cache});
    if(result.status==='solved')progress('verifying');
    if(result.status==='solved'&&!autoBridge.verifyAutoPlan(model,message.snapshot,result))result={status:'unknown',reason:'internal_auto_witness_verification_failed',optimal:false};
+   if(result.status==='solved'&&message.task==='guided-solve'){
+    const guided=require('./guided-plan.cjs'),mapping=bridge.mapSnapshot(model,message.snapshot),ids=message.selection?.protectedStickerIds??[];
+    if(!Array.isArray(ids))throw Error('Protected sticker IDs must be an array');
+    const protectedNodes=ids.map(id=>{const n=mapping.stickerToNode[String(id)];if(n===undefined)throw Error('Unknown current sticker '+id);return n;});
+    const checkpoints=guided.groupGuidedPlan(model,request,result,{protectedNodes,exactProgress:!!message.snapshot?.mirrorMode});
+    if(checkpoints.status==='solved'&&!guided.verifyGuidedPlan(model,message.snapshot,checkpoints))result={status:'unknown',reason:'internal_guided_witness_verification_failed',optimal:false};
+    else result=checkpoints;
+   }
+
    const engineStages=result.status==='solved'?result.stages.map(stage=>({...stage,engineMoves:stage.moveIndices.map(i=>({...model.moves[i].engineMove}))})):[];
    self.postMessage({id,type:'result',result,engineStages,modelFingerprint:modelFingerprint(model.id)});return;
   }

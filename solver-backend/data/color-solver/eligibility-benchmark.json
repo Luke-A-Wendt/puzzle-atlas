@@ -1,0 +1,1850 @@
+{
+  "schemaVersion": 1,
+  "description": "Exact catalog-scan equivalence across all 34 puzzles, solved and 18-move states, 0/25/75% holds, endpoint exemptions enabled; four alternating warmed timings per case. Timings exclude stabilizer analysis and whole-result cache hits.",
+  "summary": {
+    "puzzles": 34,
+    "cases": 204,
+    "baselineMs": 1992.7230794999937,
+    "optimizedMs": 340.94425149999734,
+    "witnessesUnchanged": true,
+    "reductionPercent": 82.89053531785532
+  },
+  "cases": [
+    {
+      "id": "masterpyraminx",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 111,
+      "baselineMs": 4.254411000000019,
+      "optimizedMs": 2.002268000000001,
+      "verified": true
+    },
+    {
+      "id": "masterpyraminx",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 111,
+      "baselineMs": 2.3310599999999937,
+      "optimizedMs": 0.5756925000000024,
+      "verified": true
+    },
+    {
+      "id": "masterpyraminx",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 111,
+      "baselineMs": 1.460896500000004,
+      "optimizedMs": 0.19513849999998456,
+      "verified": true
+    },
+    {
+      "id": "masterpyraminx",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 111,
+      "baselineMs": 0.9115389999999906,
+      "optimizedMs": 0.17828900000000658,
+      "verified": true
+    },
+    {
+      "id": "masterpyraminx",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 111,
+      "baselineMs": 2.1517789999999906,
+      "optimizedMs": 0.30252800000000946,
+      "verified": true
+    },
+    {
+      "id": "masterpyraminx",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 111,
+      "baselineMs": 1.02265349999999,
+      "optimizedMs": 0.2184880000000078,
+      "verified": true
+    },
+    {
+      "id": "kilominx",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1736,
+      "baselineMs": 12.764436500000045,
+      "optimizedMs": 3.569537500000024,
+      "verified": true
+    },
+    {
+      "id": "kilominx",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1736,
+      "baselineMs": 8.750033500000029,
+      "optimizedMs": 1.8289715000000228,
+      "verified": true
+    },
+    {
+      "id": "kilominx",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1736,
+      "baselineMs": 8.457865500000025,
+      "optimizedMs": 1.2954519999999548,
+      "verified": true
+    },
+    {
+      "id": "kilominx",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1736,
+      "baselineMs": 6.911422499999958,
+      "optimizedMs": 1.1655299999999897,
+      "verified": true
+    },
+    {
+      "id": "kilominx",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1736,
+      "baselineMs": 5.809216499999991,
+      "optimizedMs": 0.862972500000069,
+      "verified": true
+    },
+    {
+      "id": "kilominx",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1736,
+      "baselineMs": 8.930916000000025,
+      "optimizedMs": 1.5324674999999957,
+      "verified": true
+    },
+    {
+      "id": "ghost",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1339,
+      "baselineMs": 17.24701200000004,
+      "optimizedMs": 1.8026679999999828,
+      "verified": true
+    },
+    {
+      "id": "ghost",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1339,
+      "baselineMs": 12.618608499999937,
+      "optimizedMs": 3.3122620000000325,
+      "verified": true
+    },
+    {
+      "id": "ghost",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1339,
+      "baselineMs": 10.784363499999927,
+      "optimizedMs": 1.4533964999999398,
+      "verified": true
+    },
+    {
+      "id": "ghost",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1339,
+      "baselineMs": 11.500038000000018,
+      "optimizedMs": 2.384413499999823,
+      "verified": true
+    },
+    {
+      "id": "ghost",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1339,
+      "baselineMs": 10.219597999999905,
+      "optimizedMs": 1.5958715000000439,
+      "verified": true
+    },
+    {
+      "id": "ghost",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1339,
+      "baselineMs": 14.291784000000007,
+      "optimizedMs": 2.2568394999999555,
+      "verified": true
+    },
+    {
+      "id": "cube2",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 693,
+      "baselineMs": 2.080863999999906,
+      "optimizedMs": 0.4467464999999038,
+      "verified": true
+    },
+    {
+      "id": "cube2",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 693,
+      "baselineMs": 2.0390875000000506,
+      "optimizedMs": 0.4198260000000573,
+      "verified": true
+    },
+    {
+      "id": "cube2",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 693,
+      "baselineMs": 1.839091499999995,
+      "optimizedMs": 0.3494270000001052,
+      "verified": true
+    },
+    {
+      "id": "cube2",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 693,
+      "baselineMs": 1.9582680000000892,
+      "optimizedMs": 0.42370199999993474,
+      "verified": true
+    },
+    {
+      "id": "cube2",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 693,
+      "baselineMs": 1.9683979999999792,
+      "optimizedMs": 0.4278029999999262,
+      "verified": true
+    },
+    {
+      "id": "cube2",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 693,
+      "baselineMs": 1.7395089999998845,
+      "optimizedMs": 0.342000999999982,
+      "verified": true
+    },
+    {
+      "id": "cube3",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 2825,
+      "baselineMs": 9.445562500000051,
+      "optimizedMs": 1.7252435000000332,
+      "verified": true
+    },
+    {
+      "id": "cube3",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 2825,
+      "baselineMs": 8.314429000000018,
+      "optimizedMs": 1.5186925000000429,
+      "verified": true
+    },
+    {
+      "id": "cube3",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 2825,
+      "baselineMs": 8.758025000000089,
+      "optimizedMs": 1.5334240000000818,
+      "verified": true
+    },
+    {
+      "id": "cube3",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 2825,
+      "baselineMs": 10.003933999999958,
+      "optimizedMs": 1.7764339999999947,
+      "verified": true
+    },
+    {
+      "id": "cube3",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 2825,
+      "baselineMs": 8.690009000000032,
+      "optimizedMs": 1.553739500000006,
+      "verified": true
+    },
+    {
+      "id": "cube3",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 2825,
+      "baselineMs": 7.974263499999893,
+      "optimizedMs": 1.5161935000000994,
+      "verified": true
+    },
+    {
+      "id": "cube4",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 3833,
+      "baselineMs": 18.44876050000005,
+      "optimizedMs": 3.1128304999999727,
+      "verified": true
+    },
+    {
+      "id": "cube4",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 3833,
+      "baselineMs": 16.09928449999984,
+      "optimizedMs": 2.836176000000137,
+      "verified": true
+    },
+    {
+      "id": "cube4",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 3833,
+      "baselineMs": 15.482578000000103,
+      "optimizedMs": 2.896095499999774,
+      "verified": true
+    },
+    {
+      "id": "cube4",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 3833,
+      "baselineMs": 16.91184199999998,
+      "optimizedMs": 3.1143929999998363,
+      "verified": true
+    },
+    {
+      "id": "cube4",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 3833,
+      "baselineMs": 15.81576599999994,
+      "optimizedMs": 2.805110999999897,
+      "verified": true
+    },
+    {
+      "id": "cube4",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 3833,
+      "baselineMs": 16.109039999999823,
+      "optimizedMs": 3.1185689999999795,
+      "verified": true
+    },
+    {
+      "id": "cube5",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 4864,
+      "baselineMs": 29.423138499999823,
+      "optimizedMs": 4.39850249999995,
+      "verified": true
+    },
+    {
+      "id": "cube5",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 4864,
+      "baselineMs": 27.736818500000027,
+      "optimizedMs": 4.888047499999857,
+      "verified": true
+    },
+    {
+      "id": "cube5",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 4864,
+      "baselineMs": 29.15654450000011,
+      "optimizedMs": 5.133700999999974,
+      "verified": true
+    },
+    {
+      "id": "cube5",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 4864,
+      "baselineMs": 26.804820000000063,
+      "optimizedMs": 4.455076499999905,
+      "verified": true
+    },
+    {
+      "id": "cube5",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 4864,
+      "baselineMs": 26.528636499999948,
+      "optimizedMs": 4.936870000000226,
+      "verified": true
+    },
+    {
+      "id": "cube5",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 4864,
+      "baselineMs": 30.451980999999932,
+      "optimizedMs": 5.372910000000047,
+      "verified": true
+    },
+    {
+      "id": "cube6",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 5984,
+      "baselineMs": 56.81463899999994,
+      "optimizedMs": 8.918525499999987,
+      "verified": true
+    },
+    {
+      "id": "cube6",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 5984,
+      "baselineMs": 48.99550249999993,
+      "optimizedMs": 6.938551499999676,
+      "verified": true
+    },
+    {
+      "id": "cube6",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 5984,
+      "baselineMs": 55.09161700000004,
+      "optimizedMs": 8.106534499999725,
+      "verified": true
+    },
+    {
+      "id": "cube6",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 5984,
+      "baselineMs": 38.622417499999756,
+      "optimizedMs": 5.60924999999952,
+      "verified": true
+    },
+    {
+      "id": "cube6",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 5984,
+      "baselineMs": 48.56880599999977,
+      "optimizedMs": 8.023181000000022,
+      "verified": true
+    },
+    {
+      "id": "cube6",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 5984,
+      "baselineMs": 53.81317600000011,
+      "optimizedMs": 9.586574000000383,
+      "verified": true
+    },
+    {
+      "id": "cube7",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 5971,
+      "baselineMs": 41.62594850000005,
+      "optimizedMs": 6.358813499999542,
+      "verified": true
+    },
+    {
+      "id": "cube7",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 5971,
+      "baselineMs": 39.0410995000002,
+      "optimizedMs": 5.739792500000021,
+      "verified": true
+    },
+    {
+      "id": "cube7",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 5971,
+      "baselineMs": 47.72849049999968,
+      "optimizedMs": 7.312339000000065,
+      "verified": true
+    },
+    {
+      "id": "cube7",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 5971,
+      "baselineMs": 51.92658449999999,
+      "optimizedMs": 7.918741999999838,
+      "verified": true
+    },
+    {
+      "id": "cube7",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 5971,
+      "baselineMs": 45.132384499999716,
+      "optimizedMs": 8.34477199999992,
+      "verified": true
+    },
+    {
+      "id": "cube7",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 5971,
+      "baselineMs": 44.44749349999984,
+      "optimizedMs": 6.511825000000044,
+      "verified": true
+    },
+    {
+      "id": "cube8",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 6368,
+      "baselineMs": 48.64660600000025,
+      "optimizedMs": 8.473101500000212,
+      "verified": true
+    },
+    {
+      "id": "cube8",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 6368,
+      "baselineMs": 39.463339500000075,
+      "optimizedMs": 7.29823849999957,
+      "verified": true
+    },
+    {
+      "id": "cube8",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 6368,
+      "baselineMs": 46.773021499999686,
+      "optimizedMs": 8.4825409999994,
+      "verified": true
+    },
+    {
+      "id": "cube8",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 6368,
+      "baselineMs": 52.235649000000194,
+      "optimizedMs": 10.191123499999776,
+      "verified": true
+    },
+    {
+      "id": "cube8",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 6368,
+      "baselineMs": 30.291543999999703,
+      "optimizedMs": 5.087021000000277,
+      "verified": true
+    },
+    {
+      "id": "cube8",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 6368,
+      "baselineMs": 33.628490999999485,
+      "optimizedMs": 6.285655499999848,
+      "verified": true
+    },
+    {
+      "id": "mirror",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 2825,
+      "baselineMs": 8.86813600000005,
+      "optimizedMs": 1.4853174999998373,
+      "verified": true
+    },
+    {
+      "id": "mirror",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 2825,
+      "baselineMs": 8.006050999999388,
+      "optimizedMs": 1.5412349999996877,
+      "verified": true
+    },
+    {
+      "id": "mirror",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 2825,
+      "baselineMs": 8.48344199999974,
+      "optimizedMs": 1.5171394999997574,
+      "verified": true
+    },
+    {
+      "id": "mirror",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 2825,
+      "baselineMs": 8.848762499999793,
+      "optimizedMs": 1.6751690000000963,
+      "verified": true
+    },
+    {
+      "id": "mirror",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 2825,
+      "baselineMs": 8.05052650000016,
+      "optimizedMs": 1.4715669999995953,
+      "verified": true
+    },
+    {
+      "id": "mirror",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 2825,
+      "baselineMs": 8.59150150000005,
+      "optimizedMs": 1.5388415000006717,
+      "verified": true
+    },
+    {
+      "id": "homer",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 693,
+      "baselineMs": 1.9332054999995307,
+      "optimizedMs": 0.4395054999995409,
+      "verified": true
+    },
+    {
+      "id": "homer",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 693,
+      "baselineMs": 1.8509189999995215,
+      "optimizedMs": 0.41121800000018993,
+      "verified": true
+    },
+    {
+      "id": "homer",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 693,
+      "baselineMs": 1.7065950000005614,
+      "optimizedMs": 0.2568699999992532,
+      "verified": true
+    },
+    {
+      "id": "homer",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 693,
+      "baselineMs": 1.2139969999998357,
+      "optimizedMs": 0.22954499999923428,
+      "verified": true
+    },
+    {
+      "id": "homer",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 693,
+      "baselineMs": 1.2993274999998903,
+      "optimizedMs": 0.2746114999990823,
+      "verified": true
+    },
+    {
+      "id": "homer",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 693,
+      "baselineMs": 1.3375894999999218,
+      "optimizedMs": 0.23904349999975238,
+      "verified": true
+    },
+    {
+      "id": "pyraminx",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1862,
+      "baselineMs": 6.8111079999998765,
+      "optimizedMs": 1.165885000000344,
+      "verified": true
+    },
+    {
+      "id": "pyraminx",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1862,
+      "baselineMs": 6.234819999999672,
+      "optimizedMs": 1.0703135000003385,
+      "verified": true
+    },
+    {
+      "id": "pyraminx",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1862,
+      "baselineMs": 7.092142999999851,
+      "optimizedMs": 1.250615499999185,
+      "verified": true
+    },
+    {
+      "id": "pyraminx",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1862,
+      "baselineMs": 6.975265000000945,
+      "optimizedMs": 1.1940564999995331,
+      "verified": true
+    },
+    {
+      "id": "pyraminx",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1862,
+      "baselineMs": 6.220333500000379,
+      "optimizedMs": 1.0984300000000076,
+      "verified": true
+    },
+    {
+      "id": "pyraminx",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1862,
+      "baselineMs": 6.916548499999408,
+      "optimizedMs": 1.2320730000010371,
+      "verified": true
+    },
+    {
+      "id": "tetraminx",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1776,
+      "baselineMs": 4.663459999999759,
+      "optimizedMs": 0.8369030000012572,
+      "verified": true
+    },
+    {
+      "id": "tetraminx",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1776,
+      "baselineMs": 4.486036999999669,
+      "optimizedMs": 0.8469934999993711,
+      "verified": true
+    },
+    {
+      "id": "tetraminx",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1776,
+      "baselineMs": 4.717134499999702,
+      "optimizedMs": 0.8305334999995466,
+      "verified": true
+    },
+    {
+      "id": "tetraminx",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1776,
+      "baselineMs": 2.9500299999999697,
+      "optimizedMs": 0.6221955000000889,
+      "verified": true
+    },
+    {
+      "id": "tetraminx",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1776,
+      "baselineMs": 3.0225314999997863,
+      "optimizedMs": 0.535326500001247,
+      "verified": true
+    },
+    {
+      "id": "tetraminx",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1776,
+      "baselineMs": 3.1651535000000877,
+      "optimizedMs": 0.4827144999990196,
+      "verified": true
+    },
+    {
+      "id": "megaminx",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1116,
+      "baselineMs": 7.395792499999516,
+      "optimizedMs": 1.8760935000000245,
+      "verified": true
+    },
+    {
+      "id": "megaminx",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1116,
+      "baselineMs": 6.575257999999849,
+      "optimizedMs": 0.9586135000008653,
+      "verified": true
+    },
+    {
+      "id": "megaminx",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1116,
+      "baselineMs": 7.372242999998889,
+      "optimizedMs": 1.2712065000005168,
+      "verified": true
+    },
+    {
+      "id": "megaminx",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1116,
+      "baselineMs": 9.48153899999943,
+      "optimizedMs": 1.995147000000543,
+      "verified": true
+    },
+    {
+      "id": "megaminx",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1116,
+      "baselineMs": 8.961809499999617,
+      "optimizedMs": 1.587819500000478,
+      "verified": true
+    },
+    {
+      "id": "megaminx",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1116,
+      "baselineMs": 7.375238999999965,
+      "optimizedMs": 1.3882135000003473,
+      "verified": true
+    },
+    {
+      "id": "jing",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 543,
+      "baselineMs": 0.8724154999999882,
+      "optimizedMs": 0.10717849999946338,
+      "verified": true
+    },
+    {
+      "id": "jing",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 543,
+      "baselineMs": 0.6625199999998586,
+      "optimizedMs": 0.1233620000002702,
+      "verified": true
+    },
+    {
+      "id": "jing",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 543,
+      "baselineMs": 0.672199499999806,
+      "optimizedMs": 0.12105900000005931,
+      "verified": true
+    },
+    {
+      "id": "jing",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 543,
+      "baselineMs": 0.775371499999892,
+      "optimizedMs": 0.10956699999951525,
+      "verified": true
+    },
+    {
+      "id": "jing",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 543,
+      "baselineMs": 0.7378864999991492,
+      "optimizedMs": 0.12372300000060932,
+      "verified": true
+    },
+    {
+      "id": "jing",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 543,
+      "baselineMs": 0.675804500000595,
+      "optimizedMs": 0.12134950000017852,
+      "verified": true
+    },
+    {
+      "id": "skewb",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 285,
+      "baselineMs": 0.7409710000001724,
+      "optimizedMs": 0.1383445000001302,
+      "verified": true
+    },
+    {
+      "id": "skewb",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 285,
+      "baselineMs": 0.7924774999992223,
+      "optimizedMs": 0.13511499999913212,
+      "verified": true
+    },
+    {
+      "id": "skewb",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 285,
+      "baselineMs": 0.6358200000004217,
+      "optimizedMs": 0.12104899999940244,
+      "verified": true
+    },
+    {
+      "id": "skewb",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 285,
+      "baselineMs": 0.609150999999656,
+      "optimizedMs": 0.18291500000032102,
+      "verified": true
+    },
+    {
+      "id": "skewb",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 285,
+      "baselineMs": 0.65921999999955,
+      "optimizedMs": 0.10963200000151119,
+      "verified": true
+    },
+    {
+      "id": "skewb",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 285,
+      "baselineMs": 0.5634330000002592,
+      "optimizedMs": 0.13691250000010768,
+      "verified": true
+    },
+    {
+      "id": "masterskewb",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1597,
+      "baselineMs": 7.467851500000506,
+      "optimizedMs": 1.2658919999994396,
+      "verified": true
+    },
+    {
+      "id": "masterskewb",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1597,
+      "baselineMs": 7.4180774999995265,
+      "optimizedMs": 1.3049399999999878,
+      "verified": true
+    },
+    {
+      "id": "masterskewb",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1597,
+      "baselineMs": 8.786662000001343,
+      "optimizedMs": 1.686745000000883,
+      "verified": true
+    },
+    {
+      "id": "masterskewb",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1597,
+      "baselineMs": 8.502025499999945,
+      "optimizedMs": 1.48210250000011,
+      "verified": true
+    },
+    {
+      "id": "masterskewb",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1597,
+      "baselineMs": 7.471220500000527,
+      "optimizedMs": 1.3244595000005575,
+      "verified": true
+    },
+    {
+      "id": "masterskewb",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1597,
+      "baselineMs": 8.640886500000306,
+      "optimizedMs": 1.6395449999999983,
+      "verified": true
+    },
+    {
+      "id": "ultimate",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1332,
+      "baselineMs": 7.210204500001055,
+      "optimizedMs": 1.3114795000001322,
+      "verified": true
+    },
+    {
+      "id": "ultimate",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1332,
+      "baselineMs": 6.113292000000001,
+      "optimizedMs": 1.141453499999443,
+      "verified": true
+    },
+    {
+      "id": "ultimate",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1332,
+      "baselineMs": 7.246543500000371,
+      "optimizedMs": 1.5281504999993558,
+      "verified": true
+    },
+    {
+      "id": "ultimate",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1332,
+      "baselineMs": 5.900493000001006,
+      "optimizedMs": 1.074623999999858,
+      "verified": true
+    },
+    {
+      "id": "ultimate",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1332,
+      "baselineMs": 3.8430345000006128,
+      "optimizedMs": 0.6469020000004093,
+      "verified": true
+    },
+    {
+      "id": "ultimate",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1332,
+      "baselineMs": 4.434183499999563,
+      "optimizedMs": 0.8784999999998035,
+      "verified": true
+    },
+    {
+      "id": "diamond",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1143,
+      "baselineMs": 2.7699725000002218,
+      "optimizedMs": 0.3603130000010424,
+      "verified": true
+    },
+    {
+      "id": "diamond",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1143,
+      "baselineMs": 5.150535499999023,
+      "optimizedMs": 0.3678890000001047,
+      "verified": true
+    },
+    {
+      "id": "diamond",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1143,
+      "baselineMs": 2.995325500000945,
+      "optimizedMs": 0.4881620000005569,
+      "verified": true
+    },
+    {
+      "id": "diamond",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1143,
+      "baselineMs": 2.13347099999919,
+      "optimizedMs": 0.3547195000001011,
+      "verified": true
+    },
+    {
+      "id": "diamond",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1143,
+      "baselineMs": 3.000011999999515,
+      "optimizedMs": 0.6040280000006533,
+      "verified": true
+    },
+    {
+      "id": "diamond",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1143,
+      "baselineMs": 3.4057724999993297,
+      "optimizedMs": 0.7156740000000354,
+      "verified": true
+    },
+    {
+      "id": "fto",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1147,
+      "baselineMs": 6.840548000000126,
+      "optimizedMs": 1.0922959999998056,
+      "verified": true
+    },
+    {
+      "id": "fto",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1147,
+      "baselineMs": 5.484557499999937,
+      "optimizedMs": 0.7524235000000772,
+      "verified": true
+    },
+    {
+      "id": "fto",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1147,
+      "baselineMs": 6.440731499999856,
+      "optimizedMs": 1.4353935000008278,
+      "verified": true
+    },
+    {
+      "id": "fto",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1147,
+      "baselineMs": 8.861382000000049,
+      "optimizedMs": 1.445087500000227,
+      "verified": true
+    },
+    {
+      "id": "fto",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1147,
+      "baselineMs": 8.49001750000025,
+      "optimizedMs": 1.2819755000000441,
+      "verified": true
+    },
+    {
+      "id": "fto",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1147,
+      "baselineMs": 9.705830999999307,
+      "optimizedMs": 1.642048500000783,
+      "verified": true
+    },
+    {
+      "id": "crystal",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1509,
+      "baselineMs": 7.909168999999565,
+      "optimizedMs": 1.285345999999663,
+      "verified": true
+    },
+    {
+      "id": "crystal",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1509,
+      "baselineMs": 7.134357500000078,
+      "optimizedMs": 1.1400210000001607,
+      "verified": true
+    },
+    {
+      "id": "crystal",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1509,
+      "baselineMs": 9.901593499999763,
+      "optimizedMs": 1.3375635000002148,
+      "verified": true
+    },
+    {
+      "id": "crystal",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1509,
+      "baselineMs": 7.789171500000521,
+      "optimizedMs": 1.3367269999998825,
+      "verified": true
+    },
+    {
+      "id": "crystal",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1509,
+      "baselineMs": 8.099597999999787,
+      "optimizedMs": 1.5780390000008993,
+      "verified": true
+    },
+    {
+      "id": "crystal",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1509,
+      "baselineMs": 10.290851499999917,
+      "optimizedMs": 1.6472709999998187,
+      "verified": true
+    },
+    {
+      "id": "dino",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1439,
+      "baselineMs": 1.6927985000002082,
+      "optimizedMs": 0.3445894999995289,
+      "verified": true
+    },
+    {
+      "id": "dino",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1439,
+      "baselineMs": 1.7618155000000115,
+      "optimizedMs": 0.4173275000002832,
+      "verified": true
+    },
+    {
+      "id": "dino",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1439,
+      "baselineMs": 1.6331609999997454,
+      "optimizedMs": 0.30512650000036956,
+      "verified": true
+    },
+    {
+      "id": "dino",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1439,
+      "baselineMs": 1.7670534999997471,
+      "optimizedMs": 0.31915199999912147,
+      "verified": true
+    },
+    {
+      "id": "dino",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1439,
+      "baselineMs": 1.7958264999997482,
+      "optimizedMs": 0.37176999999974214,
+      "verified": true
+    },
+    {
+      "id": "dino",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1439,
+      "baselineMs": 1.5559659999998985,
+      "optimizedMs": 0.29069999999956053,
+      "verified": true
+    },
+    {
+      "id": "rainbow",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1439,
+      "baselineMs": 3.7300469999991037,
+      "optimizedMs": 0.653030999999828,
+      "verified": true
+    },
+    {
+      "id": "rainbow",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1439,
+      "baselineMs": 3.1129699999992226,
+      "optimizedMs": 0.5217564999993556,
+      "verified": true
+    },
+    {
+      "id": "rainbow",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1439,
+      "baselineMs": 3.40733949999958,
+      "optimizedMs": 0.527444999999716,
+      "verified": true
+    },
+    {
+      "id": "rainbow",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1439,
+      "baselineMs": 3.460047999999915,
+      "optimizedMs": 0.6159309999993638,
+      "verified": true
+    },
+    {
+      "id": "rainbow",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1439,
+      "baselineMs": 2.920549999999821,
+      "optimizedMs": 0.4592195000004722,
+      "verified": true
+    },
+    {
+      "id": "rainbow",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1439,
+      "baselineMs": 3.372403000000304,
+      "optimizedMs": 0.5082065000005969,
+      "verified": true
+    },
+    {
+      "id": "rhombic",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 2544,
+      "baselineMs": 3.9817094999998517,
+      "optimizedMs": 0.6490350000003673,
+      "verified": true
+    },
+    {
+      "id": "rhombic",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 2544,
+      "baselineMs": 4.137975499999811,
+      "optimizedMs": 0.7294639999990977,
+      "verified": true
+    },
+    {
+      "id": "rhombic",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 2544,
+      "baselineMs": 4.848001000000295,
+      "optimizedMs": 0.7301549999992858,
+      "verified": true
+    },
+    {
+      "id": "rhombic",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 2544,
+      "baselineMs": 4.246035500000289,
+      "optimizedMs": 0.6082300000007308,
+      "verified": true
+    },
+    {
+      "id": "rhombic",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 2544,
+      "baselineMs": 4.0076524999994945,
+      "optimizedMs": 0.7001710000004095,
+      "verified": true
+    },
+    {
+      "id": "rhombic",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 2544,
+      "baselineMs": 4.4322910000000775,
+      "optimizedMs": 0.9612969999998313,
+      "verified": true
+    },
+    {
+      "id": "flatdiamond",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 933,
+      "baselineMs": 16.763284999999996,
+      "optimizedMs": 2.615227999999661,
+      "verified": true
+    },
+    {
+      "id": "flatdiamond",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 933,
+      "baselineMs": 10.52666549999958,
+      "optimizedMs": 1.315966500000286,
+      "verified": true
+    },
+    {
+      "id": "flatdiamond",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 933,
+      "baselineMs": 11.061235999999553,
+      "optimizedMs": 1.3214700000007724,
+      "verified": true
+    },
+    {
+      "id": "flatdiamond",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 933,
+      "baselineMs": 11.500324999999975,
+      "optimizedMs": 1.7645750000001499,
+      "verified": true
+    },
+    {
+      "id": "flatdiamond",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 933,
+      "baselineMs": 9.679051500001151,
+      "optimizedMs": 1.2670740000003207,
+      "verified": true
+    },
+    {
+      "id": "flatdiamond",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 933,
+      "baselineMs": 10.965263999999479,
+      "optimizedMs": 1.3414240000001882,
+      "verified": true
+    },
+    {
+      "id": "cornerocta",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1537,
+      "baselineMs": 3.4288309999992634,
+      "optimizedMs": 0.603297499999826,
+      "verified": true
+    },
+    {
+      "id": "cornerocta",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1537,
+      "baselineMs": 3.225595999999314,
+      "optimizedMs": 0.5808640000004743,
+      "verified": true
+    },
+    {
+      "id": "cornerocta",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1537,
+      "baselineMs": 3.7692605000002004,
+      "optimizedMs": 0.6052004999992278,
+      "verified": true
+    },
+    {
+      "id": "cornerocta",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1537,
+      "baselineMs": 3.7932959999998275,
+      "optimizedMs": 0.7661335000002509,
+      "verified": true
+    },
+    {
+      "id": "cornerocta",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1537,
+      "baselineMs": 3.0008789999992587,
+      "optimizedMs": 0.5727880000004006,
+      "verified": true
+    },
+    {
+      "id": "cornerocta",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1537,
+      "baselineMs": 3.9874330000002374,
+      "optimizedMs": 0.6000825000000987,
+      "verified": true
+    },
+    {
+      "id": "trajber",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 2628,
+      "baselineMs": 5.51903350000066,
+      "optimizedMs": 0.9360644999997021,
+      "verified": true
+    },
+    {
+      "id": "trajber",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 2628,
+      "baselineMs": 4.272358999999597,
+      "optimizedMs": 0.7107714999992822,
+      "verified": true
+    },
+    {
+      "id": "trajber",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 2628,
+      "baselineMs": 4.674128499998915,
+      "optimizedMs": 0.6930949999996301,
+      "verified": true
+    },
+    {
+      "id": "trajber",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 2628,
+      "baselineMs": 5.054676499999914,
+      "optimizedMs": 0.6795399999991787,
+      "verified": true
+    },
+    {
+      "id": "trajber",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 2628,
+      "baselineMs": 6.3083110000006855,
+      "optimizedMs": 1.163861499999257,
+      "verified": true
+    },
+    {
+      "id": "trajber",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 2628,
+      "baselineMs": 6.611398999999437,
+      "optimizedMs": 1.1825284999995347,
+      "verified": true
+    },
+    {
+      "id": "jewel",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 2524,
+      "baselineMs": 6.782211499999903,
+      "optimizedMs": 1.3028620000004594,
+      "verified": true
+    },
+    {
+      "id": "jewel",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 2524,
+      "baselineMs": 5.9982120000004215,
+      "optimizedMs": 1.1282689999998183,
+      "verified": true
+    },
+    {
+      "id": "jewel",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 2524,
+      "baselineMs": 6.650461500000347,
+      "optimizedMs": 1.1586690000003728,
+      "verified": true
+    },
+    {
+      "id": "jewel",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 2524,
+      "baselineMs": 7.045236499999191,
+      "optimizedMs": 1.3114294999995764,
+      "verified": true
+    },
+    {
+      "id": "jewel",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 2524,
+      "baselineMs": 5.7884320000002845,
+      "optimizedMs": 1.122525499999938,
+      "verified": true
+    },
+    {
+      "id": "jewel",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 2524,
+      "baselineMs": 6.907274000000143,
+      "optimizedMs": 1.189274000000296,
+      "verified": true
+    },
+    {
+      "id": "pyramorphix",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1454,
+      "baselineMs": 4.584170999999515,
+      "optimizedMs": 0.8018510000001697,
+      "verified": true
+    },
+    {
+      "id": "pyramorphix",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1454,
+      "baselineMs": 4.566914999999426,
+      "optimizedMs": 0.8414000000011583,
+      "verified": true
+    },
+    {
+      "id": "pyramorphix",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1454,
+      "baselineMs": 4.0619180000003325,
+      "optimizedMs": 0.6632509999999456,
+      "verified": true
+    },
+    {
+      "id": "pyramorphix",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1454,
+      "baselineMs": 4.469841000000997,
+      "optimizedMs": 0.7556325000005018,
+      "verified": true
+    },
+    {
+      "id": "pyramorphix",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1454,
+      "baselineMs": 4.56248400000004,
+      "optimizedMs": 0.8567874999989726,
+      "verified": true
+    },
+    {
+      "id": "pyramorphix",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1454,
+      "baselineMs": 3.126389500001096,
+      "optimizedMs": 0.5680699999993521,
+      "verified": true
+    },
+    {
+      "id": "mastermorphix",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 610,
+      "baselineMs": 3.1072809999996025,
+      "optimizedMs": 0.4390444999989995,
+      "verified": true
+    },
+    {
+      "id": "mastermorphix",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 610,
+      "baselineMs": 2.756081499999709,
+      "optimizedMs": 0.40214499999910913,
+      "verified": true
+    },
+    {
+      "id": "mastermorphix",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 610,
+      "baselineMs": 3.802722499999618,
+      "optimizedMs": 0.6043035000002419,
+      "verified": true
+    },
+    {
+      "id": "mastermorphix",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 610,
+      "baselineMs": 3.6374805000004926,
+      "optimizedMs": 0.5436140000001615,
+      "verified": true
+    },
+    {
+      "id": "mastermorphix",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 610,
+      "baselineMs": 3.761428999999225,
+      "optimizedMs": 0.4665805000004184,
+      "verified": true
+    },
+    {
+      "id": "mastermorphix",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 610,
+      "baselineMs": 3.127726000000621,
+      "optimizedMs": 0.5482759999995324,
+      "verified": true
+    },
+    {
+      "id": "helicopter",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 1958,
+      "baselineMs": 2.4092430000000604,
+      "optimizedMs": 0.5105800000001182,
+      "verified": true
+    },
+    {
+      "id": "helicopter",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 1958,
+      "baselineMs": 2.3218345000004774,
+      "optimizedMs": 0.446160499999678,
+      "verified": true
+    },
+    {
+      "id": "helicopter",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 1958,
+      "baselineMs": 2.896990000000187,
+      "optimizedMs": 0.6157505000001038,
+      "verified": true
+    },
+    {
+      "id": "helicopter",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 1958,
+      "baselineMs": 2.782816000000821,
+      "optimizedMs": 0.402665500000694,
+      "verified": true
+    },
+    {
+      "id": "helicopter",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 1958,
+      "baselineMs": 2.6605675000009796,
+      "optimizedMs": 0.4852979999996023,
+      "verified": true
+    },
+    {
+      "id": "helicopter",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 1958,
+      "baselineMs": 1.9365045000004102,
+      "optimizedMs": 0.3755460000002131,
+      "verified": true
+    },
+    {
+      "id": "diamondstyle",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 2463,
+      "baselineMs": 2.2952750000004016,
+      "optimizedMs": 0.4262959999996383,
+      "verified": true
+    },
+    {
+      "id": "diamondstyle",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 2463,
+      "baselineMs": 2.6587530000006154,
+      "optimizedMs": 0.6005430000004708,
+      "verified": true
+    },
+    {
+      "id": "diamondstyle",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 2463,
+      "baselineMs": 2.338218500000039,
+      "optimizedMs": 0.5442904999999882,
+      "verified": true
+    },
+    {
+      "id": "diamondstyle",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 2463,
+      "baselineMs": 2.62839299999996,
+      "optimizedMs": 0.43555949999972654,
+      "verified": true
+    },
+    {
+      "id": "diamondstyle",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 2463,
+      "baselineMs": 2.712111499999992,
+      "optimizedMs": 0.6361009999991438,
+      "verified": true
+    },
+    {
+      "id": "diamondstyle",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 2463,
+      "baselineMs": 2.4124030000002676,
+      "optimizedMs": 0.5297435000002224,
+      "verified": true
+    },
+    {
+      "id": "diamondcube",
+      "state": "solved",
+      "holdFraction": 0,
+      "operations": 933,
+      "baselineMs": 5.246299999999792,
+      "optimizedMs": 1.0723104999997304,
+      "verified": true
+    },
+    {
+      "id": "diamondcube",
+      "state": "solved",
+      "holdFraction": 0.25,
+      "operations": 933,
+      "baselineMs": 4.356463500000245,
+      "optimizedMs": 0.769343500001014,
+      "verified": true
+    },
+    {
+      "id": "diamondcube",
+      "state": "solved",
+      "holdFraction": 0.75,
+      "operations": 933,
+      "baselineMs": 3.1559330000000045,
+      "optimizedMs": 0.5272900000009031,
+      "verified": true
+    },
+    {
+      "id": "diamondcube",
+      "state": "scrambled",
+      "holdFraction": 0,
+      "operations": 933,
+      "baselineMs": 3.384766000000127,
+      "optimizedMs": 0.5739734999997381,
+      "verified": true
+    },
+    {
+      "id": "diamondcube",
+      "state": "scrambled",
+      "holdFraction": 0.25,
+      "operations": 933,
+      "baselineMs": 2.891517000000931,
+      "optimizedMs": 0.46669549999933224,
+      "verified": true
+    },
+    {
+      "id": "diamondcube",
+      "state": "scrambled",
+      "holdFraction": 0.75,
+      "operations": 933,
+      "baselineMs": 3.4078154999997423,
+      "optimizedMs": 0.5654914999986431,
+      "verified": true
+    }
+  ]
+}

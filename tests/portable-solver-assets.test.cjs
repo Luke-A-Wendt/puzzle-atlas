@@ -3,6 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {webcrypto,createHash}=require('node:crypto');
 const root=path.resolve(__dirname,'../dist/games'),plain=x=>JSON.parse(JSON.stringify(x));
 const assetGroups=[['fingerprints','constrained-solver-models'],['fullCacheFingerprints','constrained-solver-caches'],['colorCacheFingerprints','color-solver-caches']];
+const catalogIds=JSON.parse(fs.readFileSync(path.join(root,'constrained-solver-models/manifest.json'),'utf8')).models.map(model=>model.id).sort();
 
 // Execute the shipping bundles with real WebCrypto. The fetch adapter denies
 // every origin/path outside the selected static deployment; no development
@@ -33,25 +34,25 @@ function homerEngine(){
  return {model,snapshot:()=>({stickers:plain(state),history:[]}),apply:move=>{state=E.applyMove(state,move);},isSolved:()=>E.isSolved(state)};
 }
 
-test('all 102 model/cache files match both shipping bundles byte for byte',()=>{
+test('all catalog model/cache files match both shipping bundles byte for byte',()=>{
  for(const filename of ['constrained-solver-core.js','constrained-solver-worker.js']){
   const source=fs.readFileSync(path.join(root,filename),'utf8');let checked=0;
   for(const [name,directory]of assetGroups){
    const found=source.match(new RegExp('const '+name+'=(\\{[^;]+\\});'));assert(found,name);
-   const fingerprints=JSON.parse(found[1]);assert.equal(Object.keys(fingerprints).length,34);
+   const fingerprints=JSON.parse(found[1]);assert.deepEqual(Object.keys(fingerprints).sort(),catalogIds);
    for(const [id,expected]of Object.entries(fingerprints)){
     const bytes=fs.readFileSync(path.join(root,directory,id+'.json'));
     assert.equal(createHash('sha256').update(bytes).digest('hex'),expected,filename+' '+directory+'/'+id);checked++;
    }
   }
-  assert.equal(checked,102);
+  assert.equal(checked,catalogIds.length*assetGroups.length);
  }
 });
 
-test('real secure-origin core and worker loaders resolve all 34 puzzles under root and nested deployments',async()=>{
+test('real secure-origin core and worker loaders resolve all catalog puzzles under root and nested deployments',async()=>{
  for(const base of ['https://example.test/games/','https://luke-a-wendt.github.io/puzzle-atlas/games/','https://example.test/arbitrary/nested/path/games/']){
   const coreHost=host('constrained-solver-core.js',{base}),worker=host('constrained-solver-worker.js',{base}),core=coreHost.ctx.ConstrainedSolverCore;
-  assert.equal(core.assetBase,base);assert.equal(core.modelIds.length,34);
+  assert.equal(core.assetBase,base);assert.deepEqual(Array.from(core.modelIds).sort(),catalogIds);
   assert.match(core.assetRelease,/^[0-9a-f]{20}$/);const workerURL=new URL(core.workerURL);
   assert.equal(workerURL.origin,new URL(base).origin);assert.equal(workerURL.pathname,new URL('constrained-solver-worker.js',base).pathname);
   assert.equal(workerURL.searchParams.get('v'),core.assetRelease);
@@ -64,7 +65,7 @@ test('real secure-origin core and worker loaders resolve all 34 puzzles under ro
    assert.equal(color.degree,model.degree,id);assert.equal(color.modelSignature,cache.modelSignature,id);
    assert.equal(cache.modelSignature,worker.ctx.require('./full-solve.cjs').modelSignature(workerModel),id);
   }
-  assert.equal(coreHost.requests.length,34);assert.equal(worker.requests.length,102);
+  assert.equal(coreHost.requests.length,catalogIds.length);assert.equal(worker.requests.length,catalogIds.length*assetGroups.length);
  }
 });
 

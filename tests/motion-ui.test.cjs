@@ -1,6 +1,6 @@
 'use strict';
 const assertAutoSolveDelegates=require('./auto-solve-delegate.cjs');
-// Exercise production RAF timing with actual slider and pause event handlers.
+// Exercise production RAF timing with actual slider and Stop event handlers.
 const assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
 const {createHarness}=require('./game-harness.cjs');
 const games=['cube2','cube3','cube4','cube5','cube6','cube7','mirror','pyraminx','tetraminx','megaminx','ultimate','diamond','fto','rhombic','flatdiamond','cornerocta','trajber','pyramorphix'];
@@ -30,10 +30,10 @@ for(const name of games){
   api.reset();speed(5);api.move(first);app.frame(109);assert(app.snapshot().animating);app.frame(2);assert.equal(history(),1);
   // A live speed adjustment keeps the same fractional progress, then accelerates.
   api.reset();speed(1);api.move(first);app.frame(350);speed(5);app.frame(80);assert.equal(history(),0);app.frame(4);assert.equal(history(),1);
-  // Paused wall time cannot consume the turn, including a slider change while paused.
-  api.reset();speed(1);api.runMoves(first+' '+second);app.frame(350);app.click('pause');app.frame(3000);speed(5);app.frame(3000);assert.equal(history(),0);assert(app.snapshot().paused);app.click('pause');app.frame(80);assert.equal(history(),0);app.frame(4);assert.equal(history(),1);app.frame(109);assert.equal(history(),1);app.frame(2);assert.equal(history(),2);assert.equal(app.snapshot().mode,'idle');
+  // Stop cancels an unfinished turn at its legal source; elapsed time cannot resume it.
+  api.reset();speed(1);api.runMoves(first+' '+second);app.frame(350);app.click('pause');const stopped=JSON.stringify(app.snapshot().stickers||app.snapshot().pieces);app.frame(3000);assert.equal(history(),0);assert.equal(app.snapshot().paused,false);assert.equal(app.snapshot().mode,'idle');assert.equal(JSON.stringify(app.snapshot().stickers||app.snapshot().pieces),stopped);assert.equal(app.elements.get('speed').value,'3');speed(5);assert(api.runMoves(first+' '+second));app.frame(109);assert.equal(history(),0);app.frame(2);assert.equal(history(),1);app.frame(109);assert.equal(history(),1);app.frame(2);assert.equal(history(),2);assert.equal(app.snapshot().mode,'idle');
   // The same speed policy controls scrambling and the runMoves API used for each constrained stage.
-  api.reset();speed(1);api.randomize();app.frame(700);assert.equal(history(),0);speed(5);app.frame(54);assert.equal(history(),0);app.frame(100);assert.equal(history(),1);settle();const scrambled=history();assert(scrambled>=12);assertAutoSolveDelegates(app.context);speed(1);assert(api.runMoves(first+' '+second,{label:'Auto Solve · animation fixture'}));app.frame(700);assert.equal(history(),scrambled);speed(5);app.frame(54);assert.equal(history(),scrambled);app.frame(100);assert.equal(history(),scrambled+1);settle();assert.equal(history(),scrambled+2);assert.equal(app.snapshot().mode,'idle');assert(app.snapshot().journal.some(j=>j.label==='Auto Solve · animation fixture'));
+  api.reset();speed(1);api.randomize();assert.equal(app.elements.get('speed').value,'5');app.frame(50);assert.equal(history(),0);app.frame(110);assert.equal(history(),1);settle();assert.equal(app.elements.get('speed').value,'3');const scrambled=history();assert(scrambled>=12);assertAutoSolveDelegates(app.context);speed(1);assert(api.runMoves(first+' '+second,{label:'Auto Solve · animation fixture'}));app.frame(700);assert.equal(history(),scrambled);speed(5);app.frame(54);assert.equal(history(),scrambled);app.frame(100);assert.equal(history(),scrambled+1);settle();assert.equal(history(),scrambled+2);assert.equal(app.snapshot().mode,'idle');assert(app.snapshot().journal.some(j=>j.label==='Auto Solve · animation fixture'));
   if(/^(cube[2-7]|mirror)$/.test(name)&&!reducedMotion){
    api.reset();app.click('homeView');app.frame(0);
    const front=trace.labels.filter(l=>/^[URFDLB]$/.test(l.text));assert.deepEqual(front.map(l=>l.text).sort(),['F','R','U']);
@@ -47,6 +47,6 @@ for(const name of games){
    api.move('L');settle();assert.equal(app.snapshot().history[0].face,'L');
   }
  }
- console.log(name+': slider slow/fast, reduced-motion override regression, live speed, paused speed, scramble, constrained-stage playback and Auto Solve delegation PASS');
+ console.log(name+': slider slow/fast, reduced-motion override regression, live speed, stopped playback, scramble, constrained-stage playback and Auto Solve delegation PASS');
 }
 console.log('All cube sizes and Mirror: camera-aligned outer face labels, opposite camera view, and label selection PASS');

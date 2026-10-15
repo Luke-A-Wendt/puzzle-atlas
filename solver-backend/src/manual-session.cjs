@@ -7,6 +7,8 @@
 const {normalize,verify,permutation,validateOptions}=require('./index.cjs');
 const {modelSignature}=require('./full-solve.cjs');
 const {CachedSwapSolver}=require('./cached-swap.cjs');
+const {ColorCompensationSearch}=require('./color-compensation.cjs');
+const {pairOperations,macroIndex}=require('./macro-index.cjs');
 const STAGES=[3000,10000,30000,60000],MAX_MS=60000;
 
 class ManualSwapSession {
@@ -17,6 +19,7 @@ class ManualSwapSession {
   this.completedRadius=0;this.catalogIndex=0;this.catalogOperations=0;this.catalogBest=null;
   this.cachedAttempts=0;this.cachedLastBudget=0;this.cachedReason=null;this.cachedRetry=false;
   this.initialized=false;this.catalogDone=false;this.bfsStopped=null;this.result=null;
+  this.compensation=null;this.compensationBytes=0;this.compensationDone=true;
   const started=this.clock();
   try{
    validateOptions(options);this.request=normalize(model,request);
@@ -35,12 +38,12 @@ class ManualSwapSession {
  }
  _retainedCacheBytes(){
   const p=this.cachedSolver?.prepared;
-  return p?(p.cacheStorage+p.generators.length*(this.model.degree*4+128)):0;
+  return this.compensationBytes+(p?(p.cacheStorage+p.generators.length*(this.model.degree*4+128)):0);
  }
  _bytes(){return (this.inverseBytes??0)+this.records.length*(this.bytesPerState??0);}
- _stats(){return {method:'resumable_preimage_tuple_bfs',searchStates:this.records.length,transitions:this.transitions,completedRadius:this.completedRadius,bytesPerState:this.bytesPerState,estimatedBytes:this._bytes()+this._retainedCacheBytes(),catalogOperations:this.catalogOperations,cachedAttempts:this.cachedAttempts,cachedReason:this.cachedReason};}
+ _stats(){return {method:'resumable_preimage_tuple_bfs',searchStates:this.records.length,transitions:this.transitions,completedRadius:this.completedRadius,bytesPerState:this.bytesPerState,estimatedBytes:this._bytes()+this._retainedCacheBytes(),catalogOperations:this.catalogOperations,cachedAttempts:this.cachedAttempts,cachedReason:this.cachedReason,compensationTests:this.compensation?.tests??0,compensationComplete:this.compensationDone};}
  _metadata(resumed,terminalReason){
-  const canContinue=!this.result&&this.budgetMs<MAX_MS&&(!this.bfsStopped||!this.catalogDone||this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry));
+  const canContinue=!this.result&&this.budgetMs<MAX_MS&&(!this.bfsStopped||!this.catalogDone||!this.compensationDone||this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry));
   return {budgetMs:this.budgetMs,elapsedMs:this.elapsedMs,states:this.records.length,transitions:this.transitions,completedRadius:this.completedRadius,canContinue,nextBudgetMs:canContinue?(STAGES.find(n=>n>this.budgetMs)??MAX_MS):null,resumed,...(terminalReason?{terminalReason}:{})};
  }
  _finish(result){
@@ -65,11 +68,21 @@ class ManualSwapSession {
   else {this.records.push({tuple:this.initial,parent:-1,move:-1,depth:0});this.seen.add(this.initial.join(','));}
   const c=this.catalog;
   if(!c||c.kind!=='color-macros'||c.schemaVersion!==1||c.degree!==d||c.modelSignature!==modelSignature(this.model)||!Array.isArray(c.operations))this.catalogDone=true;
+  else{this.catalogCandidates=pairOperations(c,...req.swap);this.catalogIndexBytes=macroIndex(c).estimatedBytes;}
+  const cache=this.options.fullCache;
+  if(this.options.constructive!==false&&req.holdSemantics==='color'&&req.protection==='endpoint'&&cache?.complete===true&&Array.isArray(cache.levels)){
+   // Reserve the worst-case lazy inverse tables and a word expansion workspace
+   // before retaining this optional fallback. Small memory budgets simply skip it.
+   const bytes=cache.levels.reduce((n,l)=>n+l.entries.length*(d*4+160),0)+cache.words.length*96+d*64;
+   if(bytes+this._bytes()+this.bytesPerState<this.maxBytes/2){
+    try{this.compensation=new ColorCompensationSearch(this.model,req,cache,{maxOutputMoves:this.maxOutputMoves});this.compensationBytes=bytes;this.compensationDone=false;}catch(_){}
+   }
+  }
  }
  _catalogStep(){
   const req=this.request,c=this.catalog;
-  if(this.catalogIndex>=c.operations.length){this.catalogDone=true;return;}
-  const op=c.operations[this.catalogIndex++];this.catalogOperations++;
+  if(this.catalogIndex>=this.catalogCandidates.length){this.catalogDone=true;return;}
+  const op=this.catalogCandidates[this.catalogIndex++];this.catalogOperations++;
   if(!op||!Array.isArray(op.word)||!op.word.length||op.word.length>this.maxOutputMoves||this.catalogBest&&op.word.length>=this.catalogBest.length||!Array.isArray(op.support)||op.support.length%2)return;
   const [a,b]=req.swap,held=new Set(req.protected);let pa=a,pb=b,matches=true;
   for(let i=0;i<op.support.length;i+=2){
@@ -78,7 +91,7 @@ class ManualSwapSession {
    if(req.holdSemantics==='color'?held.has(dest)&&req.colorByNode[source]!==req.colorByNode[dest]:held.has(source)&&source!==dest){matches=false;break;}
   }
   if(matches&&pa===b&&pb===a&&verify(this.model,req,op.word)){
-   this.catalogBest=op.word.slice();if(op.word.length===1)this.catalogDone=true;
+   this.catalogBest=op.word.slice();this.catalogDone=true;
   }
  }
  _goal(tuple){
@@ -139,6 +152,12 @@ class ManualSwapSession {
    else if(r.status==='impossible'&&!(this.request.holdSemantics==='color'&&this.request.protected.length))this._finish(r);
   }catch(error){this.cachedReason='cached_backend_error';this.cachedRetry=false;}
  }
+ _compensationAttempt(availableMs){
+  if(this.compensationDone||availableMs<1)return;
+  const scan=this.compensation.advance({maxMs:Math.min(250,availableMs)});
+  this.compensationDone=scan.done;
+  if(scan.result)this._finish(scan.result);
+ }
  advance({budgetMs=STAGES[0],onProgress}={}){
   if(!Number.isSafeInteger(budgetMs)||budgetMs<1||budgetMs>MAX_MS)throw Error('budgetMs must be an integer from 1 to 60000');
   const resumed=this.advances++>0;this.budgetMs=Math.max(this.budgetMs,budgetMs);
@@ -157,6 +176,9 @@ class ManualSwapSession {
     progress(true);
     while(!this.result&&!this.catalogDone&&remaining()>0){this._catalogStep();progress(false);}
     if(!this.result&&this.catalogDone&&this.catalogBest)this._finish({status:'solved',moveIndices:this.catalogBest,optimal:this.catalogBest.length===1,lowerBound:1,method:'manual_short_catalog'});
+    // This persistent scan checks only O(d^2) same-color compensators against
+    // the complete group chain, never full configurations. A miss stays unknown.
+    if(!this.result&&this.catalogDone&&!this.compensationDone&&remaining()>0){this._compensationAttempt(remaining());progress(false);}
     // Try short primitive solutions before expanding a potentially long cache
     // word. This probe uses exactly the same persistent frontier as later work.
     if(!this.result&&this.catalogDone&&this.cachedPossible&&!this.cachedAttempts&&!this.bfsStopped&&remaining()>0){
@@ -173,7 +195,7 @@ class ManualSwapSession {
   let terminalReason;
   if(this.result)terminalReason=this.result.status==='solved'?'solved':this.result.status==='impossible'?'exhausted':this.result.reason;
   else if(this.budgetMs>=MAX_MS){terminalReason=this.bfsStopped??'time_limit';this._finish({status:'unknown',reason:terminalReason});}
-  else if(this.bfsStopped&&this.catalogDone&&!(this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry))){terminalReason=this.bfsStopped;this._finish({status:'unknown',reason:terminalReason});}
+  else if(this.bfsStopped&&this.catalogDone&&this.compensationDone&&!(this.cachedPossible&&(!this.cachedAttempts||this.cachedRetry))){terminalReason=this.bfsStopped;this._finish({status:'unknown',reason:terminalReason});}
   const metadata=this._metadata(resumed,terminalReason);
   return {...(this.result??{status:'unknown',reason:'manual_search_paused',optimal:false}),lowerBound:this.result?.lowerBound??this.completedRadius+1,stats:{...this.result?.stats,...this._stats(),totalMs:this.elapsedMs},search:metadata};
  }

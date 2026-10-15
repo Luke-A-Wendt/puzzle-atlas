@@ -28,7 +28,7 @@ window.FTO_GUIDES={fto:{
  title:'Solve the Face-turning Octahedron',
  intro:'Solve the two-color edges, place and orient the four-color vertices, then finish the small centers. The move builders cover every case in this game’s fixed frame: choose the slots you need, and follow the displayed moves.',
  notation:[
-  'A face letter <strong>A–H</strong> means one 120° clockwise turn, viewed directly from outside that face. A prime <strong>′</strong> means counterclockwise. Use the game’s <strong>Notation moves</strong> controls and inverse option to enter these moves. Ring left/right describes screen motion and is not the notation convention.',
+  'A face letter <strong>A–H</strong> means one 120° clockwise turn, viewed directly from outside that face. A prime <strong>′</strong> means counterclockwise. Select the named axis below either panel and use <strong>Turn left</strong> or <strong>Turn right</strong>; each arrow’s tooltip names its notation move. Left/right describes ring-map motion and is not the notation convention.',
   '<strong>Am, Bm, Cm and Dm</strong> turn only the middle slice parallel to the named face. The center stage uses <strong>Bm</strong>, clockwise as seen from face B, and <strong>Bm′</strong>, its inverse. A center-slice move does not include the outer face.',
   'Dragging the 3D view changes only your viewpoint. The face letters, slot labels and move directions stay fixed. You never need to rename the faces to use this guide.',
   'Run all three parts of a builder—<strong>Set up → Do/Cycle → Restore</strong>—before judging its effect. Pieces may leave solved positions temporarily. The restore moves are part of the algorithm.'

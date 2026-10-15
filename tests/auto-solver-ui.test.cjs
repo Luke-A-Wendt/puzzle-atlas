@@ -84,23 +84,27 @@ test('Auto Solve opens the ring panel and enables constrained mode before state-
   app.workers[0].reply(payload);await app.settle();app.assertSolved();
 });
 
-test('each completed constrained stage locks its solved nodes and pauses before the next stage',async()=>{
-  const app=host();await app.scramble();await app.start();const payload=app.stagedReply();
+test('each completed constrained stage locks its goal-matching colors and pauses before the next stage',async()=>{
+  const app=host();await app.scramble(['U','D']);await app.start();const payload=app.stagedReply([["U'"],["D'"]]);
+  const checkpoint=payload.result.stages[0];
   assert.equal(app.core().verifyAutoPlan(app.model,app.snapshot(),payload.result),true);
   app.workers[0].reply(payload);await app.flush();
+  const initialVisual=app.ui().visualState(),initialState=app.ui().state();
+  assert.deepEqual(clean(initialVisual),{active:true,auto:true,held:clean(initialState.held),pair:clean(initialState.pair)});assert.equal(initialVisual.pair.length,2,'auto stage exposes both moving sticker markers');
   for(let i=0;i<100&&app.ui().state().auto?.completed!==1;i++)await app.advance(20);
   const state=app.ui().state();assert.equal(state.auto.completed,1);assert.equal(app.runCalls.length,1);
-  const expected=[...payload.result.stages[0].protectedNodes,...payload.result.stages[0].newlySolvedNodes].sort((a,b)=>a-b);
+  assert.deepEqual(clean(app.ui().visualState()),{active:true,auto:true,held:clean(state.held),pair:[]},'between stages the completed pair clears while secured-node borders remain');
+  const expected=[...checkpoint.protectedNodes,...checkpoint.newlySolvedNodes].sort((a,b)=>a-b);
   assert.deepEqual(clean(state.auto.lockedNodes).sort((a,b)=>a-b),expected);
   const map=app.core().mapSnapshot(app.model,app.snapshot());
-  for(const node of state.auto.lockedNodes){const id=map.nodeToSticker[node];assert.equal(app.home[id],node,'only solved constrained nodes are highlighted');}
+  for(const node of state.auto.lockedNodes){const id=map.nodeToSticker[node],homeId=Object.keys(app.home).find(id=>app.home[id]===node);assert.equal(app.model.colorBySticker[id],app.model.colorBySticker[homeId],'only goal-matching colors are highlighted');}
   const completedAt=app.now();await app.advance(350);assert.equal(app.runCalls.length,1,'stage pause is visible');
   await app.advance(200);assert.equal(app.runCalls.length,2);assert(app.runCalls[1].at-completedAt>=450);
   await app.settle();app.assertSolved();
 });
 
 test('top Stop stays visible between steps and exits immediately at a completed step',async()=>{
-  const app=host();await app.scramble();await app.start();app.workers[0].reply(app.stagedReply());await app.flush();
+  const app=host();await app.scramble(['U','D']);await app.start();app.workers[0].reply(app.stagedReply([["U'"],["D'"]]));await app.flush();
   for(let i=0;i<100&&app.ui().state().auto?.completed!==1;i++)await app.advance(20);
   assert.equal(app.element('pause').hidden,false);assert.equal(app.element('pause').textContent,'Stop');
   app.click('pause');await app.advance(5000);assert.equal(app.runCalls.length,1);
@@ -122,7 +126,7 @@ test('cancelled, stale, and forged Auto Solve plans never start playback',async(
   for(const scenario of ['cancelled','stale','forged','fingerprint']){
     const app=host();await app.scramble();await app.start();const worker=app.workers[0],payload=app.stagedReply();
     if(scenario==='cancelled')app.ui().cancel();
-    if(scenario==='stale'){app.original.move('F');await app.finishMotion();}
+    if(scenario==='stale'){app.original.runMoves(['F']);await app.finishMotion();}
     if(scenario==='forged'){payload.result.stages[0].moveIndices=[0];payload.result.moveIndices=payload.result.stages.flatMap(s=>s.moveIndices);}
     if(scenario==='fingerprint')payload.modelFingerprint='stale-model';
     worker.reply(payload,true);await app.advance(1000);assert.equal(app.runCalls.length,0,scenario+' must execute no automatic moves');
@@ -149,21 +153,21 @@ test('a constrained Auto Solve stage longer than 300 moves is fully verified and
   assert.equal(app.core().verifyAutoPlan(app.model,app.snapshot(),payload.result),true);
   app.workers[0].reply(payload);await app.settle(1800);app.assertSolved();
   assert.equal(app.runCalls.reduce((sum,call)=>sum+call.moves.length,0),322);
-  assert(app.runCalls.every(call=>call.moves.length<=300));assert.deepEqual(app.runCalls.map(call=>call.moves.length),[300,21,1]);
+  assert(app.runCalls.every(call=>call.moves.length<=300));assert.deepEqual(app.runCalls.map(call=>call.moves.length),[300,21,1],'long stages chunk at 300 moves without merging the next incremental stage');
 });
 
-test('Auto Solve leaves mirror difficulty so the ring-map solver is visible',async()=>{
+test('Auto Solve preserves mirror difficulty while opening its silver ring-map solver',async()=>{
   const app=host('mirror');await app.scramble();app.click('ringPanelHide');app.click('mirrorMode');
   assert.equal(app.snapshot().mirrorMode,true);await app.start();
-  assert.equal(app.snapshot().mirrorMode,false);assert.equal(app.element('ringPanel').hidden,false);
+  assert.equal(app.snapshot().mirrorMode,true);assert.equal(app.element('ringPanel').hidden,false);assert.equal(app.element('csShowGoal').hidden,true);
   assert.equal(app.document.body.classList.contains('rings-collapsed'),false);assert.equal(app.ui().state().active,true);
   assert.equal(app.workers.at(-1).request.task,'full-solve');app.ui().cancel();
 });
 
-test('all 34 puzzle pages route Auto Solve to full-state constrained planning',async()=>{
+test('all catalog puzzle pages route Auto Solve to full-state constrained planning',async()=>{
   const manifest=JSON.parse(fs.readFileSync(path.join(games,'constrained-solver-models/manifest.json'),'utf8'));
   const ids=Array.isArray(manifest)?manifest.map(x=>x.id):manifest.models?.map(x=>x.id)||manifest.puzzles?.map(x=>x.id);
-  assert.equal(ids.length,34);
+  assert.equal(new Set(ids).size,ids.length);for(const id of ['axis','cube9','cube10'])assert(ids.includes(id),id+' must be covered by native Auto Solve routing');
   for(const id of ids){
     const app=host(id);
     // U only rearranges same-colored cap pieces on the three-band Diamond;
@@ -187,8 +191,39 @@ test('an external move during the inter-stage gap stops stale playback without h
   const app=host();await app.scramble();await app.start();app.workers[0].reply(app.stagedReply());await app.flush();
   for(let i=0;i<100&&app.ui().state().auto?.completed!==1;i++)await app.advance(20);
   assert.equal(app.ui().state().phase,'auto-gap');app.element('speed').value='1';app.element('speed').dispatch('input');
-  assert.equal(app.original.move('F'),true);await app.advance(550);await app.advance(2000);await app.advance(2000);
+  assert.equal(app.original.runMoves(['F']),true);await app.advance(550);await app.advance(2000);await app.advance(2000);
   assert.equal(app.runCalls.length,1,'no automatic next stage can use a changed starting state');
   assert.equal(app.ui().state().auto,null,'a stale auto job must stop instead of waiting forever');
   assert.equal(app.ui().state().phase,'selecting');
+});
+
+test('clicking Constrained Solver during Auto Solve finishes the current stage then stays in manual solver mode',async()=>{
+  const app=host();await app.scramble();await app.start();const payload=app.stagedReply();
+  app.workers[0].reply(payload);await app.advance(20);app.click('constrainedSolverToggle');
+  assert.equal(app.ui().state().auto?.active,true);await app.settle();
+  const state=app.ui().state();assert.equal(app.runCalls.length,1,'must finish only the current stage');assert.equal(state.active,true);assert.equal(state.phase,'selecting');assert.equal(state.auto,null);assert.deepEqual(clean(state.pair),[]);assert.equal(app.ui().autoStopActive(),false);assert.equal(String(app.element('speed').value),'1');assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'all');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),true);
+  assert.equal(app.element('constrainedSolverToggle').getAttribute('aria-pressed'),'true');assert.equal(app.element('csSuggestHolds').hidden,false);
+  const map=app.core().mapSnapshot(app.model,app.snapshot());for(const id of state.held)assert.equal(map.stickerToNode[id],app.home[id]);
+});
+
+test('Auto Solve preserves small verified stages instead of grouping incidental matches into a long opening run',async()=>{
+  const app=host('cube5');let seed=9173;const names=[];
+  for(let k=0;k<19;k++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;names.push(app.model.moves[seed%app.model.moves.length].name);}
+  await app.scramble(names);await app.start();const payload=await app.payload(),plan=payload.result;
+  assert.equal(plan.status,'solved',plan.reason);assert(app.core().verifyAutoPlan(app.model,app.snapshot(),plan));
+  const regrouped=app.core().groupGuidedPlan(app.model,app.core().autoRequestFromSnapshot(app.model,app.snapshot()),plan);
+  assert(plan.stages.length>20,'fixture has many independent secured placements');
+  assert(regrouped.stages[0].moveIndices.length>300,'fixture reproduces the excessive old opening checkpoint');
+  assert(plan.stages[0].moveIndices.length<10,'the native first placement is short');
+  const goalBefore=app.core().solvedProgress(app.model,app.snapshot()).solvedCount;
+  assert(goalBefore>plan.initialProtectedNodes.length,'accidental correct colors are not automatically protected');
+  app.workers[0].reply(payload);await app.flush();
+  assert.equal(app.ui().state().auto.totalStages,plan.stages.length);
+  assert.deepEqual(app.runCalls[0].moves,plan.stages[0].moveIndices.map(i=>app.model.moves[i].engineMove));
+  assert.equal(app.element('csAutoProgressBar').value,plan.initialProtectedNodes.length,'upper bar starts at the verified prefix, not accidental goal matches');
+  for(let i=0;i<100&&app.ui().state().auto.completed!==1;i++)await app.advance(20);
+  const locked=app.ui().state().auto.lockedNodes.length;
+  assert.equal(app.ui().state().auto.completed,1);assert.equal(app.element('csAutoProgressBar').value,locked);assert(locked>plan.initialProtectedNodes.length);
+  assert.equal(app.runCalls.length,1,'a visible pause follows the small first stage');
+  app.ui().stopAuto();await app.advance(0);assert.equal(app.ui().state().active,false);
 });

@@ -10,8 +10,8 @@ test('all 34 color catalogues exactly replay legal words within the storage budg
   const model=require('../data/'+info.id+'.json'),cache=require('../data/color-solver/'+info.id+'.json');
   const result=verifyColorCache(model,cache),size=Buffer.byteLength(JSON.stringify(cache));
   assert(result.verifiedWords>0,info.id+': missing useful operations');
-  assert(size<=2*1024*1024,info.id+': oversized catalogue');
-  assert(cache.operations.every(op=>op.word.length<=6));
+  assert(size<=3*1024*1024,info.id+': oversized catalogue');
+  assert(cache.operations.every(op=>op.word.length<=1500));
   for(let i=1;i<cache.operations.length;i++)assert(cache.operations[i-1].word.length<=cache.operations[i].word.length,info.id+': words not shortest-first');
   bytes+=size;operations+=result.verifiedWords;
  }

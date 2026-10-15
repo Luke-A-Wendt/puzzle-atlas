@@ -4,6 +4,8 @@
 
 The algorithm below is the complete identity-correct baseline. Supported fixed, fully occupied color puzzles now receive a bounded verified post-pass that removes color loops, adds one-move edges along the witnessed route and merges stages with no new secured colors. Shape/picture models keep the strict goal. Color plans declare `goalSemantics: 'colors'`, preserve colors at secured stage endpoints, and may use different sticker identities there. They never increase baseline move or stage count. See [`COLOR_SOLVER.md`](COLOR_SOLVER.md) for the complete second-pass algorithm and verification contract.
 
+The website plays these verified incremental placement stages directly. It does not regroup them to preserve every incidental goal-color match: that stricter condition can merge dozens of short stages into one hundreds-move sequence. Each stage preserves its declared secured prefix and adds newly solved nodes; the upper Auto Solve bar counts that prefix. The footer separately measures actual goal overlap, held steady during each sequence and recomputed at its endpoint, rounded down to a whole number (100% only for the complete goal). Incidental matches outside the secured prefix may be lost between stages, so the footer is not monotonic. Solver Stop finishes only the active primitive turn and cancels the remaining word, clearing held and numbered selections. The resulting prefix is legal but need not satisfy the stage endpoint constraints. Randomize and replay stop at the last committed turn. `guided-plan.cjs` remains an optional explicitly requested backend grouping API; normal Auto Solve does not invoke it.
+
 ## API
 
 ```js

@@ -22,11 +22,16 @@ for(const type of ['rhombic','flatdiamond','cornerocta','trajber','pyramorphix']
  api.reset();api.runMoves("R U F' L2 B");app.complete();app.click('pieceLabels');app.frame(0);
  assert.equal(app.elements.get('pieceLabels').attributes['aria-pressed'],'true');
  const reference=engine.create(type);for(const move of ['R','U',"F'",'L2','B'])reference.applyMove(move);
- const G=app.context.ShapeRings.create(reference),views=G.views(),w=500,h=500,scale=Math.min((w-20)/500,(h-24)/500),cx=w/2-250*scale,cy=h/2-250*scale;
+ const views=app.context.ShapeRings.create(reference).views();
  for(const piece of reference.pieces){
   let point=views.find(v=>v.piece.id===piece.id);
   assert(point,'every real piece, including tips, has a sticker node');
-  ring.dispatch('pointerdown',{clientX:cx+point.x*scale,clientY:cy+point.y*scale});ring.dispatch('pointerup',{clientX:cx+point.x*scale,clientY:cy+point.y*scale});app.frame(0);
+  // The connected map computes its viewport from the current geometry. Use
+  // the production bridge's current node pose rather than a historical scale.
+  const node=app.context.PUZZLE_SOLVER_BRIDGE.nodes().find(n=>String(n.stickerId)===String(point.id)),bounds=ring.getBoundingClientRect();
+  assert(node,'every real sticker is exposed by the live ring map');
+  const pointer={clientX:bounds.left+node.x,clientY:bounds.top+node.y};
+  ring.dispatch('pointerdown',pointer);ring.dispatch('pointerup',pointer);app.frame(0);
   const text=app.elements.get('pieceInfo').textContent,home=piece.name||original.slotName(piece.home),slot=original.slotName(piece.pos),orientation=app.context.ShapeGuideOrientation.describe(piece);
   assert(text.startsWith(home+' → '+slot+' · '),'inspect correct piece '+type+' '+home+': '+text);
   assert(text.includes(orientation),'orientation readable '+type+' '+home);

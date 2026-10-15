@@ -162,7 +162,7 @@ ${table(['Operation or storage','Cost of this implementation'],[
 ['Serialized cache','O(N(R−r)+W+r) numeric entries: full nonidentity transporter arrays, shared words and base/level metadata.'],
 ['Full-base worst case','r=N, r<sub>i</sub>≤N−i, hence R≤N(N+1)/2. Explicit transporter storage can be cubic in N; it is not automatically linear.']])}
 <p>These costs use permutation degree, not configuration count. They do not guarantee small worst-case runtime for this bounded implementation. Generator growth, closure passes and expanded words remain practical constraints.</p>
-<p>The group context defaults to 2 seconds, 2,000 strong generators, 300,000 DAG nodes, 3,000,000 Schreier tests, 100,000 accumulated unweighted orbit states, 20,000 output moves and estimated 64 MiB storage. Full precomputation overrides these to 30 seconds, 5,000 generators, 500,000 DAG nodes, 20,000,000 Schreier tests, 100,000 representative output moves and estimated 160 MiB. Callers may override them. The offline batch uses 60 seconds for most puzzles; 7×7 and 8×8 use the unweighted builder, 150 seconds and estimated 192 MiB.</p>
+<p>The group context defaults to 2 seconds, 2,000 strong generators, 300,000 DAG nodes, 3,000,000 Schreier tests, 100,000 accumulated unweighted orbit states, 20,000 output moves and estimated 64 MiB storage. Full precomputation overrides these to 30 seconds, 5,000 generators, 500,000 DAG nodes, 20,000,000 Schreier tests, 100,000 representative output moves and estimated 160 MiB. Callers may override them. The offline batch uses 60 seconds for most puzzles; 7×7×7 and 8×8×8 use the unweighted builder, 150 seconds and estimated 192 MiB.</p>
 <p>Storage checks are accounting estimates, not measured browser heap use. Unweighted construction checks accumulated orbit states and estimated allocations; weighted construction also estimates the chain footprint after rebuilding. Time checks are cooperative, not hard real-time deadlines. A guard produces <code>unknown</code>, with reasons including <code>time_limit</code>, <code>storage_limit</code>, <code>strong_generator_limit</code>, <code>word_dag_limit</code>, <code>schreier_test_limit</code>, <code>orbit_storage_limit</code> or expansion/output limits.</p>
 `)}
 `, 'Build exact address orbits and legal transporter words until every Schreier residual reduces to identity.');
@@ -312,8 +312,60 @@ sort retained operations by wordLength, then movedNodeCount
 independently replay every word and compare its entire sparse support
 write signature-bound catalog and verification report`)}
 <p>For N addresses and m primitives, the algebraic word families require O(m²N) array work, before sorting and bounded retention. The optional depth-four enumeration is deliberately limited to m≤16 and does not grow with scramble length. Deduplication is by the complete resulting permutation, not color pattern or support size. Tie-breaking may choose any shortest encountered legal word; the catalog is not exhaustive over all words up to six moves.</p>
-<p>Regenerate with <code>node solver-backend/tools/precompute-color.cjs</code>, verify with <code>node solver-backend/tools/verify-color-precompute.cjs</code>, then rebuild the browser bundle. Schema version 1 uses <code>kind:'color-macros'</code>, <code>modelId</code>, <code>modelSignature</code>, <code>degree</code>, and <code>operations:[{word,support}]</code>. Every model signature must match the primitive permutations. The all-puzzle build imposes a 20 MiB aggregate catalog cap. Only the selected puzzle's catalog is loaded.</p>
-<p>The current 34-model catalog contains 30,955 independently replayed operations, totals 10,495,834 raw JSON bytes, and uses words of at most six moves. These are legal witnesses available for many possible color states, not stored configurations. A missing operation cannot prove impossibility.</p>
+<p>Regenerate with <code>node solver-backend/tools/precompute-color.cjs</code>, verify with <code>node solver-backend/tools/verify-color-precompute.cjs</code>, then rebuild the browser bundle. Schema version 1 uses <code>kind:'color-macros'</code>, <code>modelId</code>, <code>modelSignature</code>, <code>degree</code>, and <code>operations:[{word,support}]</code>. Every model signature must match the primitive permutations. The original short-word build imposes a 20 MiB aggregate cap; the verified conjugacy extension below allows at most 24 MiB for the final catalogs. Only the selected puzzle's catalog is loaded.</p>
+<p>The final 34-model catalog contains 70,014 independently replayed operations, totals 15,506,236 raw JSON bytes, and has a longest retained word of 25 moves. This combines the initial short-word families, exact double-swap witnesses, and the bounded conjugacy extension below. These are legal witnesses available for many possible color states, not stored configurations. A missing operation cannot prove impossibility.</p>
+`)}
+${subsection('tech-catalog-conjugacy','Expand useful operations by sparse conjugacy',`
+<p>An operation useful at one set of addresses can be moved to a different set by a legal setup. Let W be its source-to-destination permutation and Q one legal primitive. The matrix product C = Q W Q⁻¹ maps Q(s) to Q(t) whenever W maps s to t. Its chronological word is <code>[Q⁻¹, word(W), Q]</code>. Consequently the cycle structure is unchanged, and the candidate support can be computed by relabeling only the moved source/destination pairs. The order of the inverse is essential.</p>
+${code('EXPAND-SPARSE-CONJUGATES',`require an inverse primitive index for every allowed move
+original := map from canonical sparse support to existing operation
+minimumSupport := smallest number of support integers in original
+seedPool := operations with supportLength <= max(minimumSupport,24)
+            and wordLength <= 40 - 2*2
+sort seedPool by wordLength, then supportLength; keep at most 128
+queue := these seeds with depth 0; discovered := empty support map
+for each queued operation W, while expansionCount < 6000:
+  if W.depth == 2: skip
+  for each primitive Q, while expansionCount < 6000:
+    support := sort pairs (Q[s],Q[t]) for every stored pair (s,t) in W
+    word := [inverseIndex(Q)] ++ W.word ++ [index(Q)]
+    skip if original or discovered has this same support at no greater cost
+    retain candidate at depth W.depth+1
+    enqueue it only if its depth < 2
+rank candidates by supportLength + 2*wordLength, then stable tie-breaks
+for each candidate within 2000 new words and 256 KiB net added bytes:
+  independently replay all legal primitives
+  assert replay's full sparse support equals candidate.support
+  if same support already stored: replace only with a shorter word
+  else append this verified new witness
+sort final operations by wordLength, supportLength and support key
+verify every resulting catalog; enforce 24 MiB aggregate serialized size`)}
+<p>The two depth limits count setup layers around an already-known operation, not scramble depth. If s support pairs move, one relabeling takes O(s) array lookups plus O(s log s) canonical sorting. Candidate full-word replay costs O(NL) for N model addresses and L primitive moves. Queue expansion, retention and bytes are explicitly capped. Nothing enumerates all puzzle configurations or all possible held sets. Old witnesses are retained unless an exactly equal permutation has a shorter verified expression.</p>
+<p>This extension added 36,299 operations and shortened 284 existing expressions. It does not make the catalog exhaustive, and a catalog miss remains unknown. Run <code>node solver-backend/tools/expand-color-conjugates.cjs</code> after the short-word and exact-double-swap precomputations; then verify catalogs and rebuild the browser bundle.</p>
+`)}
+${subsection('tech-catalog-index','Index witnesses by their actual exchanged pair',`
+<p>Manual requests select only two addresses. Scanning operations that do not exchange those addresses wastes work. Build an index once for each immutable loaded catalog: the unordered pair key is min(a,b)·N + max(a,b). An operation may appear under several keys because it may contain several disjoint two-cycles.</p>
+${code('BUILD-PAIR-INDEX and LOOKUP',`byPair := empty map
+for each operation op:
+  map := its sparse source-to-destination support
+  reject malformed support as an index entry
+  for each source a and destination b in map:
+    if a < b and map[b] == a:
+      append op to byPair[a*N+b]
+for each pair list: sort by wordLength, then supportLength
+memoize index for this immutable catalog object and operation array
+
+LOOKUP(a,b,F,colors):
+  candidates := byPair[min(a,b)*N+max(a,b)] or empty list
+  for op in candidates, respecting the request budget:
+    test colors arriving at every active held destination
+    skip if any active hold fails
+    replay op.word against the authoritative primitive permutations
+    verify the complete support, both selected identities and every hold
+    return first valid witness, or continue after an invalid declaration
+  return NO_CATALOG_WITNESS // not an impossibility proof`)}
+<p>If S is total sparse-support size and kₚ is the number of operations indexed for pair p, construction costs O(S + ∑ₚ kₚ log kₚ), assuming constant-time hash operations. Storage is proportional to the total indexed two-cycles plus pair-map entries. A later request tests only k₍ₐ,ᵦ₎ candidates, rather than every catalog operation. The first fully verified acceptable candidate has minimum stored word length in this list, not necessarily minimum legal distance. A time-limited scan has no such global claim. Progressive sessions retain the index and their candidate cursor; changing the request invalidates the session.</p>
+<p>The implementation charges an estimate of 16 bytes per pair-to-operation entry plus 96 bytes per pair-map entry. This is a guard, not a browser heap measurement. A full permutation declaration never becomes trusted merely because it was indexed: replay and endpoint verification remain required. The index is <code>src/macro-index.cjs</code>; it is built lazily, not downloaded as a separate table.</p>
 `)}
 ${subsection('tech-shorten-local','Local equal-permutation rewrites',`
 <p>Three reductions are distinct. DAG expansion cancels adjacent inverse primitives. Weighted-chain normalization builds an <i>m</i> × <i>m</i> table and replaces adjacent pairs equal to identity or one available primitive, in a left-to-right stack pass. The runtime shortener examines longer windows using a dictionary of identity, all one-move products and all two-move products.</p>
@@ -400,6 +452,12 @@ ${code('IMPROVE: replace a transporter and sift the displaced one',`IMPROVE(p,se
 <p>Defaults are 5 seconds; candidate length 600; pooled generator length 100; residual length 18; at most 12,000 generators; 2,000 random seeds with seed 123456789. The refinement runner instead uses seed 20261012, 3,000 seeds and 4 seconds for degree below 90 or 20 seconds otherwise. These are heuristic bounds, not limits on the legal group. The optimizer requires an inverse primitive for every move; otherwise it returns the unchanged cache.</p>
 <p>The acceptance gate evaluates changed DAG expressions, verifies their stored complete permutations, base-prefix fixation and destinations, and rejects any increase in representative word length. It also profiles 32 fixed legal scrambles, with depths cycling through 5, 10, 20, 30, 50 and 80. Accept only if some representative improves and the representative length bound, sample mean and sample 95th percentile do not worsen. Samples detect regressions; they do not prove globally shortest words or a universal average-case claim.</p>
 <p>Cache sharing between puzzles first requires equal degrees, identical move arrays in identical order and equal bases. Import only shorter compatible representatives, offset signed DAG references, compact reachable nodes, then repeat exact verification and benchmark gating. Similar geometry or colors alone are insufficient.</p>
+`)}
+${subsection('tech-measured-refinement','Measured improvements and their limits',`
+<p>The recorded refinement revisited the previous 34-puzzle catalog. Eleven accepted cache updates shorten 828 stored representatives while retaining complete orbit coverage and passing the same permutation/base-prefix checks. The deterministic benchmark uses 32 fixed scrambles per model at several depths: its total primitive count falls from 297,638 to 285,800, a 3.98% reduction. These samples measure the baseline constructive words; they are not a theorem that every scramble, every device, or every constrained request improves.</p>
+<p>A separate constructed-request benchmark compares the old and enlarged catalogs. It finds 1,176 newly ready requests across 33 puzzles and 18 shorter ready answers among 1,249 tested extension cases. The cases were deliberately constructed from added legal operations, so this is a capability witness, not a representative success-rate estimate for arbitrary user selections.</p>
+<p>For 816 lookup cases across that 34-puzzle catalog, indexed lookup inspects 1,792 operations instead of 229,998. On the measured run, lookup CPU time falls from 47.2 ms to 43.2 ms in aggregate; one-time index construction adds 137.1 ms across the entire catalog. This setup cost is amortized across repeated requests. Lower candidate counts are robust; exact elapsed times are hardware- and load-dependent, and individual small requests can be slower. The unchanged constructive and bounded-search fallbacks remain available.</p>
+<p>Reproduction data are <code>solver-backend/data/full-solver/refinement-report.json</code>, <code>solver-backend/data/color-solver/conjugacy-report.json</code>, and <code>solver-backend/data/color-solver/index-benchmark.json</code>. All retained words still undergo independent playback verification. Faster lookup and more cached witnesses do not convert unknown requests into impossibility proofs or certify globally shortest words.</p>
 `)}
 ${subsection('tech-shorten-format','Serialization, model signature and coverage verification',`
 <p>A full cache contains <code>schemaVersion:1</code>, <code>status:"ready"</code>, model ID, degree, <code>modelSignature</code>, full base, levels, words, <code>complete:true</code> and statistics. <code>words[0]</code> is null. A leaf is <code>[moveIndex]</code>; concatenation is <code>[signedLeftRef,signedRightRef]</code>, with each absolute child reference preceding the parent. Each nonidentity level entry is <code>[destination,wordRef,permutationArray]</code>; the level-base identity entry is implicit.</p>

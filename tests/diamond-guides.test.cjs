@@ -70,3 +70,5 @@ test('Diamond Cube guide describes the actual 86 facelets and embeds every 3×3 
   assert(g.sources.some(s=>s.url.includes('americanhistory.si.edu')));
   assert(guides.diamondstyle.steps.some(s=>s.body.includes("L D' L'")));
 });
+
+test('Diamond guides use color goals and require no identity-label scaffolding',()=>{for(const guide of Object.values(guides)){const text=[...guide.notation,...guide.steps.map(s=>s.body)].join('');assert(text.includes('Tile identity labels are unnecessary'));assert(!/holds exact selected patches|Holding every green node by identity/.test(text));assert(/colors at selected|selected locations’ colors/.test(text));}});

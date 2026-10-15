@@ -4,10 +4,15 @@ const dist=path.resolve(__dirname,'../dist');
 const read=f=>fs.readFileSync(path.join(dist,f.split(/[?#]/)[0]),'utf8');
 const index=read('index.html'),play=read('play.html');
 const choices=[...index.matchAll(/class="puzzle-card"[^>]*data-family="([^"]+)"[^>]*href="([^"]+)"/g)].map(m=>({family:m[1],href:m[2].replaceAll('&amp;','&')}));
-assert.equal(choices.length,33);
-const families={tetrahedral:4,cubical:18,octahedral:7,dodecahedral:4};
+const catalogIds=JSON.parse(read('games/constrained-solver-models/manifest.json')).models.map(model=>model.id);
+const cardIds=choices.map(choice=>new URL(choice.href,'https://atlas.test').searchParams.get('p'));
+assert.equal(catalogIds.length,37);
+assert.deepEqual([...cardIds,'homer'].sort(),catalogIds.slice().sort(),'each shipped puzzle has exactly one atlas route, including secret Homer');
+for(const id of ['axis','cube9','cube10'])assert(cardIds.includes(id),id+' appears in the atlas');
+assert.equal(choices.length,catalogIds.length-1);
+const families={tetrahedral:4,cubical:21,octahedral:7,dodecahedral:4};
 for(const [family,count]of Object.entries(families))assert.equal(choices.filter(c=>c.family===family).length,count);
-assert.equal(new Set(choices.map(c=>new URL(c.href,'https://atlas.test').searchParams.get('p'))).size,33);
+assert.equal(new Set(cardIds).size,choices.length);
 assert.equal(choices.filter(c=>new URL(c.href,'https://atlas.test').searchParams.get('p')==='mirror').length,1);
 assert(index.includes('assets/mirror-color.png'));
 assert(!index.includes('assets/mirror.png'));
@@ -28,7 +33,7 @@ for(const file of walk(dist)){
  for(const match of source.matchAll(/<script>([\s\S]*?)<\/script>/g))new vm.Script(match[1],{filename:file});
 }
 function element(classes=''){
- const set=new Set(classes.split(' '));return {value:'',textContent:'',innerHTML:'',listeners:{},attributes:{},style:{setProperty(){}},focus(){},addEventListener(k,f){this.listeners[k]=f;},setAttribute(k,v){this.attributes[k]=v;},classList:{contains:k=>set.has(k),remove:k=>set.delete(k),toggle(k,force){const add=force??!set.has(k);add?set.add(k):set.delete(k);return add;}}};
+ const set=new Set(classes.split(' '));return {value:'',textContent:'',innerHTML:'',listeners:{},attributes:{},style:{setProperty(){}},focus(){},addEventListener(k,f){this.listeners[k]=f;},setAttribute(k,v){this.attributes[k]=v;},classList:{contains:k=>set.has(k),add:k=>set.add(k),remove:k=>set.delete(k),toggle(k,force){const add=force??!set.has(k);add?set.add(k):set.delete(k);return add;}}};
 }
 for(const choice of [...choices,{href:secret[1]}]){
  const url=new URL(choice.href.replaceAll('&amp;','&'),'https://atlas.test'),key=url.searchParams.get('p');
@@ -37,14 +42,36 @@ for(const choice of [...choices,{href:secret[1]}]){
  elements['solver-guide'].querySelector=s=>s==='.solver-guide-algorithm'?algorithm:null;
  elements['guide-sources'].closest=s=>s==='details'?references:null;
  elements['guide-scroll'].insertBefore=(node,before)=>{assert.equal(node,algorithm);assert.equal(before,references);algorithmMoved=true;};
- const skip=element(),tabs=element(),document={getElementById:id=>{assert(elements[id],`missing element ${id}`);return elements[id];},querySelector:s=>s==='meta[name="atlas-release"]'?{getAttribute:name=>name==='content'?(/<meta name="atlas-release" content="([^"]+)"/.exec(play)?.[1]||''):null}:s==='.skip-link'?skip:tabs,querySelectorAll:()=>[],addEventListener(){}};
- const context={document,location:{search:url.search,origin:url.origin},URLSearchParams,console,addEventListener(){}};context.window=context;vm.createContext(context);
+ const skip=element(),tabs=element(),document={getElementById:id=>{assert(elements[id],`missing element ${id}`);return elements[id];},querySelector:s=>s==='meta[name="atlas-release"]'?{content:(/<meta name="atlas-release" content="([^"]+)"/.exec(play)?.[1]||''),getAttribute:name=>name==='content'?(/<meta name="atlas-release" content="([^"]+)"/.exec(play)?.[1]||''):null}:s==='.skip-link'?skip:tabs,querySelectorAll:()=>[],addEventListener(){}};
+ document.documentElement=element(); const context={document,location:{search:url.search,origin:url.origin},URLSearchParams,console,addEventListener(){},setTimeout:()=>0,clearTimeout(){},requestAnimationFrame:fn=>fn()};context.window=context;vm.createContext(context);
  for(const match of play.matchAll(/<script src="([^"]+)"/g))vm.runInContext(read(match[1]),context,{filename:match[1]});
- assert(algorithmMoved,'algorithm chapter appears immediately before references');
+ assert(!algorithmMoved,'general algorithms have moved to the common handbook');
+ assert.equal(elements['solver-guide'].innerHTML,'','puzzle page omits repeated common material');
  assert(elements['guide-intro'].innerHTML.includes('<h3>'),`missing guide ${key}`);
  assert(elements['guide-steps'].innerHTML.includes('guide-step'),`missing steps ${key}`);
  const gameURL=new URL(elements['puzzle-frame'].src,'https://atlas.test/');assert.equal(gameURL.pathname,'/games/'+key+'.html');assert.equal(gameURL.searchParams.get('mirror'),url.searchParams.get('mirror')==='1'?'1':null);const release=/<meta name="atlas-release" content="([^"]+)"/.exec(play)?.[1];if(release)assert.equal(gameURL.searchParams.get('v'),release);
  assert.equal(document.title,elements['puzzle-title'].textContent+' — Puzzle Atlas');
+ if(/^cube\d+$/.test(key)){
+  const n=Number(key.slice(4)),name=`Cube ${n}×${n}×${n}`;
+  assert.equal(elements['puzzle-title'].textContent,name,key+' full dimensional name');
+  assert.equal(elements['puzzle-frame'].title,'Interactive '+name+' game');
+  assert(elements['guide-intro'].innerHTML.includes(name),key+' guide heading');
+  assert(elements['guide-intro'].innerHTML.includes(`${n}×${n}×${n} ·`),key+' method title');
+  const card=new RegExp('<a class="puzzle-card"[^>]*href="play\\.html\\?p='+key+'(?:&[^"]*)?"[\\s\\S]*?<\\/a>').exec(index)?.[0];
+  assert(card&&card.includes('aria-label="Play '+name+'"'),key+' accessible atlas name');
+  assert(card.includes('<h2>'+name+'</h2>'),key+' atlas heading');
+  assert(card.includes('alt="'+name+' puzzle"'),key+' preview alt text');
+  assert(read('games/'+key+'.html').includes('<title>'+n+'×'+n+'×'+n+' Cube'),key+' standalone title');
+ }
+ const help=/<p class="guide-how-to-link"><a href="([^"]+)"[^>]*target="_blank"[^>]*aria-label="([^"]+)"/.exec(play);
+ assert(help,key+' has illustrated help at the top of its guide');
+ assert(play.indexOf('class="guide-how-to-link"')<play.indexOf('id="guide-intro"'),key+' help precedes recipe');
+ assert(help[2].includes('new tab'),key+' announces preserved-game help navigation');
+ for(const base of ['https://atlas.test/play.html','https://atlas.test/puzzle-atlas/play.html','http://localhost:8000/dist/play.html']){
+  const href=new URL(help[1].replaceAll('&amp;','&'),base),expected=new URL('solver-handbook.html',base);
+  assert.equal(href.pathname,expected.pathname,key+' local nested help route');assert.equal(href.hash,'#how-to-play');
+ }
+
  assert(!play.includes('id="puzzle-select"'));
  assert(!elements['puzzle-title'].textContent.includes('axes'));
  assert(elements['play-layout'].classList.contains('guide-hidden'));
@@ -54,6 +81,6 @@ for(const choice of [...choices,{href:secret[1]}]){
 }
 const buttons=['all',...Object.keys(families)].map(filter=>Object.assign(element(),{dataset:{filter}}));
 const cards=choices.map(c=>Object.assign(element(),{dataset:{family:c.family}})),status=element();
-vm.runInNewContext(read('home.js'),{document:{querySelectorAll:s=>s==='[data-filter]'?buttons:cards,getElementById:()=>status}});
-for(const button of buttons){button.listeners.click();assert.equal(cards.filter(c=>!c.hidden).length,button.dataset.filter==='all'?33:families[button.dataset.filter]);assert.equal(button.attributes['aria-pressed'],'true');}
-console.log('Catalog: 33 main puzzles plus the secret Homer route, all assets/guides, filters, hidden-guide toggle and keyboard skip passed.');
+vm.runInNewContext(read('home.js'),{document:{querySelectorAll:s=>s==='[data-filter]'?buttons:s==='[data-family]'?cards:[],getElementById:()=>status}});
+for(const button of buttons){button.listeners.click();assert.equal(cards.filter(c=>!c.hidden).length,button.dataset.filter==='all'?choices.length:families[button.dataset.filter]);assert.equal(button.attributes['aria-pressed'],'true');}
+console.log('Catalog: '+choices.length+' main puzzles plus the secret Homer route, all assets/guides, filters, hidden-guide toggle and keyboard skip passed.');

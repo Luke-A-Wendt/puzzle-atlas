@@ -3,7 +3,7 @@
 const assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
 const {createHarness}=require('./game-harness.cjs');
 const {recorder,stickerMarks}=require('./connected-map-recorder.cjs');
-const names=['masterpyraminx','kilominx','ghost','cube2','cube3','cube4','cube5','cube6','cube7','cube8','diamondstyle','diamondcube','mirror','homer','pyraminx','tetraminx','megaminx','jing','skewb','masterskewb','ultimate','diamond','fto','crystal','dino','rainbow','rhombic','flatdiamond','cornerocta','trajber','jewel','pyramorphix','mastermorphix','helicopter'];
+const names=JSON.parse(fs.readFileSync(path.join(__dirname,'../dist/games/constrained-solver-models/manifest.json'),'utf8')).models.map(model=>model.id);
 let referenceCount=0;
 for(const name of names){
  const htmlPath=path.join(__dirname,'../dist/games',name+'.html'),html=fs.readFileSync(htmlPath,'utf8');
@@ -43,9 +43,9 @@ for(const name of names){
  app.complete();app.frame(0);const after=check('turned');
  assert(after.some(n=>{const old=before.find(x=>x.stickerId===n.stickerId);return Math.hypot(n.x-old.x,n.y-old.y)>1e-6;}),name+' identities follow the existing animation');
  if(api.setMirrorMode&&['mirror','pyramorphix','mastermorphix','ghost'].includes(name)){
-  assert.equal(api.setMirrorMode(true),true);app.frame(0);assert.equal(bridge.nodes().length,0,name+' hidden mirror map has no targets');api.setMirrorMode(false);app.frame(0);check('returned from mirror');
+  assert.equal(api.setMirrorMode(true),true);app.frame(0);assert.equal(bridge.nodes().length,after.length,name+' silver mirror map retains its targets');assert(bridge.nodes().every(n=>n.color==='#c9cdd3'));api.setMirrorMode(false);app.frame(0);check('returned from mirror');
  }
  console.log(name+': actual paint, sticker identity, unchanged controls, animation and CSS pixel mapping PASS');
 }
 assert(referenceCount>0,'stationary reference circles covered');
-console.log('All 34 puzzle bridges preserve the existing map and expose each physical sticker once.');
+console.log('All '+names.length+' puzzle bridges preserve the existing map and expose each physical sticker once.');

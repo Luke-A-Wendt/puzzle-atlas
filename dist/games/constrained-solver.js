@@ -7,7 +7,6 @@
   if (!panel || !rings) return;
   const head = panel.querySelector('.ring-panel-head'), wrap = rings.parentElement;
   const scriptBase = new URL('.', document.currentScript.src);
-  const workerURL = core.workerURL || new URL('constrained-solver-worker.js',scriptBase).href;
   const make = (tag, id, cls, text) => { const el = document.createElement(tag); if (id) el.id = id; if (cls) el.className = cls; if (text) el.textContent = text; return el; };
   const button = (id, text, cls = '') => { const el = make('button', id, cls, text); el.type = 'button'; return el; };
   const toggle = button('constrainedSolverToggle', 'Constrained Solver', 'small outline cs-toggle');
@@ -17,10 +16,11 @@
   head.insertBefore(modeSwitch, document.getElementById('ringPanelHide'));
   const controls = make('section', 'constrainedSolverControls', 'cs-controls'); controls.hidden = true;
   controls.setAttribute('aria-label', 'Constrained Solver');
+  const actionRow = make('div', '', 'cs-action-row');
   const toolbar = make('div', '', 'cs-toolbar');
   const tools = make('div', '', 'cs-tools'); tools.setAttribute('role', 'group'); tools.setAttribute('aria-label', 'Node selection tool');
   const hold = button('csHold', 'Select held'), swap = button('csSwap', 'Swap pair'); tools.append(hold);swap.hidden=true;swap.tabIndex=-1;tools.append(swap);
-  hold.title='Click or lasso to flip each node between held and not held; choose A or B to leave this mode';
+  hold.title='Click or lasso to flip each node between held and not held; choose 1 or 2 to leave this mode';
   const clear = button('csClear', 'Clear all', 'small outline'), cancel = button('csCancel', 'Cancel search', 'small outline');
   const retry = button('csRetry', 'Continue · +7s', 'small outline'); cancel.hidden = true; retry.hidden = true;
   const go = button('csGo', 'Go', 'small outline cs-go');
@@ -28,31 +28,38 @@
   toolbar.append(holdLabel,tools,clear);
   const selection = make('div', '', 'cs-selection');
   const heldCount = make('span', 'csHeldCount', 'cs-held-count', '0 held');
-  const aChip = button('csPairA', 'A · choose a node', 'cs-pair-chip'), bChip = button('csPairB', 'B · choose a node', 'cs-pair-chip');
-  const slotParts=[aChip,bChip].map((chip,i)=>{chip.textContent='';const label=make('span','','cs-slot-label',i?'B':'A'),value=make('span','','cs-slot-value','Choose a node'),action=make('span','','cs-slot-action','Choose');chip.append(label,value,action);return {value,action};});
+  const aChip = button('csPairA', '1 · choose a node', 'cs-pair-chip'), bChip = button('csPairB', '2 · choose a node', 'cs-pair-chip');
+  const slotParts=[aChip,bChip].map((chip,i)=>{chip.textContent='';const label=make('span','','cs-slot-label',i?'2':'1'),value=make('span','','cs-slot-value','Choose a node'),action=make('span','','cs-slot-action','Choose');chip.append(label,value,action);return {value,action};});
   const pairArrow = make('span', '', 'cs-swap-arrow', '↔'); toolbar.insertBefore(heldCount,clear);selection.append(aChip, pairArrow, bChip, go);
-  const suggest=button('csSuggest','Suggest a swap','small outline cs-suggest');suggest.title='Choose a pair with a verified sequence; no moves happen until you press Go';
-  const searchActions=make('div','','cs-search-actions');searchActions.append(suggest,cancel,retry);
+  const suggestHolds=button('csSuggestHolds','Suggest holds','small outline');suggestHolds.title='Replace the holds with nodes whose current color already matches the solved goal; clear the selected pair';
+  const showGoal=button('csShowGoal','Show goal','small outline cs-show-goal');showGoal.title='Press and hold to see the solved colors at these node locations; release to return to the current colors';showGoal.setAttribute('aria-pressed','false');
+  const searchActions=make('div','','cs-search-actions');searchActions.append(cancel,retry);toolbar.append(suggestHolds);head.insertBefore(showGoal,document.getElementById('ringPanelHide'));
   const searchProgress=make('div','csSearchProgress','cs-search-progress');searchProgress.hidden=true;
   const searchProgressLabel=make('span','csSearchProgressLabel');
   const searchActivity=make('progress','csSearchActivity');searchActivity.setAttribute('aria-label','Searching for a verified swap; completion percentage is unknown');
   searchProgress.append(searchProgressLabel,searchActivity);
   const autoProgress = make('div', 'csAutoProgress', 'cs-auto-progress'); autoProgress.hidden = true;
   const progressLabel = make('span', 'csAutoProgressLabel', '', 'Preparing a solution');
-  const progressBar = make('progress', 'csAutoProgressBar'); progressBar.setAttribute('aria-label', 'Nodes solved and constrained'); autoProgress.append(progressLabel, progressBar);
+  const progressBar = make('progress', 'csAutoProgressBar'); progressBar.setAttribute('aria-label', 'Nodes solved and secured by completed solving steps'); autoProgress.append(progressLabel, progressBar);
   const stepLabel = make('span', 'csStepProgressLabel', '', 'Current step');
   const stepBar = make('progress', 'csStepProgressBar'); stepBar.setAttribute('aria-label', 'Moves completed in the current constrained step'); autoProgress.append(stepLabel, stepBar);
   const status = make('p', 'csStatus', 'cs-status', ''); status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
   const autoNotice=make('div','csAutoNotice','cs-auto-notice');autoNotice.hidden=true;
   const autoNoticeText=make('span','csAutoNoticeText');autoNoticeText.setAttribute('role','status');autoNoticeText.setAttribute('aria-live','polite');
   const autoNoticeProgress=make('progress','csAutoNoticeProgress');autoNoticeProgress.setAttribute('aria-label','Auto Solve preparation');
+  const autoNoticeReload=button('csAutoNoticeReload','Reload puzzle','small outline');
   const autoNoticeRetry=button('csAutoNoticeRetry','Retry','small outline'),autoNoticeDismiss=button('csAutoNoticeDismiss','Dismiss','small outline');
-  autoNotice.append(autoNoticeText,autoNoticeProgress,autoNoticeRetry,autoNoticeDismiss);document.querySelector('.action-panel')?.appendChild(autoNotice);
+  autoNotice.append(autoNoticeText,autoNoticeProgress,autoNoticeRetry,autoNoticeReload,autoNoticeDismiss);document.querySelector('.action-panel')?.appendChild(autoNotice);
   const eligibilityNote = make('p', 'csEligibilityNote', 'cs-eligibility', ''); eligibilityNote.hidden=true;
   const bottom = make('div', '', 'cs-bottom');
   const keyboardNote = make('span', '', 'cs-keyboard', 'Bright: sequence ready · ?: needs a check · Dark: unavailable');
   bottom.append(keyboardNote);
-  controls.append(toolbar, selection, eligibilityNote, searchActions, searchProgress, autoProgress, status, bottom); panel.appendChild(controls);
+  // One persistent feedback area prevents the canvas moving when a check turns
+  // into playback. Search and playback use the same slot; idle keeps it blank.
+  const feedback=make('div','','cs-feedback'),progressSlot=make('div','','cs-progress-slot'),detailSlot=make('div','','cs-detail-slot');
+  progressSlot.append(searchProgress,autoProgress);detailSlot.append(eligibilityNote,status);
+  feedback.append(progressSlot,searchActions,detailSlot);
+  actionRow.append(toolbar,selection);controls.append(actionRow, feedback, bottom); panel.appendChild(controls);
   const overlay = make('canvas', 'csNodeOverlay', 'cs-node-overlay'); overlay.hidden = true; overlay.tabIndex = 0;
   overlay.setAttribute('aria-label', 'Select ring-map nodes. Arrow keys choose a node; Enter selects it.');
   overlay.setAttribute('aria-describedby', 'csStatus'); wrap.appendChild(overlay);
@@ -61,8 +68,10 @@
   const backCtx = backdrop.getContext('2d');
   let active = false, tool = 'hold', phase = 'off', model = null, held = new Set(), pair = [], result = null;
   let message = '', worker = null, workerTimer = null, epoch = 0, execution = null, observed = null, hover = null, focusId = null, lastDraw = '', pointerStart = null;
-  let autoJob = null, autoRequested = false, autoSpeed = false, lasso = null, lastAutoStep = 0, lastManualStep = 0;
-  let autoTransportActive = false;
+  let autoJob = null, autoRequested = false, solverSpeed = false, lasso = null, lastAutoStep = 0, lastManualStep = 0;
+  let autoTransportActive = false, manualMoveBlockActive = false;
+  let goalPreview=false, goalColors=null, goalPointer=null, goalKey=null, goalRequested=false, goalLoad=null;
+  let exitToManual=false;
   let eligibility=null, eligibilityWorker=null, eligibilityTimer=null, eligibilityEpoch=0;
   let anchors=[], referencesDirty=true, pairTarget=0, returnToDefault=false, lastEligibilityProof=null;
   const eligibilityCache=new Map(); let eligibilityBytes=0;
@@ -72,22 +81,62 @@
   const cache = new Map(); let cacheBytes = 0; const CACHE_LIMIT = 1024 * 1024;
   const isBusy = () => ['loading', 'unavailable', 'solving', 'executing', 'auto-gap'].includes(phase);
   const idle = s => !s.animating && (!s.mode || s.mode === 'idle');
+  const mirrorActive = () => document.body.classList.contains('mirror-active');
   const tokenKey = m => JSON.stringify(Object.entries(m.stickerToNode).sort((a,b) => a[0].localeCompare(b[0])));
   const mapping = s => core.mapSnapshot(model, s);
   const sameMap = (a,b) => Object.keys(a).length === Object.keys(b).length && Object.keys(a).every(k => a[k] === b[k]);
   const nodes = () => (bridge.nodes() || []).filter(n => Number.isFinite(n.x) && Number.isFinite(n.y)).map(n => ({...n, stickerId: String(n.stickerId)}));
   const nodeName = id => { const s = api.snapshot().stickers?.find(x => String(x.id) === String(id)); return (s?.face ? s.face + ' · ' : '') + String(id); };
-  const setMessage = text => { if(message===text)return;message = text; status.textContent = text; };
+  const setMessage = (text,kind='notice') => { message=text;status.textContent=text;status.title=text;status.hidden=!text||kind==='help';status.setAttribute('data-state',kind); };
+  // The canonical goal is a spatial color field, not a sticker-identity goal.
+  // Some shape-changing models include poses that are empty in the solved
+  // geometry. Those addresses have no goal color and must not invent one.
+  function goalState() {
+    const snapshot=api.snapshot(), map=mapping(snapshot), colors=core.colorsFromSnapshot(model,snapshot,map), homes=new Map(), palette=new Map();
+    for(const [id,node] of Object.entries(model.homeBySticker||{})){const color=model.colorBySticker?.[id];if(color!==undefined&&color!==null)homes.set(node,String(color));}
+    for(const n of nodes()){const color=colors[map.stickerToNode[n.stickerId]];if(color!=null&&typeof n.color==='string')palette.set(String(color),n.color);}
+    const targets=new Map(), matching=[];let empty=0;
+    for(const [id,node] of Object.entries(map.stickerToNode)){
+      const color=homes.get(node);
+      if(color===undefined){targets.set(id,null);empty++;continue;}
+      targets.set(id,palette.get(color)||color);
+      if(colors[node]===color)matching.push(id);
+    }
+    return {targets,matching,empty};
+  }
+  function setGoalPreview(value) {
+    value=!!value;goalRequested=value;window.PuzzleJournal?.sync?.();
+    if(!value){goalColors=null;goalPointer=null;goalKey=null;}
+    if(value){
+      if(mirrorActive()||autoRequested||isBusy()||!idle(api.snapshot())){goalRequested=false;return false;}
+      if(!model){
+        if(!goalLoad)goalLoad=core.loadModel(api.puzzle).then(loaded=>{model=loaded;goalLoad=null;if(goalRequested)setGoalPreview(true);}).catch(error=>{goalLoad=null;goalRequested=false;showGoal.title='Goal could not load: '+error.message+'. Press again to retry.';});
+        return true;
+      }
+      try{goalColors=goalState().targets;}catch(_){goalRequested=false;return false;}
+      pointerStart=null;lasso=null;hover=null;window.PuzzleSelection3D?.clearHover?.();
+    }
+    goalPreview=value;showGoal.setAttribute('aria-pressed',String(value));
+    window.PuzzleJournal?.sync?.();panel.classList.toggle('cs-goal-preview',value);overlay.hidden=!active&&!value;overlay.style.pointerEvents=active?'':'none';lastDraw='';bridge.requestRender();return true;
+  }
+  function suggestCurrentHolds() {
+    if(!canSelect3D()||!model)return false;
+    let goal;try{goal=goalState();}catch(error){setMessage('Could not read the goal: '+error.message);return false;}
+    discardManualSearch();hideAutoNotice();held=new Set(goal.matching);pair=[];pairTarget=0;tool='swap';result=null;autoRequested=false;lastManualStep=0;anchors=[];referencesDirty=true;
+    setMessage(held.size+' holds selected.');sync();return true;
+  }
+  function canSelect3D(){return active&&phase==='selecting'&&!autoRequested&&!goalPreview&&!!model&&idle(api.snapshot());}
   function hideAutoNotice(){autoNotice.hidden=true;document.querySelector('.action-panel')?.classList.remove('cs-notice-visible');}
-  function showAutoNotice(text,failed=false){autoNotice.hidden=false;document.querySelector('.action-panel')?.classList.add('cs-notice-visible');autoNoticeText.textContent=text;autoNoticeProgress.hidden=failed;autoNoticeRetry.hidden=!failed;autoNoticeDismiss.hidden=!failed;autoNotice.setAttribute('data-state',failed?'error':'loading');}
+  function showAutoNotice(text,failed=false){autoNotice.hidden=false;document.querySelector('.action-panel')?.classList.add('cs-notice-visible');autoNoticeText.textContent=text;autoNoticeProgress.hidden=failed;autoNoticeRetry.hidden=!failed;autoNoticeReload.hidden=!failed;autoNoticeDismiss.hidden=!failed;autoNotice.setAttribute('data-state',failed?'error':'loading');}
   function autoFailure(reason,detail){
     let text;
-    if(/file_protocol/.test(reason))text='Open this website through a local HTTP server or GitHub Pages. Direct file opening blocks the browser solver. See START-HERE.txt in the ZIP.';
+    if(reason==='file_protocol'||window.location?.protocol==='file:')text='The solver needs local HTTP to load its included files and worker. Serve the complete website folder over HTTP, then open its local address.';
+    else if(reason==='release_mismatch')text='This puzzle tab and its solver are from different releases. Reload the puzzle to use matching files.';
     else if(reason==='color_goal_identity_baseline_unreachable')text='The sticker identities do not match the solver’s reachable states. This does not prove the color goal impossible. If you used only ordinary moves, reload the puzzle to check for a browser/model mismatch.';
     else if(/load_timeout/.test(reason))text='Downloading the solver data timed out. Check your connection and retry.';
-    else if(/network|http|unavailable/.test(reason) && !/worker|integrity/.test(reason))text='Solver data could not be loaded from this website. Check the connection and that the complete dist folder was published.';
-    else if(/integrity|parse|version/.test(reason))text='The solver files are from different releases or were changed. Reload the page. If this persists, publish the complete dist folder from one ZIP.';
-    else if(/worker/.test(reason))text='The browser could not start or keep the solver running. Close other tabs and retry; an updated browser may help.';
+    else if(/network|http|unavailable/.test(reason) && !/worker|integrity/.test(reason))text='Solver data could not be loaded. Keep the complete website folder together, including its solver data and caches; reload and retry.';
+    else if(/integrity|parse|version/.test(reason))text='The solver data could not be verified, possibly because files from different releases are mixed. Reload this puzzle with the complete matching website files and retry.';
+    else if(/worker/.test(reason))text='The browser could not start or keep the solver running. If the site was just updated, reload this puzzle. Otherwise close other tabs and retry; an updated browser may help.';
     else if(/memory|storage/.test(reason))text='The solver reached its memory limit. Close other tabs and retry.';
     else if(/output|sequence|word/.test(reason))text='The solution exceeded the move-sequence limit.';
     else if(/time|limit|budget/.test(reason))text='The solver reached its computation limit. Retry allows more planning time.';
@@ -96,9 +145,10 @@
   }
   function reportAutoFailure(reason,detail){const text=autoFailure(reason,detail);setMessage(text);showAutoNotice(text,true);}
   const autoStopActive = () => active && autoRequested && ['loading','solving','executing','auto-gap'].includes(phase);
+  const manualStopActive = () => active && !autoRequested && ['loading','solving','executing'].includes(phase);
   function syncTransport() {
     const stop=document.getElementById('pause');if(!stop)return;
-    const snap=api.snapshot(), automatic=autoStopActive(), scrambling=snap.mode==='scramble';
+    const snap=api.snapshot(), automatic=autoStopActive(), manual=manualStopActive(), scrambling=snap.mode==='scramble';
     // The solver session remains active while the native move queue rests
     // between stages. Keep its status and disabled/hover treatment steady.
     if(automatic){
@@ -106,21 +156,45 @@
       if(badge){badge.className='status busy';badge.textContent='✦ Solving';}
       if(solve)solve.disabled=true;
     }
-    stop.hidden=!automatic && (!snap.mode || snap.mode==='idle');
-    stop.textContent=automatic && autoJob?.stopAfterStep?'Stopping…':automatic||scrambling?'Stop':snap.paused?'Resume':'Pause';
-    stop.disabled=!!(automatic && autoJob?.stopAfterStep);
-    stop.title=automatic?'Stop after the current constrained step':scrambling?'Stop randomizing immediately; keep completed turns':'Pause or resume the current sequence';
+    stop.hidden=!automatic&&!manual && (!snap.mode || snap.mode==='idle');
+    const stoppingTurn=(automatic&&autoJob?.stopAfterTurn)||(manual&&execution?.stopAfterTurn),stoppingStep=automatic&&autoJob?.stopAfterStep;
+    stop.textContent=stoppingStep&&!stoppingTurn?'Stop now':'Stop';stop.setAttribute('aria-label',stoppingTurn?'Stopping after the current turn':stoppingStep?'Stop after the current turn instead':'Stop');
+    stop.disabled=!!stoppingTurn;
+    stop.setAttribute('aria-pressed',String(!!(stoppingStep||stoppingTurn)));
+    stop.title=automatic?(stoppingTurn?'Stopping after the current turn; unfinished holds will be cleared':stoppingStep?'Stopping after this sequence. Click again to stop after the current turn; unfinished holds will be cleared':'Finish this sequence, then stop. Click twice to stop after the current turn'):manual?'Finish the current turn, then stop; held colors may not yet be restored':scrambling?'Stop randomizing immediately; keep completed turns':'Stop replay at the current completed turn';window.PuzzleJournal?.sync?.();
   }
   function captureReferences() {
     const v=bridge.viewport?.();if(!v || !(v.scale>0))return;
-    anchors=nodes().filter(n=>held.has(n.stickerId)||pair.includes(n.stickerId)).map(n=>({id:n.stickerId,x:(n.x-v.x)/v.scale,y:(n.y-v.y)/v.scale,r:(n.r||5)/v.scale,label:pair.includes(n.stickerId)?(pair.indexOf(n.stickerId)?'B':'A'):''}));
+    anchors=nodes().filter(n=>held.has(n.stickerId)||pair.includes(n.stickerId)).map(n=>({id:n.stickerId,x:(n.x-v.x)/v.scale,y:(n.y-v.y)/v.scale,r:(n.r||5)/v.scale,label:pair.includes(n.stickerId)?(pair.indexOf(n.stickerId)?'2':'1'):''}));
     referencesDirty=false;lastDraw='';
   }
-  function setAutoSpeed(on) {
-    if (!on && !autoSpeed) return;
-    autoSpeed = on;
-    const speed = document.getElementById('speed');
-    if (speed) { speed.value = on ? '5' : '3'; speed.dispatchEvent(new Event('input', {bubbles:true})); }
+  function setSolverSpeed(on) {
+    solverSpeed = on;
+    if (on) {
+      // The label preset supplies the initial playback rate. Sync and each
+      // later stage deliberately leave a user's label/speed override alone.
+      window.PuzzleAxisDisplay?.setLabelMode?.(autoRequested ? 'none' : 'all', {resetSpeed:true});
+      return;
+    }
+    // Clear the native sequence flag before restoring the ordinary preset;
+    // otherwise the next manual move could reset a new speed selection again.
+    const keepManualSettings=active&&!autoRequested;
+    if (typeof api.restorePlaybackDefaults === 'function') api.restorePlaybackDefaults({preserveSettings:keepManualSettings});
+    else if(!keepManualSettings)window.PuzzleAxisDisplay?.resetDefaults?.({pulse:true});
+  }
+  function enterManualDefaults(){
+    window.PuzzleAxisDisplay?.setLabelMode?.('all',{resetSpeed:true});
+    window.PuzzleAxisDisplay?.setHighlights3D?.(true);
+  }
+  function updateGoalProgress(){
+    // Show the verified secured-node checkpoint in Auto Solve's upper bar.
+    // This never changes the plan, holds, or stage timing.
+    if(!model)return;
+    const count=autoJob?.locked.size||0,total=model.stickerCount||1;
+    progressBar.max=total;progressBar.value=count;
+    progressBar.setAttribute('aria-valuetext',count+' of '+total+' nodes secured');
+    progressLabel.textContent=autoJob?'Step '+Math.min(autoJob.completed+1,autoJob.stages.length)+' / '+autoJob.stages.length+' · '+count+' / '+total+' secured':phase==='solving'?'Planning solution…':count+' / '+total+' secured';
+    progressLabel.title=progressLabel.textContent;
   }
   function updateStepProgress(snap = api.snapshot()) {
     const job = execution, previous = autoRequested ? lastAutoStep : lastManualStep;
@@ -129,8 +203,12 @@
     stepBar.max = total || 1; stepBar.value = completed;
     const label = autoRequested ? 'Current step' : 'Swap progress';
     stepLabel.textContent = label + (total ? ' · ' + completed + ' / ' + total + ' moves' : phase === 'solving' ? ' · finding a sequence' : ' · waiting');
+    stepLabel.title=stepLabel.textContent;
   }
   const hasPair=()=>pair[0]!=null && pair[1]!=null;
+  // A hold is a persistent location classification. Selected swap endpoints
+  // temporarily override its color constraint without removing its outline.
+  const effectiveHeld = (endpoints=pair) => [...held].filter(id=>autoRequested||!endpoints.includes(id));
   const seconds=ms=>(Math.max(0,Number(ms)||0)/1000).toFixed(1).replace(/\.0$/,'');
   function clearWorkerTimer(){if(workerTimer!==null)clearTimeout(workerTimer);workerTimer=null;}
   function discardManualSearch(){if(manualSearch){epoch++;terminateWorker();manualSearch=null;}}
@@ -142,12 +220,12 @@
     const elapsed=Math.min(manualSearch.budgetMs,(Number(s.elapsedMs)||0)+(running?Math.max(0,performance.now()-manualSearch.progressAt):0));
     const count=Number(s.states)||0;
     searchProgressLabel.textContent=running?'Searching · '+seconds(elapsed)+'s / '+seconds(manualSearch.budgetMs)+'s compute budget'+(count?' · '+count.toLocaleString()+' states examined':''):'Preparing the move library…';
+    searchProgressLabel.title=searchProgressLabel.textContent;
     searchActivity.removeAttribute('value');
   }
   function manualUnavailable(){return !autoRequested&&!!manualSearch&&phase==='selecting'&&result?.status==='unknown';}
   function canContinueSearch(){return manualUnavailable()&&manualSearch.search?.canContinue===true&&Number(manualSearch.search.nextBudgetMs)>Number(manualSearch.search.budgetMs)&&Number(manualSearch.search.nextBudgetMs)<=60000;}
 
-  const trimPair=()=>{while(pair.length && pair[pair.length-1]==null)pair.pop();};
   function stopEligibility(terminate=true) {
     eligibilityEpoch++;
     if(terminate && eligibilityWorker){eligibilityWorker.terminate();eligibilityWorker=null;}
@@ -185,56 +263,64 @@
   }
   const candidatePartner=()=>pairTarget===1 && pair[0]!=null ? pair[0] : null;
   function candidateStatus(id) {
-    if(held.has(id))return 2;
     const n=eligibility?.map[id], other=candidatePartner();
-    return proofStatus(n,other!=null?eligibility?.map[other]:undefined);
+    if(other===id)return 2;
+    const status=proofStatus(n,other!=null?eligibility?.map[other]:undefined);
+    // Older/unfinished tables describe H, not H minus the candidate endpoints.
+    // Their held-node exclusion must never masquerade as a legal impossibility.
+    if(eligibility?.result?.exemptSwapEndpoints!==true && (held.has(id)||held.has(other)||(other==null&&held.size&&status===2)))return 0;
+    return status;
   }
   function candidateReady(id) {
-    if(held.has(id) || candidateStatus(id)===2)return false;
+    if(candidateStatus(id)===2)return false;
     const n=eligibility?.map[id],other=candidatePartner();
     return readyStatus(n,other!=null?eligibility?.map[other]:undefined);
   }
   function selectedPairStatus() {
     if(!hasPair())return 0;
-    if(held.has(pair[0]) || held.has(pair[1]) || pair[0]===pair[1])return 2;
+    if(pair[0]===pair[1])return 2;
     if(result?.status==='impossible')return 2;
+    if(eligibility?.result?.exemptSwapEndpoints!==true && pair.some(id=>held.has(id)))return 0;
     return proofStatus(eligibility?.map[pair[0]],eligibility?.map[pair[1]]);
   }
   function eligibilityCode(id) {
-    if(!active || phase!=='selecting' || autoRequested || held.has(id) || pair.includes(id))return 0;
+    if(!active || phase!=='selecting' || autoRequested || (tool==='hold'&&held.has(id)) || pair.includes(id))return 0;
     return candidateStatus(id)===2?2:candidateReady(id)?1:3;
   }
   function syncPairUI() {
     const invalid=selectedPairStatus()===2,ready=hasPair()&&!invalid&&readyStatus(eligibility?.map[pair[0]],eligibility?.map[pair[1]]);
     [aChip,bChip].forEach((chip,i)=>{
       const selected=pair[i]!=null, editing=tool==='swap' && pairTarget===i && !isBusy() && !autoRequested;
-      slotParts[i].value.textContent=selected?nodeName(pair[i]):autoRequested?(i?'Solved position':'Current position'):'Choose a node';
+      slotParts[i].value.textContent=selected?nodeName(pair[i]):autoRequested?(i?'Goal':'Current'):'Choose';
       slotParts[i].action.textContent=autoRequested?(i?'Target':'Current'):isBusy()?'Selected':editing?'Pick on map':selected?'Change':'Choose';
       chip.classList.toggle('chosen',selected);chip.classList.toggle('editing',editing);chip.classList.toggle('invalid',invalid);
-      chip.setAttribute('aria-pressed',String(editing));chip.setAttribute('aria-label',(selected?'Change ':'Choose ')+(i?'B':'A')+(selected?': '+nodeName(pair[i]):''));
+      chip.setAttribute('aria-pressed',String(editing));chip.setAttribute('aria-label',(selected?'Change ':'Choose ')+(i?'2':'1')+(selected?': '+nodeName(pair[i]):''));
+      chip.title=selected&&held.has(pair[i])&&!autoRequested?'Held location: temporarily released for this swap, then held again with its new color':selected?'Choose another '+(i?'2':'1'):'Choose '+(i?'2':'1')+' on the ring map';
       chip.disabled=isBusy()||!!autoRequested;
     });
-    go.hidden=!!autoRequested;go.disabled=isBusy()||!hasPair()||invalid||(manualUnavailable()&&!ready);
-    go.textContent=hasPair()&&!ready&&!invalid?'Check & solve':'Go';go.setAttribute('data-readiness',invalid?'blocked':ready?'ready':'check');
-    go.title=manualUnavailable()&&!ready?(canContinueSearch()?'Continue the retained search below, or choose another pair':'No viable sequence was found within the search limits. Choose another pair or release a hold'):invalid?'This pair cannot swap with the current holds':!hasPair()?'Choose A and B first':ready?'Execute the verified sequence already found for this pair':'Search for this pair, then execute only if a verified sequence is found';
+    go.hidden=!!autoRequested;go.disabled=isBusy()||(!hasPair())||invalid||(manualUnavailable()&&!ready);
+    go.textContent='Go';go.setAttribute('data-readiness',invalid?'blocked':ready?'ready':'check');
+    go.title=manualUnavailable()&&!ready?(canContinueSearch()?'Continue the retained search below, or choose another pair':'No viable sequence was found within the search limits. Choose another pair or release a hold'):invalid?'This pair cannot swap with the current holds':!hasPair()?'Choose 1 and 2 first':ready?'Execute the verified sequence already found for this pair':'Search for this pair, then execute only if a verified sequence is found';
   }
   function syncEligibilityNote() {
     eligibilityNote.hidden=!active || phase!=='selecting' || autoRequested;
     if(eligibilityNote.hidden)return;
-    const label=pairTarget?'B':'A', invalid=selectedPairStatus()===2;
-    const partner=candidatePartner(), candidates=nodes().filter(n=>!held.has(n.stickerId) && n.stickerId!==partner);
+    const label=pairTarget?'2':'1', invalid=selectedPairStatus()===2;
+    const partner=candidatePartner(), candidates=nodes().filter(n=>n.stickerId!==partner);
     let available=0,blocked=0,unknown=0;for(const n of candidates){const s=candidateStatus(n.stickerId);if(s===2)blocked++;else if(candidateReady(n.stickerId))available++;else unknown++;}
     const checking=eligibility?.status==='pending';
     eligibilityNote.setAttribute('data-state',invalid?'blocked':checking?'checking':unknown?'unknown':'ready');
-    if(manualUnavailable()&&!readyStatus(eligibility?.map[pair[0]],eligibility?.map[pair[1]]))eligibilityNote.textContent=canContinueSearch()?'Search progress is saved. Continue below, choose a different pair, or adjust the holds.':'This pair reached the search limit; it has not been proved impossible. Try another pair or release a hold.';
-    else if(invalid)eligibilityNote.textContent='A and B cannot swap with these holds. Change A or B, or release a hold.';
-    else if(!candidates.length || (blocked===candidates.length && !unknown))eligibilityNote.textContent='No '+label+' choices under the legal moves'+(held.size?' with these holds':'')+(partner!=null?' and A':'')+'. '+(held.size?'Release a hold or choose a new A.':'This node has no legal swap partner. Choose a new A.');
-    else if(checking)eligibilityNote.textContent='Finding ready choices for '+label+'… '+available+' ready'+(blocked?' · '+blocked+' unavailable.':'.')+' ? choices can still be checked.';
-    else if(hasPair() && readyStatus(eligibility?.map[pair[0]],eligibility?.map[pair[1]])){const length=readyWord(eligibility?.map[pair[0]],eligibility?.map[pair[1]])?.length;eligibilityNote.textContent='Ready'+(length?' · '+length+' verified '+(length===1?'move':'moves'):'')+'. Press Go, or choose A or B to change the pair.';}
-    else if(hasPair())eligibilityNote.textContent='No executable sequence is ready for this pair. Check & solve searches before moving; it may reach the compute limit.';
-    else eligibilityNote.textContent=label+': '+available+' ready · '+unknown+' need a check · '+blocked+' unavailable. Bright choices have a verified sequence.';
-    if(!held.size && partner==null && blocked)eligibilityNote.textContent+=' No holds are applied: these nodes have no legal pair exchange.';
-    eligibilityNote.title='Bright A nodes have at least one partner with a stored verified sequence. After choosing A, bright B nodes have a stored sequence for that pair. Shaded ? nodes need a search; they are not proved impossible. Dark nodes are proved unavailable. Choices update with the held colors.';
+    if(manualUnavailable()&&!readyStatus(eligibility?.map[pair[0]],eligibility?.map[pair[1]]))eligibilityNote.textContent=canContinueSearch()?'Search saved · continue or change the pair':'Search limit reached · change pair or holds';
+    else if(invalid)eligibilityNote.textContent='This pair cannot swap with these holds';
+    else if(!candidates.length||(blocked===candidates.length&&!unknown))eligibilityNote.textContent='No available '+label+' · change pair or holds';
+    else if(checking)eligibilityNote.textContent='Checking choices…';
+    else if(hasPair()&&readyStatus(eligibility?.map[pair[0]],eligibility?.map[pair[1]])){const length=readyWord(eligibility?.map[pair[0]],eligibility?.map[pair[1]])?.length;eligibilityNote.textContent='Ready'+(length?' · '+length+' '+(length===1?'move':'moves'):'');}
+    else if(hasPair())eligibilityNote.textContent='Check required';
+    else eligibilityNote.textContent='';
+    // A completed action or error takes precedence over background eligibility
+    // checking. Both occupy one reserved line instead of growing the panel.
+    eligibilityNote.hidden=!eligibilityNote.textContent||(!status.hidden&&!!status.textContent);
+    eligibilityNote.title='Bright 1 nodes have at least one partner with a stored verified sequence. After choosing 1, bright 2 nodes have a stored sequence for that pair. Shaded ? nodes need a search; they are not proved impossible. Dark nodes are proved unavailable. Choices update with the held colors. A held node selected as 1 or 2 is temporarily released for the swap, then held again with its new color.';
     overlay.setAttribute('aria-busy',String(checking));
   }
   function ensureEligibility() {
@@ -242,7 +328,7 @@
     const snapshot=api.snapshot();if(!idle(snapshot))return;
     let map;try{map=mapping(snapshot);}catch(_){return;}
     const startKey=tokenKey(map),fixed=[...held].map(id=>map.stickerToNode[id]).sort((a,b)=>a-b);
-    const occupiedKey=JSON.stringify(Object.values(map.stickerToNode).sort((a,b)=>a-b)),colorKey=JSON.stringify(core.colorsFromSnapshot(model,snapshot,map)),key=JSON.stringify([fixed,occupiedKey,colorKey]);
+    const occupiedKey=JSON.stringify(Object.values(map.stickerToNode).sort((a,b)=>a-b)),colorKey=JSON.stringify(core.colorsFromSnapshot(model,snapshot,map)),key=JSON.stringify([fixed,occupiedKey,colorKey,'endpoint-exempt']);
     if(eligibility?.key===key && eligibility.startKey===startKey)return;
     // Reuse an idle worker's prepared chain; cancel work tied to old holds.
     stopEligibility(eligibility?.status==='pending');const id=eligibilityEpoch;
@@ -274,69 +360,82 @@
       eligibilityTimer=null;
       if(id!==eligibilityEpoch || !active || phase!=='selecting' || autoRequested)return;
       try{
-        if(!eligibilityWorker)eligibilityWorker=new Worker(workerURL);
+        if(!eligibilityWorker)eligibilityWorker=new Worker(core.workerURL||new URL('constrained-solver-worker.js',scriptBase));
         eligibilityWorker.onmessage=e=>{if(e.data?.id===id && e.data.type==='result')receive(e.data);};
         eligibilityWorker.onerror=()=>receive({result:{status:'unknown'}});
         eligibilityTimer=setTimeout(()=>receive({result:{status:'unknown'}}),7000);
-        eligibilityWorker.postMessage({task:'eligible-swaps',id,modelId:api.puzzle,snapshot,selection:{protectedStickerIds:[...held],holdSemantics:'color'},options:{maxMs:3000}});
+        eligibilityWorker.postMessage({task:'eligible-swaps',id,modelId:api.puzzle,expectedRelease:core.assetRelease,snapshot,selection:{protectedStickerIds:[...held],holdSemantics:'color',exemptSwapEndpoints:true},options:{maxMs:3000}});
       }catch(_){receive({result:{status:'unknown'}});}
     },80);
   }
   function sync() {
     panel.classList.toggle('cs-active', active); panel.classList.toggle('cs-auto-active', active && autoRequested); document.body.classList.toggle('cs-working', active && ['loading','solving','executing','auto-gap'].includes(phase));
-    controls.hidden = !active; overlay.hidden = !active; backdrop.hidden = !active;
-    toggle.setAttribute('aria-pressed', String(active));normalMode.setAttribute('aria-pressed',String(!active));toggle.disabled=false;normalMode.disabled=returnToDefault||!!autoJob?.stopAfterStep;
-    toggle.title='Preserve colors at held locations and swap a pair';normalMode.title=phase==='executing'?'Return to ring turns after this complete step':'Return to ordinary ring turns';
-    normalMode.textContent=normalMode.disabled?'Finishing step…':'Turn rings';modeSwitch.setAttribute('aria-busy',String(normalMode.disabled));
+    controls.hidden = !active; overlay.hidden = !active&&!goalPreview; overlay.style.pointerEvents=active?'':'none'; backdrop.hidden = !active;
+    toggle.setAttribute('aria-pressed', String(active));normalMode.setAttribute('aria-pressed',String(!active));toggle.disabled=false;normalMode.disabled=returnToDefault||!!autoJob?.stopAfterTurn;
+    toggle.title='Preserve colors at held locations and swap a pair';normalMode.title=phase==='executing'?'Return to ring turns after the current turn':'Return to ordinary ring turns';
+    normalMode.textContent='Turn rings';normalMode.setAttribute('aria-label',normalMode.disabled?'Returning to Turn rings after the current turn':'Turn rings');modeSwitch.setAttribute('aria-busy',String(normalMode.disabled));
     hold.setAttribute('aria-pressed', String(tool === 'hold')); swap.setAttribute('aria-pressed', String(tool === 'swap'));
     hold.disabled = swap.disabled = clear.disabled = isBusy();
-    heldCount.textContent = held.size + (autoRequested ? ' secured' : ' held');
+    suggestHolds.hidden=!active||!!autoRequested;suggestHolds.disabled=isBusy();showGoal.hidden=mirrorActive();showGoal.disabled=mirrorActive()||isBusy()||!!autoRequested||(bridge.isBusy?bridge.isBusy():!idle(api.snapshot()));
+    if(goalPreview&&(mirrorActive()||isBusy()||autoRequested||!idle(api.snapshot())))setGoalPreview(false);
+    toolbar.hidden=!!autoRequested;heldCount.hidden=!!autoRequested;
+    heldCount.textContent = held.size + ' held';
     cancel.hidden = phase !== 'solving' && !(autoRequested && phase==='loading');
-    retry.hidden=!active||phase!=='selecting'||result?.status!=='unknown'||(!autoRequested&&(!hasPair()||!canContinueSearch()));
+    retry.hidden=!active||phase!=='selecting'||result?.status!=='unknown'||(!autoRequested&&!canContinueSearch());
     const next=manualSearch?.search?.nextBudgetMs||10000,previous=manualSearch?.search?.budgetMs||3000;
-    retry.textContent=autoRequested?'Retry full solve · 30s':'Continue · +'+seconds(next-previous)+'s';
-    retry.title=autoRequested?'Retry full puzzle planning with a longer budget':'Resume the saved search with a '+seconds(next)+'-second total compute budget';
-    suggest.hidden=!active||!!autoRequested||isBusy();
-    searchActions.hidden=cancel.hidden&&retry.hidden&&suggest.hidden;updateSearchProgress();
+    retry.textContent=autoRequested?'Retry full solve · 30s':'Continue previous pair · +'+seconds(next-previous)+'s';
+    retry.title=autoRequested?'Retry full puzzle planning with a longer budget':'Restore the previous 1 and 2, then resume their saved search with a '+seconds(next)+'-second total compute budget';
+    searchActions.hidden=cancel.hidden&&retry.hidden;updateSearchProgress();
     tools.hidden = !!autoJob || (autoRequested && phase === 'solving'); holdLabel.hidden=!!autoRequested; clear.hidden = !!autoJob; pairArrow.textContent = autoRequested ? '→' : '↔';
-    autoProgress.hidden = !active || (!autoRequested && phase!=='executing'); progressBar.hidden = progressLabel.hidden = !autoRequested; progressBar.max = model?.stickerCount || 1; progressBar.value = held.size;
-    progressLabel.textContent = autoJob ? 'Step ' + Math.min(autoJob.completed + 1, autoJob.stages.length) + ' / ' + autoJob.stages.length + ' · ' + held.size + ' / ' + model.stickerCount + ' nodes secured' : held.size === model?.stickerCount ? 'All ' + held.size + ' nodes restored' : phase === 'solving' ? 'Planning from the current configuration' : held.size + ' nodes secured';
+    autoProgress.hidden = !active || (!autoRequested && phase!=='executing'); progressBar.hidden = progressLabel.hidden = !autoRequested;
+    updateGoalProgress();
     updateStepProgress();
     ensureEligibility();syncPairUI();syncEligibilityNote();syncNodeLabel();
+    // Readiness/results and progress share the same reserved footprint. The
+    // progress caption already reports moves; do not repeat it below the bar.
+    detailSlot.hidden=autoRequested||!autoProgress.hidden||!searchProgress.hidden;
     const automatic=autoStopActive();
-    if(autoTransportActive!==automatic){autoTransportActive=automatic;bridge.refreshControls?.();}
+    if(autoTransportActive!==automatic||manualMoveBlockActive!==active){autoTransportActive=automatic;manualMoveBlockActive=active;bridge.refreshControls?.();}
     syncTransport();
     panel.setAttribute('data-solver-phase', phase); lastDraw = ''; bridge.requestRender();
   }
   function instructions() {
-    setMessage(tool==='hold'?'Click or lasso to flip each node: held becomes not held, and not held becomes held. Choose A or B below to leave Select held. Held colors return at the end of a swap.':hasPair()?'Click a new node to replace '+(pairTarget?'B':'A')+', or use the button beside B. Other unheld nodes may move.':'Choose '+(pairTarget?'B':'A')+' on the map. Bright nodes have a verified sequence; ? nodes need a search. Click either letter below to change your selection.');
+    setMessage(tool==='hold'?'Click a 3D tile or click/lasso map nodes to toggle holds. Choose 1 and 2, then Go. Held colors return after a swap; a held endpoint adopts its swapped color and stays held.':hasPair()?'Click a new node to replace '+(pairTarget?'2':'1')+', or use the button beside 2. Other unheld nodes may move.':'Choose '+(pairTarget?'2':'1')+' on the map or 3D puzzle. Bright nodes have a verified sequence; ? nodes need a search. Click either number below to change your selection.','help');
+  }
+  function clearManualPair() {
+    pair=[];pairTarget=0;tool='swap';lastManualStep=0;
+    anchors=anchors.filter(a=>held.has(a.id)).map(a=>({...a,label:''}));referencesDirty=true;
   }
   function terminateWorker() { if (worker) worker.terminate(); worker = null; clearWorkerTimer(); }
   function cancelSearch() {
-    if(phase==='selecting'&&manualSearch){discardManualSearch();result=null;setMessage('Saved search cleared. Choose a pair to start again.');sync();return true;}
+    if(phase==='selecting'&&manualSearch){discardManualSearch();result=null;clearManualPair();setMessage('Saved search cleared.');sync();return true;}
     if (phase !== 'solving' && !(autoRequested && phase==='loading')) return false;
     if (autoRequested) { closePanel(); return true; }
-    epoch++; terminateWorker(); manualSearch=null; phase = 'selecting'; result = null; autoJob = null; setAutoSpeed(false); setMessage('Search canceled. The puzzle has not moved.'); sync(); return true;
+    epoch++; terminateWorker(); manualSearch=null; phase = 'selecting'; result = null; autoJob = null; clearManualPair();setSolverSpeed(false); setMessage('Search canceled · pair cleared.'); sync(); return true;
   }
   // Closing the map abandons endpoint constraints, but never interrupts an
   // atomic puzzle turn. The engine finishes that turn and discards its queue.
   function closePanel() {
+    setGoalPreview(false);
+    window.PuzzleAxisDisplay?.clear();
     hideAutoNotice();
     epoch++; terminateWorker();manualSearch=null;
     stopEligibility(); eligibility=null;lastEligibilityProof=null;
-    if (execution || autoJob) api.stopAfterCurrentMove?.();
-    active=false; phase='off'; execution=null; autoJob=null; autoRequested=false;
+    if (execution || autoJob){api.stopAfterCurrentMove?.();window.PuzzleJournal?.endSequence();}
+    active=false; phase='off'; execution=null; autoJob=null; autoRequested=false;exitToManual=false;
     held.clear(); pair=[]; result=null; observed=null; pointerStart=null; lasso=null; lastAutoStep=0; lastManualStep=0; anchors=[];referencesDirty=true;pairTarget=0;returnToDefault=false;
-    setAutoSpeed(false); sync(); return true;
+    setSolverSpeed(false); sync(); return true;
   }
   async function setActive(value) {
     value = !!value;
+    if(value&&active&&autoRequested){stopAuto(true);return true;}
     if (value === active) return true;
     if (phase === 'executing' || phase === 'auto-gap') return false;
     if (!value) return closePanel();
     const snap = api.snapshot();
     if (!idle(snap)) { toggle.title = 'Wait for the current sequence to finish'; return false; }
-    active = true; phase = 'loading'; tool = 'hold'; setMessage('Loading the puzzle move model…'); sync();
+    setGoalPreview(false);window.PuzzleAxisDisplay?.clear();window.PuzzleSelection3D?.clearHover?.();
+    active = true; phase = 'loading'; tool = 'hold'; if(!autoRequested)enterManualDefaults();setMessage('Loading the puzzle move model…'); sync();
     const id = ++epoch;
     try {
       model = await core.loadModel(api.puzzle);
@@ -344,40 +443,41 @@
       observed = tokenKey(mapping(api.snapshot())); phase = autoRequested?'solving':'selecting'; if(!autoRequested)instructions(); sync(); overlay.focus({preventScroll:true}); return true;
     } catch (error) {
       if (!active || id !== epoch) return false;
-      phase = 'unavailable';if(autoRequested)reportAutoFailure(error.code||'model_unavailable',error.message);else setMessage('Solver unavailable: ' + error.message + '. Turn this mode off and on to retry.');setAutoSpeed(false);sync();return false;
+      phase = 'unavailable';if(autoRequested)reportAutoFailure(error.code||'model_unavailable',error.message);else setMessage('Solver unavailable: ' + error.message + '. Turn this mode off and on to retry.');setSolverSpeed(false);sync();return false;
     }
   }
   function editPair(index) {
-    if(!active || isBusy() || autoRequested)return false;
-    // Starting over at A releases both endpoints, but preserves all holds.
+    if(!active || isBusy() || autoRequested || goalPreview)return false;
+    // Starting over at 1 releases both endpoints, but preserves all holds.
     discardManualSearch();result=null;
-    if(index===0){pair=[];result=null;lastManualStep=0;anchors=anchors.filter(a=>held.has(a.id));referencesDirty=true;}
+    if(index===0){pair=[];result=null;lastManualStep=0;anchors=anchors.filter(a=>held.has(a.id)).map(a=>({...a,label:''}));referencesDirty=true;}
     hideAutoNotice();pointerStart=null;lasso=null;tool='swap';pairTarget=index;instructions();sync();return true;
   }
   function setTool(value) {
-    if(!active || isBusy() || !['hold','swap'].includes(value))return false;
+    if(!active || isBusy() || goalPreview || !['hold','swap'].includes(value))return false;
     hideAutoNotice();autoRequested=false;pointerStart=null;lasso=null;tool=value;if(value==='swap'){if(pair[0]==null)pairTarget=0;else if(pair[1]==null)pairTarget=1;}
     instructions();sync();return true;
   }
-  function clearSelection() { if (!active || isBusy()) return false;discardManualSearch();hideAutoNotice(); autoRequested=false;lastManualStep=0;held.clear();pair=[];pairTarget=0;result=null;anchors=[];referencesDirty=true;instructions();sync();return true; }
+  function clearSelection() { if (!active || isBusy() || goalPreview) return false;discardManualSearch();hideAutoNotice(); autoRequested=false;lastManualStep=0;held.clear();pair=[];pairTarget=0;result=null;anchors=[];referencesDirty=true;instructions();sync();return true; }
   function changedHolds() {
     discardManualSearch();
-    pair=pair.map(id=>held.has(id)?null:id);trimPair();
+    // Toggling a hold never cancels a chosen endpoint: its classification and
+    // its temporary swap exemption are independent.
     if(pair[0]==null){pair=[];pairTarget=0;}else if(pair[1]==null)pairTarget=1;
     result=null;autoRequested=false;lastManualStep=0;referencesDirty=true;
   }
   function selectNode(id) {
     id=String(id);
-    if(!active || isBusy() || !model || !nodes().some(n=>n.stickerId===id))return false;
+    if(!active || isBusy() || goalPreview || !model || !nodes().some(n=>n.stickerId===id))return false;
     if(!idle(api.snapshot())){setMessage('Wait for the puzzle to finish moving.');return false;}
     focusId=id;
     if(tool==='hold'){
       if(!held.delete(id))held.add(id);
       changedHolds();instructions();sync();return true;
     }
-    if(held.has(id)){setMessage('That node is held. Choose Select held, then click it to release it.');return false;}
-    if(candidatePartner()===id){setMessage('That node is already A. Choose another node, or click A below to start a new pair.');return false;}
-    if(candidateStatus(id)===2){setMessage('That choice has no legal pair exchange'+(held.size?' with the current holds':'')+(candidatePartner()!=null?' and A':'')+'. Choose a bright node for a ready sequence, or a ? node to check'+(held.size?', or release a hold.':'.'));return false;}
+
+    if(candidatePartner()===id){setMessage('Already selected as 1.');return false;}
+    if(candidateStatus(id)===2){setMessage('That choice has no legal pair exchange'+(held.size?' with the current holds':'')+(candidatePartner()!=null?' and 1':'')+'. Choose a bright node for a ready sequence, or a ? node to check'+(held.size?', or release a hold.':'.'));return false;}
     if(pair[pairTarget]===id)return true;
     discardManualSearch();result=null;autoRequested=false;lastManualStep=0;pair[pairTarget]=id;
     if(pair[0]==null)pairTarget=0;else if(pair[1]==null)pairTarget=1;
@@ -391,60 +491,20 @@
     while (cache.size && cacheBytes + bytes > CACHE_LIMIT) { const oldest = cache.keys().next().value; cacheBytes -= cache.get(oldest).length * 2; cache.delete(oldest); }
     cache.set(key, value); cacheBytes += bytes;
   }
-  function suggestSwap() {
-    if(!active||isBusy()||!model||autoRequested||!idle(api.snapshot()))return false;
-    ensureEligibility();
-    const snapshot=api.snapshot(),map=mapping(snapshot),colors=core.colorsFromSnapshot(model,snapshot,map),heldNodes=new Set([...held].map(id=>map.stickerToNode[id]));
-    const homeColors={};for(const [id,node]of Object.entries(model.homeBySticker||{}))homeColors[node]=model.colorBySticker?.[id];
-    const candidates=[],seen=new Set(),wordGains=new Map(),sources=[eligibility?.result];
-    if(eligibility?.boundCanRelax)sources.push(eligibility.bound?.result);
-    for(const source of sources){
-      if(!source||rejectedReadiness.has(source))continue;
-      for(const entry of source.readyWitnesses||[]){
-        if(!Array.isArray(entry.word)||!entry.word.length||entry.word.length>5000)continue;
-        for(let i=0;i<(entry.pairs?.length||0);i+=2){
-          const a=entry.pairs[i],b=entry.pairs[i+1],key=Math.min(a,b)+','+Math.max(a,b);
-          if(seen.has(key)||heldNodes.has(a)||heldNodes.has(b)||map.nodeToSticker[a]===undefined||map.nodeToSticker[b]===undefined)continue;
-          seen.add(key);
-          const gain=Number(colors[b]===homeColors[a])+Number(colors[a]===homeColors[b])-Number(colors[a]===homeColors[a])-Number(colors[b]===homeColors[b]);
-          const repeated=hasPair()&&[a,b].every(n=>pair.includes(String(map.nodeToSticker[n])));
-          candidates.push({a,b,word:entry.word,different:colors[a]!==colors[b],gain,repeated});
-        }
-      }
-    }
-    candidates.sort((a,b)=>Number(a.repeated)-Number(b.repeated)||Number(b.different)-Number(a.different)||b.gain-a.gain||a.word.length-b.word.length);
-    const shortlist=candidates.slice(0,24),scoreStarted=performance.now();
-    for(const c of shortlist){
-      if(performance.now()-scoreStarted>35){c.fullGain=c.gain;continue;}
-      const key=c.word.join(',');
-      if(!wordGains.has(key)){
-        let final=colors.slice();
-        for(const index of c.word){const move=model.moves[index]?.perm;if(!move){final=null;break;}const next=final.slice();for(let i=0;i<final.length;i++)next[move[i]]=final[i];final=next;}
-        const gain=final?final.reduce((sum,color,i)=>sum+Number(color===homeColors[i])-Number(colors[i]===homeColors[i]),0):-Infinity;
-        wordGains.set(key,gain);
-      }
-      c.fullGain=wordGains.get(key);
-    }
-    shortlist.sort((a,b)=>Number(a.repeated)-Number(b.repeated)||Number(b.different)-Number(a.different)||b.fullGain-a.fullGain||a.word.length-b.word.length);
-    for(const c of shortlist){
-      const ids=[String(map.nodeToSticker[c.a]),String(map.nodeToSticker[c.b])];
-      try{
-        const req=core.requestFromSnapshot(model,snapshot,{protectedStickerIds:[...held],swapStickerIds:ids,holdSemantics:'color'});
-        if(!core.verify(model,core.normalize(model,req),c.word))continue;
-        discardManualSearch();result=null;lastManualStep=0;pair=ids;pairTarget=1;tool='swap';referencesDirty=true;
-        lastSwapWitness={key:eligibility?.key,a:c.a,b:c.b,word:c.word.slice()};
-        setMessage('Suggested pair · '+c.word.length+' verified '+(c.word.length===1?'move':'moves')+'. Press Go to swap it, or choose different A and B. Other unheld nodes may move.');sync();return true;
-      }catch(_){}
-    }
-    setMessage(eligibility?.status==='pending'?'Still checking for ready pairs. You can choose A and B while this finishes.':'No ready pair is stored for these holds yet. Select a ? pair to check it'+(held.size?', or release a hold.':'.'));sync();return false;
-  }
+
   function startSearch(maxMs,continuing=false) {
+    if(goalPreview)return false;
+    // A failed check releases the visible endpoints. Explicit Continue restores
+    // its private pair and retained frontier; choosing anything new discards it.
+    if(continuing && active && phase==='selecting' && canContinueSearch() && worker && manualSearch.pair?.length===2){
+      pair=manualSearch.pair.slice();pairTarget=1;tool='swap';referencesDirty=true;
+    }
     if (!active || phase !== 'selecting' || !hasPair() || !model) return;
     const snapshot = api.snapshot(); if (!idle(snapshot)) return;
     ensureEligibility();if(selectedPairStatus()===2){syncPairUI();syncEligibilityNote();return;}
     let req, before;
-    try { req = core.requestFromSnapshot(model, snapshot, {protectedStickerIds: [...held], swapStickerIds: pair,holdSemantics:'color'}); before = mapping(snapshot); }
-    catch (error) { setMessage(error.message); return; }
+    try { req = core.requestFromSnapshot(model, snapshot, {protectedStickerIds: effectiveHeld(), swapStickerIds: pair,holdSemantics:'color'}); before = mapping(snapshot); }
+    catch (error) { discardManualSearch();clearManualPair();setSolverSpeed(false);setMessage(error.message);sync(); return; }
     const startKey=tokenKey(before),cacheKey=JSON.stringify({protected:req.protected.slice().sort((a,b)=>a-b),swap:req.swap,occupied:req.occupiedNodes,holdSemantics:req.holdSemantics,colors:req.colorByNode}),sessionKey=cacheKey+'|'+startKey;
     if(manualSearch&&manualSearch.key!==sessionKey)discardManualSearch();
     if(manualUnavailable()&&!readyWord(req.swap[0],req.swap[1])&&(!continuing||!canContinueSearch())){sync();return;}
@@ -456,9 +516,9 @@
     if(witness){try{if(!core.verify(model,core.normalize(model,req),witness))throw Error('invalid witness');}catch(_){witness=null;lastSwapWitness=null;if(source)rejectedReadiness.add(source);}}
     else if(source)rejectedReadiness.add(source);
     if(manualUnavailable()&&!witness&&(!continuing||!canContinueSearch())){sync();return;}
-    if(!manualSearch)manualSearch={key:sessionKey,search:{budgetMs:0,elapsedMs:0,states:0,transitions:0,canContinue:false},budgetMs:maxMs,stage:'loading-model',progressAt:performance.now()};
+    if(!manualSearch)manualSearch={key:sessionKey,pair:pair.slice(),search:{budgetMs:0,elapsedMs:0,states:0,transitions:0,canContinue:false},budgetMs:maxMs,stage:'loading-model',progressAt:performance.now()};
     manualSearch.budgetMs=maxMs;manualSearch.stage=continuing?'planning':'loading-model';manualSearch.progressAt=performance.now();
-    captureReferences();phase = 'solving'; result = null; lastManualStep=0; setAutoSpeed(true); setMessage(witness?'Starting the verified swap… Held colors return at the end.':continuing?'Continuing the saved search. Previously checked states are retained; no moves until a sequence is verified.':'Checking this pair… No moves until a sequence is verified. You can cancel at any time.'); sync();
+    captureReferences();phase = 'solving'; result = null; lastManualStep=0; setSolverSpeed(true); setMessage(witness?'Starting swap…':continuing?'Resuming search…':'Checking pair…'); sync();
     const id = ++epoch;
     const receive = payload => {
       if (id !== epoch || !active || phase !== 'solving') return;
@@ -475,16 +535,17 @@
           if (payload.modelFingerprint && payload.modelFingerprint !== core.modelFingerprint(model)) throw Error('The puzzle model changed. Reload before solving.');
           remember(cacheKey, payload);
           lastSwapWitness={key:eligibilityKey,a:req.swap[0],b:req.swap[1],word:r.moveIndices.slice()};
-          execution = {request: normalized, indices:r.moveIndices.slice(), offset:0, chunkEnd:0, pending:false, expected:{...before.stickerToNode}, original:{...before.stickerToNode}, length:r.moveIndices.length};
-          phase = 'executing'; setMessage('Playing ' + execution.length + ' verified moves' + (r.optimal ? ' · shortest sequence.' : ' · shortest length not proved.') + ' Held colors return at the end.'); sync(); runChunk();
+          execution = {request: normalized, heldNodes:[...held].map(sticker=>before.stickerToNode[sticker]), swappedHolds:pair.filter(sticker=>held.has(sticker)).length, indices:r.moveIndices.slice(), offset:0, chunkEnd:0, pending:false, expected:{...before.stickerToNode}, original:{...before.stickerToNode}, length:r.moveIndices.length};
+          window.PuzzleJournal?.beginSequence('Constrained swap');phase = 'executing';window.PuzzleSelection3D?.clearHover?.(); setMessage('Solving · ' + execution.length + ' moves' + (r.optimal ? ' · shortest' : '')); sync(); runChunk();
         } else {
-          phase = 'selecting'; setAutoSpeed(false);
+          phase = 'selecting'; setSolverSpeed(false);
           const supplied=r.search||{},canResume=r.status==='unknown'&&supplied.canContinue===true&&!!worker&&Number(supplied.nextBudgetMs)>maxMs&&Number(supplied.nextBudgetMs)<=60000;
           manualSearch.search={...manualSearch.search,...supplied,budgetMs:maxMs,canContinue:canResume,...(canResume?{}:{terminalReason:supplied.terminalReason||r.reason||'search_limit'})};manualSearch.stage='paused';
           if(!canResume)terminateWorker();
+          clearManualPair();
           if (r.status === 'impossible') { remember(cacheKey, payload); setMessage('This swap is proved impossible with these held colors. No moves were made. Choose another pair or release a hold.'); }
-          else if (r.status === 'unknown'&&canResume){const count=Number(supplied.states)||0;setMessage('Search paused'+(count?' · '+count.toLocaleString()+' states examined':'')+'. Progress is saved. Continue adds '+seconds(supplied.nextBudgetMs-maxMs)+'s, or try another pair. No moves were made.');}
-          else if(r.status==='unknown'&&/worker|load|network|integrity/.test(r.reason||''))setMessage('The search could not continue ('+String(r.reason).replace(/_/g,' ')+'). No moves were made. Choose another pair or reopen Constrained Solver to try again.');
+          else if (r.status === 'unknown'&&canResume){const count=Number(supplied.states)||0;setMessage('Search paused'+(count?' · '+count.toLocaleString()+' states examined':'')+'. 1 and 2 are cleared; holds are unchanged. Continue previous pair restores them and adds '+seconds(supplied.nextBudgetMs-maxMs)+'s to the saved search, or choose a new pair. No moves were made.');}
+          else if(r.status==='unknown'&&/worker|load|network|integrity|release_mismatch/.test(r.reason||'')){setMessage(r.reason==='release_mismatch'?'This puzzle tab and its solver are from different releases. Reload the puzzle before trying again. No moves were made.':'The search could not continue ('+String(r.reason).replace(/_/g,' ')+(r.detail?': '+String(r.detail).slice(0,160):'')+'). No moves were made. If the site was just updated, reload this puzzle; otherwise reopen Constrained Solver to retry.');showAutoNotice(message,true);autoNoticeRetry.hidden=true;}
           else if (r.status === 'unknown') {
             const reason=String(supplied.terminalReason||r.reason||''),limit=/storage|memory|state_limit/.test(reason)?'Memory limit reached. ':/depth|output|word/.test(reason)?'Sequence search limit reached. ':maxMs>=60000?'One-minute search budget reached. ':'';
             setMessage(limit+'No viable sequence found within these limits. This is not proved impossible. Try another pair or release a hold. No moves were made.');
@@ -492,12 +553,12 @@
           else setMessage('This request is unavailable: ' + (r.reason || 'unsupported state') + '. No moves were made.');
           sync();
         }
-      } catch (error) { terminateWorker();manualSearch=null;phase = 'selecting'; result = null; execution = null; pair = []; setAutoSpeed(false); setMessage(error.message); sync(); }
+      } catch (error) { terminateWorker();manualSearch=null;phase = 'selecting'; result = null; execution = null; clearManualPair();setSolverSpeed(false); setMessage(error.message); sync(); }
     };
     if(witness){Promise.resolve().then(()=>receive({result:{status:'solved',moveIndices:witness,optimal:witness.length===1,source:'stored-eligibility-witness'},modelFingerprint:core.modelFingerprint(model)}));return;}
     if (cache.has(cacheKey)) { const payload = JSON.parse(cache.get(cacheKey)); Promise.resolve().then(() => receive(payload)); return; }
     try {
-      if(!worker)worker = new Worker(workerURL);
+      if(!worker)worker = new Worker(core.workerURL||new URL('constrained-solver-worker.js', scriptBase));
       worker.onmessage = event => {
         const data=event.data;if(data?.id!==id||id!==epoch||!active||phase!=='solving')return;
         if(data.type==='result'){receive(data);return;}
@@ -508,13 +569,14 @@
           // The watchdog is a wall-time safety net, not a new solver budget.
           if(starting){clearWorkerTimer();workerTimer=setTimeout(()=>receive({result:{status:'unknown',reason:['planning','searching'].includes(data.stage)?'worker_timeout':'solver_data_load_timeout'}}),['planning','searching'].includes(data.stage)?Math.max(1000,maxMs-priorElapsed)+3000:24000);}
           if(data.stage==='loading-cache')setMessage('Loading the verified move library…');
-          if(data.stage==='planning'||data.stage==='searching')setMessage(continuing?'Continuing the saved search. No moves until the sequence is verified.':'Finding a legal swap that restores the held colors…');
+          if(data.stage==='planning'||data.stage==='searching')setMessage(continuing?'Resuming search…':'Finding a verified swap…');
           updateSearchProgress();
         }
       };
-      worker.onerror = () => receive({result:{status:'unknown',reason:'worker_unavailable'}});
+      worker.onerror = event => receive({result:{status:'unknown',reason:'worker_unavailable',detail:event?.message}});
+      worker.onmessageerror=()=>receive({result:{status:'unknown',reason:'worker_message_error'}});
       clearWorkerTimer();workerTimer = setTimeout(() => receive({result:{status:'unknown',reason:'worker_timeout'}}),continuing?Math.max(1000,maxMs-priorElapsed)+3000:24000);
-      worker.postMessage({task:'manual-swap',id,modelId:api.puzzle,snapshot,selection:{protectedStickerIds:[...held],swapStickerIds:pair.slice(),holdSemantics:'color'},options:{maxMs,maxOutputMoves:5000}});
+      worker.postMessage({task:'manual-swap',id,modelId:api.puzzle,expectedRelease:core.assetRelease,snapshot,selection:{protectedStickerIds:effectiveHeld(),swapStickerIds:pair.slice(),holdSemantics:'color'},options:{maxMs,maxOutputMoves:5000}});
     } catch (_) { receive({result:{status:'unknown',reason:'worker_unavailable'}}); }
   }
   const AUTO_GAP_MS = 500;
@@ -525,28 +587,27 @@
   }
   async function autoSolve(maxMs = 15000) {
     try{return await startAutoPlanning(maxMs);}
-    catch(error){terminateWorker();autoJob=null;execution=null;result={status:'unknown',reason:error.code||'startup_error'};phase='selecting';setAutoSpeed(false);reportAutoFailure(result.reason,error.message);sync();return false;}
+    catch(error){terminateWorker();autoJob=null;execution=null;result={status:'unknown',reason:error.code||'startup_error'};phase='selecting';setSolverSpeed(false);reportAutoFailure(result.reason,error.message);sync();return false;}
   }
   async function startAutoPlanning(maxMs) {
     if (['executing','auto-gap','loading'].includes(phase) || !idle(api.snapshot())) return false;
     if (phase === 'solving') cancelSearch();
-    discardManualSearch();
+    discardManualSearch();exitToManual=false;
     if(phase==='unavailable')closePanel();
     autoRequested=true;
     showAutoNotice('Loading the puzzle move model…');
-    // Mirror difficulty deliberately hides the map. Return to its colored view
-    // before opening the existing panel; neither operation changes the state.
-    if (api.snapshot().mirrorMode && api.setMirrorMode) { api.setMirrorMode(false); await Promise.resolve(); }
+    // Mirror mode shares the same legal move model and keeps the map usable.
     document.getElementById('ringPanelToggle')?.click();
     if (!active && !await setActive(true)) return false;
+    if(!autoRequested)return false;
     if (!model || phase === 'unavailable') return false;
     const snapshot = api.snapshot(); if (!idle(snapshot)) return false;
     let before;
     try { before = mapping(snapshot); core.solvedProgress(model, snapshot); }
-    catch (error) { phase='selecting';reportAutoFailure('state_mapping_error',error.message);sync();return false; }
+    catch (error) { phase='selecting';setSolverSpeed(false);reportAutoFailure('state_mapping_error',error.message);sync();return false; }
     held.clear(); pair=[]; autoJob=null; autoRequested=true; result=null; lastAutoStep=0; phase='solving';
-    setAutoSpeed(true);
-    setMessage('Planning a solution from the current sticker positions… No move journal is needed.');showAutoNotice('Starting the solver…'); sync();
+    setSolverSpeed(true);
+    setMessage('Planning solution…');showAutoNotice('Starting the solver…'); sync();
     const id=++epoch, startKey=tokenKey(before);
     const receive = payload => {
       if (id !== epoch || !active || phase !== 'solving') return;
@@ -560,22 +621,24 @@
         result=r;
         if (r.status !== 'solved') {
           phase='selecting';
-          setAutoSpeed(false);
+          setSolverSpeed(false);
           if (r.status === 'unknown') reportAutoFailure(r.reason||'compute_limit',r.detail);
           else if (r.status === 'impossible') setMessage('This arrangement does not match a reachable state in the solver’s move model. If it followed ordinary game moves, reload the puzzle: this can indicate a browser/model mismatch. No moves were made. ('+(r.reason||'state_outside_legal_moves')+(Number.isInteger(r.failedTargetNode)?'; target node '+r.failedTargetNode:'')+')');
           else setMessage('Auto Solve is unavailable for this state: ' + (r.reason || 'unsupported state') + '. No moves were made.');
           if(r.status!=='unknown')showAutoNotice(message,true);sync(); return;
         }
         if (!core.verifyAutoPlan(model,current,r)) throw Error('The full solution did not pass independent verification. No moves were made.');
+        // Preserve the solver's verified incremental placements. Protecting all
+        // incidental correct colors would merge these into very long stages.
         const stages=r.stages.map(s=>({...s,moveIndices:s.moveIndices.slice(),protectedNodes:s.protectedNodes.slice(),newlySolvedNodes:s.newlySolvedNodes.slice()}));
-        autoJob={stages,goalSemantics:r.goalSemantics||'identity',completed:0,locked:new Set(r.initialProtectedNodes || stages[0]?.protectedNodes || []),paused:false,stopAfterStep:false,gapUntil:0,totalMoves:r.moveIndices.length};
+        autoJob={stages,goalSemantics:r.goalSemantics||'identity',completed:0,locked:new Set(r.initialProtectedNodes || stages[0]?.protectedNodes || []),paused:false,stopAfterStep:false,stopAfterTurn:false,gapUntil:0,totalMoves:r.moveIndices.length};
         updateSecured(); observed=startKey;
         if (!stages.length) finishAuto(false); else beginAutoStage();
-      } catch (error) { autoJob=null; execution=null; phase='selecting'; result=null; pair=[]; setAutoSpeed(false);reportAutoFailure('verification_error',error.message);sync(); }
+      } catch (error) { autoJob=null; execution=null; phase='selecting'; result=null; pair=[]; setSolverSpeed(false);reportAutoFailure('verification_error',error.message);sync(); }
     };
     const watch=stage=>{if(workerTimer!==null)clearTimeout(workerTimer);const loading=stage==='loading-model'||stage==='loading-cache';workerTimer=setTimeout(()=>receive({result:{status:'unknown',reason:loading?(stage==='loading-cache'?'cache_load_timeout':'model_load_timeout'):'time_limit'}}),loading?24000:maxMs+12000);};
     try {
-      worker=new Worker(workerURL);
+      worker=new Worker(core.workerURL||new URL('constrained-solver-worker.js',scriptBase));
       worker.onmessage=event=>{
         const data=event.data;if(data?.id!==id||id!==epoch||!active||phase!=='solving')return;
         if(data.type==='result'){receive(data);return;}
@@ -586,7 +649,7 @@
       worker.onmessageerror=()=>receive({result:{status:'unknown',reason:'worker_message_error'}});
       watch('loading-model');
       // History is intentionally excluded from the planning request.
-      worker.postMessage({task:'full-solve',id,modelId:api.puzzle,snapshot:{...snapshot,history:[]},options:{maxMs,maxOutputMoves:20000}});
+      worker.postMessage({task:'full-solve',id,modelId:api.puzzle,expectedRelease:core.assetRelease,snapshot:{...snapshot,history:[]},options:{maxMs,maxOutputMoves:20000}});
       return true;
     } catch (error) { receive({result:{status:'unknown',reason:'worker_unavailable',detail:error.message}}); return false; }
   }
@@ -594,7 +657,7 @@
     if (!autoJob) return;
     const snapshot=api.snapshot();
     if (!idle(snapshot) || tokenKey(mapping(snapshot)) !== observed) { interrupted('The puzzle changed between constrained steps. No further automatic moves were made.'); return; }
-    if (autoJob.stopAfterStep) { finishAuto(true); return; }
+    if (autoJob.stopAfterStep || autoJob.stopAfterTurn) { finishAuto(true); return; }
     if (autoJob.completed >= autoJob.stages.length) { finishAuto(false); return; }
     hideAutoNotice();
     const stage=autoJob.stages[autoJob.completed], current=mapping(snapshot);
@@ -603,8 +666,8 @@
     pair=[current.nodeToSticker[stage.sourceNode],current.nodeToSticker[stage.targetNode]].filter(id=>id!==undefined).map(String);
     captureReferences();
     execution={kind:'auto',stage,indices:stage.moveIndices,offset:0,chunkEnd:0,pending:false,expected:{...current.stickerToNode},original:{...current.stickerToNode},length:stage.moveIndices.length};
-    phase='executing';
-    setMessage('Constrained step ' + (autoJob.completed+1) + ' of ' + autoJob.stages.length + ' · ' + stage.moveIndices.length + ' moves. Dashed white locations regain their secured colors at the end of this step.'); sync(); runChunk();
+    window.PuzzleJournal?.beginSequence('Auto Solve · step '+(autoJob.completed+1));phase='executing';window.PuzzleSelection3D?.clearHover?.();
+    setMessage('Solving · step ' + (autoJob.completed+1) + ' / ' + autoJob.stages.length + ' · ' + stage.moveIndices.length + ' moves'); sync(); runChunk();
   }
   function finishAuto(stopped) {
     const job=autoJob; if (!job) return;
@@ -614,51 +677,87 @@
     const count=job.completed, moves=job.totalMoves;
     lastAutoStep=job.stages[count-1]?.moveIndices.length||0;
     autoJob=null; execution=null; pair=[]; phase='selecting'; observed=tokenKey(mapping(api.snapshot()));
-    setAutoSpeed(false);
-    setMessage(stopped ? 'Exited after ' + count + ' constrained steps. All ' + held.size + ' secured nodes are restored.' : 'Puzzle solved · ' + count + ' constrained steps · ' + moves + ' moves. All nodes are restored; shortest length is not claimed.');
+    setSolverSpeed(false);
+    setMessage(stopped ? 'Stopped at a completed step · '+held.size+' holds restored.' : 'Solved · '+count+' steps · '+moves+' moves.');
+    if(exitToManual){exitToManual=false;autoRequested=false;returnToDefault=false;tool='hold';pairTarget=0;result=null;anchors=[];referencesDirty=true;enterManualDefaults();window.PuzzleAxisDisplay?.clear();window.PuzzleSelection3D?.clearHover?.();sync();return;}
     closePanel();
   }
-  function stopAuto() {
-    if(autoRequested && (phase==='solving'||phase==='loading')){cancelSearch();return;}
+  function stopAuto(toManual=false,gracefulOnly=false) {
+    // Changing mode always finishes the stage. Only a repeated Stop request
+    // escalates the existing graceful stop to the current primitive turn.
+    if(toManual)exitToManual=true;else if(gracefulOnly)exitToManual=false;
+    if(toManual&&phase==='loading'&&!model){autoRequested=false;exitToManual=false;hideAutoNotice();setSolverSpeed(false);enterManualDefaults();setMessage('Opening manual Constrained Solver…');sync();return;}
+    if(autoRequested && (phase==='solving'||phase==='loading'||(toManual&&!autoJob))){if(toManual){epoch++;terminateWorker();autoRequested=false;autoJob=null;phase=model?'selecting':'unavailable';exitToManual=false;setSolverSpeed(false);enterManualDefaults();hideAutoNotice();setMessage('Planning stopped. Choose holds and a pair.');sync();}else cancelSearch();return;}
     if (!autoJob) return;
-    autoJob.stopAfterStep=true;
-    if (phase==='auto-gap') finishAuto(true);
-    else { autoJob.paused=false;api.resumePlayback?.();setMessage('Stopping after this constrained step, once the secured nodes are restored.'); sync(); }
+    if (phase==='auto-gap') { finishAuto(true);return; }
+    if (!execution || autoJob.stopAfterTurn)return;
+    if(autoJob.stopAfterStep&&!toManual&&!gracefulOnly){
+      autoJob.stopAfterTurn=true;execution.stopAfterTurn=true;autoJob.paused=false;
+      api.stopAfterCurrentMove?.();setMessage('Stopping after the current turn… Unfinished holds will be cleared.');sync();return;
+    }
+    autoJob.stopAfterStep=true;autoJob.paused=false;api.resumePlayback?.();
+    setMessage(toManual?'Finishing this sequence, then opening Constrained Solver…':'Stopping after this sequence… Press Stop again to stop after the current turn.');sync();
   }
-  function interrupted(text) { execution = null; autoJob=null; held.clear(); phase = 'selecting'; pair = []; anchors=[];referencesDirty=true; result = null; observed = null; setAutoSpeed(false); setMessage(text); if(returnToDefault){closePanel();return;}sync(); }
+  function stopManual() {
+    if(!manualStopActive())return false;
+    if(phase==='executing'&&execution){execution.stopAfterTurn=true;api.stopAfterCurrentMove?.();setMessage('Stopping after the current turn…');sync();return true;}
+    if(phase==='loading'){closePanel();return true;}
+    return cancelSearch();
+  }
+  function finishStoppedTurn(snapshot) {
+    const job=execution;if(!job)return;
+    const completed=Math.min(job.chunkEnd-job.offset,Math.max(0,Number(snapshot.sequence?.completed)||0));
+    const expected={...(job.chunkOriginal||job.original)};
+    for(const index of job.indices.slice(job.offset,job.offset+completed))for(const id of Object.keys(expected))expected[id]=model.moves[index].perm[expected[id]];
+    if(!sameMap(mapping(snapshot).stickerToNode,expected)){interrupted('Stopped. The committed turn could not be verified; selections cleared.');return;}
+    const count=job.offset+completed,wasAuto=!!autoJob,toManual=exitToManual;
+    if(count===job.length){job.offset=count;job.pending=false;runChunk();return;}
+    const text='Stopped after '+count+' / '+job.length+' moves. Holds cleared: the unfinished sequence may not have restored their colors.';
+    window.PuzzleJournal?.endSequence();execution=null;autoJob=null;autoRequested=false;exitToManual=false;
+    held.clear();pair=[];pairTarget=0;result=null;anchors=[];referencesDirty=true;observed=tokenKey(mapping(snapshot));phase='selecting';tool='hold';
+    lastManualStep=count;lastAutoStep=count;setSolverSpeed(false);if(wasAuto&&toManual)enterManualDefaults();window.PuzzleAxisDisplay?.clear();window.PuzzleSelection3D?.clearHover?.();
+    setMessage(text);document.getElementById('message').textContent=text;
+    if(returnToDefault||(wasAuto&&!toManual)){closePanel();return;}
+    sync();
+  }
+  function interrupted(text) {window.PuzzleJournal?.endSequence(); window.PuzzleAxisDisplay?.clear();window.PuzzleSelection3D?.clearHover?.(); execution = null; autoJob=null;autoRequested=false;exitToManual=false; held.clear(); phase = 'selecting'; pair = []; anchors=[];referencesDirty=true; result = null; observed = null; setSolverSpeed(false); setMessage(text); if(returnToDefault){closePanel();return;}sync(); }
   function runChunk() {
     const job = execution; if (!job || phase !== 'executing') return;
     try {
       const current = api.snapshot(); if (!idle(current)) return;
       if (!sameMap(mapping(current).stickerToNode, job.expected)) { interrupted('Playback was interrupted. The requested restoration is not confirmed.'); return; }
       if (job.offset >= job.length) {
+        window.PuzzleJournal?.endSequence();
         const end = mapping(current).stickerToNode;
         if (job.kind === 'auto') {
           const restored=new Set([...job.stage.protectedNodes,...job.stage.newlySolvedNodes]);
-          if(autoJob.goalSemantics==='colors'){
-            const solved=new Set(core.solvedProgress(model,current).solvedNodes);
-            if([...restored].some(node=>!solved.has(node)))throw Error('Constrained color restoration check failed.');
-          }else if (Object.entries(model.homeBySticker).some(([id,node])=>restored.has(node) && end[id]!==node)) throw Error('Constrained step restoration check failed.');
+          const colors=core.colorsFromSnapshot(model,current),homeId=new Map(Object.entries(model.homeBySticker).map(([id,node])=>[node,id]));
+          const correct=node=>autoJob.goalSemantics==='colors'?colors[node]===model.colorBySticker[homeId.get(node)]:end[homeId.get(node)]===node;
+          if([...restored].some(node=>!correct(node)))throw Error('Secured-node restoration check failed.');
           for (const node of restored) autoJob.locked.add(node);
           autoJob.completed++; updateSecured(); observed=tokenKey(mapping(current));
+          window.PuzzleAxisDisplay?.clear();
           execution=null; pair=[]; phase='auto-gap'; autoJob.gapUntil=performance.now()+AUTO_GAP_MS;
-          setMessage('Step ' + autoJob.completed + ' complete · ' + held.size + ' nodes solved and secured.'); sync();
-          if (autoJob.stopAfterStep) finishAuto(true);
+          setMessage('Step '+autoJob.completed+' complete · '+held.size+' secured'); sync();
+          if (autoJob.stopAfterStep || autoJob.stopAfterTurn) finishAuto(true);
           return;
         }
         const finalColors=job.request.holdSemantics==='color'?core.colorsFromSnapshot(model,current):null;
         const requestOK = Object.entries(job.original).every(([id,from]) => job.request.protected.includes(from) ? finalColors?finalColors[from]===job.request.colorByNode[from]:end[id] === from : from === job.request.swap[0] ? end[id] === job.request.swap[1] : from === job.request.swap[1] ? end[id] === job.request.swap[0] : true);
         if (!requestOK) throw Error('Final restoration check failed.');
-        // Holds belong to locations. A same-color replacement inherits the hold.
+        // Holds belong to locations. Replaced stickers inherit the hold; a held
+        // swap endpoint intentionally adopts its new color when the pair clears.
         const finalMapping=mapping(current);
-        held=new Set(job.request.protected.map(node=>finalMapping.nodeToSticker[node]).filter(id=>id!==undefined).map(String));
+        held=new Set((job.heldNodes||job.request.protected).map(node=>finalMapping.nodeToSticker[node]).filter(id=>id!==undefined).map(String));
         observed = tokenKey(mapping(current)); const length = job.length;
         const optimal=!!result?.optimal;
-        lastManualStep = length; execution = null; phase = 'selecting'; pair=[];pairTarget=0;result=null;tool='swap';anchors=anchors.filter(a=>held.has(a.id));referencesDirty=true;setAutoSpeed(false);
+        window.PuzzleAxisDisplay?.clear();
+        lastManualStep = length; execution = null; phase = 'selecting'; pair=[];pairTarget=0;result=null;tool='swap';anchors=anchors.filter(a=>held.has(a.id)).map(a=>({...a,label:''}));referencesDirty=true;setSolverSpeed(false);
         if(returnToDefault){closePanel();return;}
-        setMessage('Swap complete · ' + length + ' moves' + (optimal ? ' · proved shortest' : '') + '. All ' + held.size + ' held colors are restored. Choose a new A and B.'); sync(); return;
+        setMessage('Swap complete · ' + length + ' moves' + (optimal ? ' · shortest' : '')); sync(); return;
       }
       const indices = job.indices.slice(job.offset, job.offset + 300);
+      job.chunkOriginal={...job.expected};
       const predicted = {...job.expected};
       for (const i of indices) for (const id of Object.keys(predicted)) predicted[id] = model.moves[i].perm[predicted[id]];
       if (!api.runMoves(indices.map(i => model.moves[i].engineMove), {label:job.kind==='auto' ? 'Auto Solve · constrained step ' + (autoJob.completed+1) : 'Constrained swap'})) { interrupted('The puzzle could not start playback. No further moves were made.'); return; }
@@ -679,7 +778,7 @@
     return inside;
   }
   overlay.addEventListener('pointerdown', event => {
-    if (event.button > 0 || !active || isBusy() || !idle(api.snapshot())) return;
+    if (event.button > 0 || !active || isBusy() || goalPreview || !idle(api.snapshot())) return;
     event.preventDefault(); event.stopPropagation(); overlay.focus({preventScroll:true});
     pointerStart={x:event.clientX,y:event.clientY,id:hitAt(event)?.stickerId,pointer:event.pointerId,dragged:false};
     lasso=tool==='hold'?[localPoint(event)]:null;
@@ -693,7 +792,7 @@
       let added=0,removed=0; const ids=new Set(nodes().filter(n=>enclosed(n,polygon)).map(n=>n.stickerId));
       for (const id of ids) { if(held.delete(id))removed++;else{held.add(id);added++;} }
       if(ids.size)changedHolds();
-      setMessage(ids.size ? added+' held · '+removed+' released. Choose A or B below when ready.' : 'No nodes changed. Enclose node centers to select them.'); sync();
+      setMessage(ids.size ? added+' held · '+removed+' released' : 'No nodes changed'); sync();
     } else if (!start.dragged && start.id!==undefined) selectNode(start.id);
   });
   overlay.addEventListener('pointercancel', () => { pointerStart=null; lasso=null; lastDraw=''; });
@@ -721,7 +820,9 @@
   // Capture only puzzle shortcuts while active. Camera controls and normal form
   // navigation keep their original behavior; inactive mode is a strict no-op.
   document.addEventListener('keydown', event => {
-    if (!active || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    if(goalPreview&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();setGoalPreview(false);return;}
+    if(!active)return;
     if (event.target === overlay) {
       if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' '].includes(event.key)) { event.preventDefault(); event.stopImmediatePropagation(); if (!isBusy()) { if (event.key === 'Enter' || event.key === ' ') { if (focusId !== null) selectNode(focusId); } else navigate(event.key); } return; }
     }
@@ -733,78 +834,119 @@
   document.addEventListener('click', event => {
     if (!active) return;
     const target = event.target.closest?.('button');
-    if (target && (['cw','ccw'].includes(target.id) || target.classList.contains('ring-key'))) { event.preventDefault(); event.stopImmediatePropagation(); return; }
+    if (target && (['cw','ccw','axisTurnCW','axisTurnCCW'].includes(target.id) || target.classList.contains('ring-key') || target.classList.contains('notation-key') || target.closest('#jumbleControls'))) { event.preventDefault(); event.stopImmediatePropagation(); return; }
     if (['loading','solving','executing','auto-gap'].includes(phase) && target && (['randomize','solve','reset','undo','mirrorMode','advanced','advancedMode','jumbleMode'].includes(target.id) || target.classList.contains('notation-key') || target.closest('#jumbleControls'))) { event.preventDefault(); event.stopImmediatePropagation(); return; }
     if (['randomize','reset'].includes(target?.id) && !target.disabled) closePanel();
   }, true);
   toggle.addEventListener('click', () => setActive(true));
-  normalMode.addEventListener('click',()=>{if(!active)return;if(autoStopActive()){stopAuto();return;}if(phase==='executing'){returnToDefault=true;api.resumePlayback?.();setMessage('Returning to Turn rings after this swap restores the held nodes.');sync();return;}closePanel();}); hold.addEventListener('click', () => setTool('hold'));swap.addEventListener('click', () => setTool('swap'));
+  normalMode.addEventListener('click',()=>{if(!active)return;if(autoStopActive()){stopAuto(false,true);return;}if(phase==='executing'){returnToDefault=true;stopManual();return;}closePanel();}); hold.addEventListener('click', () => setTool('hold'));swap.addEventListener('click', () => setTool('swap'));
   clear.addEventListener('click', clearSelection); cancel.addEventListener('click', cancelSearch); retry.addEventListener('click', () => autoRequested ? autoSolve(30000) : canContinueSearch()&&startSearch(manualSearch.search.nextBudgetMs,true));
-  suggest.addEventListener('click',suggestSwap);
+  suggestHolds.addEventListener('click',suggestCurrentHolds);
+  showGoal.addEventListener('pointerdown',event=>{if(event.button>0)return;event.preventDefault();if(setGoalPreview(true)){goalPointer=event.pointerId;showGoal.setPointerCapture?.(event.pointerId);}});
+  const releaseGoalPointer=event=>{if(goalPointer!==null&&(event.pointerId===undefined||event.pointerId===goalPointer))setGoalPreview(false);};
+  showGoal.addEventListener('pointerup',releaseGoalPointer);showGoal.addEventListener('pointercancel',releaseGoalPointer);showGoal.addEventListener('lostpointercapture',releaseGoalPointer);
+  document.addEventListener('pointerup',releaseGoalPointer,true);document.addEventListener('pointercancel',releaseGoalPointer,true);
+  showGoal.addEventListener('keydown',event=>{if(event.key!==' '&&event.key!=='Enter')return;event.preventDefault();if(!event.repeat&&setGoalPreview(true))goalKey=event.key;});
+  const releaseGoalKey=event=>{if(goalKey&&event.key===goalKey){event.preventDefault();setGoalPreview(false);}};
+  showGoal.addEventListener('keyup',releaseGoalKey);document.addEventListener('keyup',releaseGoalKey,true);
+  showGoal.addEventListener('click',event=>event.preventDefault());showGoal.addEventListener('contextmenu',event=>event.preventDefault());showGoal.addEventListener('blur',()=>setGoalPreview(false));
+  window.addEventListener('blur',()=>setGoalPreview(false));document.addEventListener('visibilitychange',()=>{if(document.hidden)setGoalPreview(false);});
   go.addEventListener('click',()=>startSearch(3000));
-  autoNoticeRetry.addEventListener('click',()=>autoSolve(30000));autoNoticeDismiss.addEventListener('click',hideAutoNotice);
+  autoNoticeReload.addEventListener('click',()=>{if(!execution)window.location?.reload?.();});autoNoticeRetry.addEventListener('click',()=>autoSolve(30000));autoNoticeDismiss.addEventListener('click',hideAutoNotice);
   aChip.addEventListener('click',()=>editPair(0));
   bChip.addEventListener('click',()=>editPair(1));
   function draw() {
     const b = rings.getBoundingClientRect(), list = nodes(), dpr = Math.min(window.devicePixelRatio || 1,2);
     const viewport=bridge.viewport?.();
     const blockedHover=tool==='swap' && hover!==null && candidateStatus(hover)===2;
-    overlay.style.cursor=isBusy()?'progress':blockedHover?'not-allowed':tool==='swap'?'pointer':'crosshair';
-    overlay.title=blockedHover?'Proved unavailable with the current holds and other endpoint':tool==='swap'?(hover!==null?(candidateReady(hover)?'Verified sequence ready. ':'No sequence ready; select this ? node to check it. '):'')+'Choose '+(pairTarget?'B':'A')+' · click its card below to change the target':'Click or lasso to flip each node between held and not held';
-    const key = JSON.stringify([b.width,b.height,viewport,anchors,phase,tool,[...held],pair,pairTarget,hover,focusId,lasso,eligibility?.status,document.activeElement === overlay,list.map(n=>[n.stickerId,n.x,n.y,n.r,n.highlightLineWidth,n.highlightOuterRadius,n.highlighted])]); if (key === lastDraw) return; lastDraw = key;
-    overlay.width = Math.max(1,Math.round(b.width*dpr)); overlay.height = Math.max(1,Math.round(b.height*dpr)); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,b.width,b.height);
-    backdrop.width=overlay.width;backdrop.height=overlay.height;backCtx.setTransform(dpr,0,0,dpr,0,0);backCtx.clearRect(0,0,b.width,b.height);
+    overlay.style.cursor=goalPreview?'default':isBusy()?'progress':blockedHover?'not-allowed':tool==='swap'?'pointer':'crosshair';
+    overlay.title=goalPreview?'Solved goal colors · release Show goal to resume. Hollow gray nodes are positions absent from the solved shape.':blockedHover?'Proved unavailable with the current holds and other endpoint':tool==='swap'?(hover!==null?(candidateReady(hover)?'Verified sequence ready. ':'No sequence ready; select this ? node to check it. '):'')+'Choose '+(pairTarget?'2':'1')+' · click its card below to change the target':'Click or lasso to flip each node between held and not held';
+    const key = JSON.stringify([b.width,b.height,viewport,anchors,phase,tool,goalPreview,[...held],pair,pairTarget,hover,focusId,lasso,eligibility?.status,document.activeElement === overlay,list.map(n=>[n.stickerId,n.x,n.y,n.r,n.highlightLineWidth,n.highlightOuterRadius,n.highlighted])]); if (key === lastDraw) return; lastDraw = key;
+    const pixelWidth=Math.max(1,Math.round(b.width*dpr)),pixelHeight=Math.max(1,Math.round(b.height*dpr));
+    // Retain backing stores between moves: assigning even the same canvas
+    // dimensions resets its context and can allocate another full bitmap.
+    if(overlay.width!==pixelWidth)overlay.width=pixelWidth;if(overlay.height!==pixelHeight)overlay.height=pixelHeight;
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,b.width,b.height);
+    if(backdrop.width!==pixelWidth)backdrop.width=pixelWidth;if(backdrop.height!==pixelHeight)backdrop.height=pixelHeight;backCtx.setTransform(dpr,0,0,dpr,0,0);backCtx.clearRect(0,0,b.width,b.height);
     if(viewport?.scale>0)for(const a of anchors){
       const x=viewport.x+a.x*viewport.scale,y=viewport.y+a.y*viewport.scale,r=Math.max(4,a.r*viewport.scale)+7;
       backCtx.beginPath();backCtx.arc(x,y,r,0,Math.PI*2);backCtx.fillStyle='rgba(145,145,157,.18)';backCtx.fill();
       if(a.label){backCtx.font='700 12px system-ui';backCtx.textAlign='center';backCtx.textBaseline='middle';backCtx.fillStyle='#73737e';backCtx.fillText(a.label,x+Math.min(r+6,18),y-r-3);}
     }
+    // Paint eligibility below every selection mark. A neighboring node may
+    // overlap a numbered badge, so interleaving these layers can shade 1/2.
     for (const n of list) {
-      const fixed = held.has(n.stickerId), index = pair.indexOf(n.stickerId), hot = hover === n.stickerId, focused = document.activeElement === overlay && focusId === n.stickerId;
-      const choice=eligibilityCode(n.stickerId);
+      if(goalPreview){
+        // Opaque circles exactly cover the native node fills. Holds and pair
+        // outlines remain legible; no readiness dimming obscures the goal.
+        const color=goalColors?.get(n.stickerId);
+        ctx.beginPath();ctx.arc(n.x,n.y,Math.max(3,n.r||5)+.4,0,Math.PI*2);ctx.fillStyle=color||'#24252e';ctx.fill();
+        if(!color){ctx.strokeStyle='#8b8c97';ctx.lineWidth=1.25;ctx.stroke();}
+      }
+      const choice=goalPreview?0:eligibilityCode(n.stickerId);
       if(choice===2 || choice===3){
         ctx.beginPath();ctx.arc(n.x,n.y,Math.max(3,n.r||5)+1,0,Math.PI*2);ctx.fillStyle=choice===2?'rgba(20,21,29,.78)':'rgba(20,21,29,.42)';ctx.fill();
-        if(choice===3){ctx.font='700 '+Math.max(7,Math.min(12,(n.r||5)*1.65))+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#eeeaf5';ctx.fillText('?',n.x,n.y+.3);}
+        if(choice===3){ctx.font='700 '+Math.max(7,Math.min(12,(n.r||5)*1.65))+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#eeeeee';ctx.fillText('?',n.x,n.y+.3);}
       }
+    }
+    // On small screens the minimum eligibility-mask radius may extend into
+    // a neighboring selected node. Clear only these two native-color disks;
+    // do not repaint colors, which may represent mirror mode or a moving tile.
+    if(!goalPreview)for(const n of list){if(!pair.includes(n.stickerId))continue;const r=Math.max(3,n.r||5)+.4;ctx.save();ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.clip();ctx.clearRect(n.x-r,n.y-r,r*2,r*2);ctx.restore();}
+    const endpointLabels=[];
+    for (const n of list) {
+      const fixed = held.has(n.stickerId), index = pair.indexOf(n.stickerId), hot = hover === n.stickerId, focused = document.activeElement === overlay && focusId === n.stickerId;
       if (!fixed && index < 0 && !hot && !focused) continue;
       const nodeRadius = Math.max(3,n.r || 5), nativeWidth = Number.isFinite(n.highlightLineWidth) && n.highlightLineWidth > 0 ? n.highlightLineWidth : 2.2;
       const nativeOuter = Number.isFinite(n.highlightOuterRadius) ? Math.max(nodeRadius,n.highlightOuterRadius) : nodeRadius;
       const radius = nodeRadius + 3;
+      const heldRadius = nativeOuter + nativeWidth + 2;
+      const selectedRadius = fixed ? Math.max(radius,heldRadius + nativeWidth/2 + 4.4) : radius;
       if (fixed) {
-        // The native canvas owns the selected-axis solid outline. A held node
-        // adds only this outer dashed ring, with the same native stroke weight.
-        const outerRadius = nativeOuter + nativeWidth + 2;
+        // A selected held node keeps its dashed classification, surrounded by
+        // a separate thicker numbered endpoint circle.
+        const outerRadius = heldRadius;
         ctx.setLineDash([nativeWidth * 2, nativeWidth * 1.25]);
         ctx.beginPath(); ctx.arc(n.x,n.y,outerRadius,0,Math.PI*2);
         ctx.lineWidth=nativeWidth; ctx.strokeStyle='#ffffff'; ctx.stroke(); ctx.setLineDash([]);
-      } else if (index >= 0 || hot || focused) {
-        ctx.beginPath(); ctx.arc(n.x,n.y,radius,0,Math.PI*2); ctx.lineWidth=index>=0?4.8:1.3; ctx.strokeStyle=index>=0?'#ffffff':'#f4f1fc'; ctx.stroke();
       }
-      if (index >= 0) { const x = Math.max(8,Math.min(b.width-8,n.x+radius+6)),y=Math.max(9,n.y-radius-4);ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();ctx.font='700 9px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#171820';ctx.fillText(index?'B':'A',x,y+.4); }
+      if (index >= 0 || (!fixed && (hot || focused))) {
+        ctx.beginPath(); ctx.arc(n.x,n.y,index>=0?selectedRadius:radius,0,Math.PI*2); ctx.lineWidth=index>=0?4.8:1.3; ctx.strokeStyle=index>=0?'#ffffff':'#f5f5f5'; ctx.stroke();
+      }
+      if (index >= 0) endpointLabels.push({x:Math.max(8,Math.min(b.width-8,n.x+selectedRadius+6)),y:Math.max(9,n.y-selectedRadius-4),label:index?'2':'1'});
       // The solid hover/focus outline above keeps keyboard focus distinct from
       // the dashed held-node symbol; an unheld node never gets a dashed circle.
     }
+    // Number badges are the top selection layer, above neighboring node
+    // eligibility masks and held/hover outlines in dense ring maps.
+    for(const {x,y,label} of endpointLabels){ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();ctx.lineWidth=1.25;ctx.strokeStyle='#111111';ctx.stroke();ctx.font='700 9px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#171820';ctx.fillText(label,x,y+.4);}
     if(lasso?.length>1 && pointerStart?.dragged){ctx.beginPath();lasso.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle='rgba(255,255,255,.07)';ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);}
   }
   function frame() {
+    if(mirrorActive()&&(goalPreview||goalRequested))setGoalPreview(false);
+    if(goalPreview&&!active){if(!idle(api.snapshot()))setGoalPreview(false);else draw();}
+    showGoal.hidden=mirrorActive();
+    showGoal.disabled=mirrorActive()||isBusy()||!!autoRequested||(bridge.isBusy?bridge.isBusy():!idle(api.snapshot()));
     if (active) {
       try {
         const snap = api.snapshot();
+        if(goalPreview&&!idle(snap))setGoalPreview(false);
         updateStepProgress(snap);updateSearchProgress();
         if (phase === 'executing' && autoJob) { const paused=!!snap.paused;if(autoJob.paused!==paused){autoJob.paused=paused;sync();} }
-        if (phase === 'executing' && execution?.pending && idle(snap)) { execution.offset = execution.chunkEnd; execution.pending = false; runChunk(); }
+        if (phase === 'executing' && execution?.stopAfterTurn && idle(snap)) finishStoppedTurn(snap);
+        else if (phase === 'executing' && execution?.pending && idle(snap)) { execution.offset = execution.chunkEnd; execution.pending = false; runChunk(); }
         else if (phase === 'auto-gap' && autoJob && !autoJob.paused && performance.now() >= autoJob.gapUntil) beginAutoStage();
         else if (phase === 'selecting' && model && idle(snap)) {
           const now = tokenKey(mapping(snap));
-          if (observed !== null && observed !== now) { discardManualSearch();held.clear(); pair=[]; result=null; autoRequested=false; lastManualStep=0;anchors=[];referencesDirty=true; setMessage('The puzzle changed. Selections were cleared; choose the nodes for this state.'); sync(); }
+          if (observed !== null && observed !== now) { discardManualSearch();held.clear(); pair=[]; result=null; autoRequested=false; lastManualStep=0;anchors=[];referencesDirty=true; setMessage('Puzzle changed · selections cleared.'); sync(); }
           observed = now;
         }
         if(referencesDirty && idle(snap) && phase==='selecting')captureReferences();
         draw();
-      } catch (error) { if (phase === 'executing' || phase === 'auto-gap') interrupted('Playback could not be verified: ' + error.message); else if (phase !== 'loading') { terminateWorker();epoch++;phase='unavailable';setMessage(error.message);sync(); } }
+      } catch (error) { if (phase === 'executing' || phase === 'auto-gap') interrupted('Playback could not be verified: ' + error.message); else if (phase !== 'loading') { terminateWorker();epoch++;phase='unavailable';setSolverSpeed(false);window.PuzzleAxisDisplay?.clear();setMessage(error.message);sync(); } }
     }
     requestAnimationFrame(frame);
   }
-  window.ConstrainedSolverUI = Object.freeze({setActive,closePanel,selectNode,setTool,clearSelection,autoSolve,startAutoSolve:autoSolve,go:()=>startSearch(3000),stopAuto,autoStopActive,syncTransport,cancel:cancelSearch,state:()=>({active,tool,phase,pairTarget,held:[...held],pair:pair.slice(),anchors:anchors.map(a=>({...a})),status:message,eligibility:{status:eligibility?.status||'idle',ready:nodes().filter(n=>eligibilityCode(n.stickerId)===1).map(n=>n.stickerId),uncertain:nodes().filter(n=>eligibilityCode(n.stickerId)===3).map(n=>n.stickerId),blocked:nodes().filter(n=>eligibilityCode(n.stickerId)===2).map(n=>n.stickerId),dimmed:nodes().filter(n=>eligibilityCode(n.stickerId)>=2).map(n=>n.stickerId)},result:result?{status:result.status,optimal:!!result.optimal}:null,search:manualSearch?{...manualSearch.search}:null,executed:execution?.offset || 0,total:execution?.length || 0,auto:autoJob?{active:true,stage:autoJob.completed,completed:autoJob.completed,totalStages:autoJob.stages.length,lockedNodes:[...autoJob.locked],paused:autoJob.paused,gapUntil:autoJob.gapUntil}:null})});
+  window.ConstrainedSolverUI = Object.freeze({blocksManualMoves:()=>active||goalPreview||goalRequested,journalBusy:()=>goalPreview||goalRequested||autoRequested||!!autoJob||['loading','solving','executing','auto-gap'].includes(phase),setActive,closePanel,selectNode,canSelect3D,setTool,suggestHolds:suggestCurrentHolds,setGoalPreview,clearSelection,autoSolve,startAutoSolve:autoSolve,go:()=>startSearch(3000),stopAuto,autoStopActive,stop:stopManual,stopManualAfterStep:stopManual,manualStopActive,syncTransport,cancel:cancelSearch,visualState:()=>({active,...(autoStopActive()?{auto:true}:{}),...(goalPreview?{goalPreview:true}:{}),held:[...held],pair:pair.slice()}),state:()=>({active,tool,phase,pairTarget,goalPreview,guided:null,held:[...held],effectiveHeld:effectiveHeld(),pair:pair.slice(),anchors:anchors.map(a=>({...a})),status:message,eligibility:{status:eligibility?.status||'idle',ready:nodes().filter(n=>eligibilityCode(n.stickerId)===1).map(n=>n.stickerId),uncertain:nodes().filter(n=>eligibilityCode(n.stickerId)===3).map(n=>n.stickerId),blocked:nodes().filter(n=>eligibilityCode(n.stickerId)===2).map(n=>n.stickerId),dimmed:nodes().filter(n=>eligibilityCode(n.stickerId)>=2).map(n=>n.stickerId)},result:result?{status:result.status,optimal:!!result.optimal}:null,search:manualSearch?{...manualSearch.search}:null,executed:execution?.offset || 0,total:execution?.length || 0,auto:autoJob?{active:true,stage:autoJob.completed,completed:autoJob.completed,totalStages:autoJob.stages.length,lockedNodes:[...autoJob.locked],paused:autoJob.paused,stopRequested:autoJob.stopAfterTurn?'turn':autoJob.stopAfterStep?'sequence':null,gapUntil:autoJob.gapUntil}:null})});
   sync(); requestAnimationFrame(frame);
 })();

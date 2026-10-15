@@ -32,7 +32,9 @@ function normalize(model,request){
   else if(c!==null)throw Error('Unoccupied addresses must have null colors');
  }
  const heldSet=new Set(held);
- return {protectedNodes:held,occupiedNodes:occupied,candidateNodes:occupied.filter(x=>!heldSet.has(x)),protection,colorByNode:colors.slice(),holdSemantics:'color'};
+ if(request.exemptSwapEndpoints!==undefined&&typeof request.exemptSwapEndpoints!=='boolean')throw Error('exemptSwapEndpoints must be boolean');
+ const exemptSwapEndpoints=request.exemptSwapEndpoints===true;
+ return {protectedNodes:held,occupiedNodes:occupied,candidateNodes:exemptSwapEndpoints?occupied.slice():occupied.filter(x=>!heldSet.has(x)),protection,colorByNode:colors.slice(),holdSemantics:'color',...(exemptSwapEndpoints?{exemptSwapEndpoints:true}:{})};
 }
 function initResult(d,req){
  const bytes=Math.ceil(d*d/8),result={degree:d,...req,knownPairs:new Uint8Array(bytes),feasiblePairs:new Uint8Array(bytes),firstStatus:new Uint8Array(d).fill(2),readyPairs:new Uint8Array(bytes),readyFirstStatus:new Uint8Array(d),readyWitnesses:[]},candidates=new Set(req.candidateNodes);
@@ -109,7 +111,7 @@ class ColorEligibilityAnalyzer{
    for(const a of req.candidateNodes)for(const b of req.candidateNodes){
     if(a===b)continue;const s=eligibilityStatus(unrestricted,a,b);
     if(s===2){mark(result,a,b,false);ctx.stats.globalExcludedPairs++;}
-    else if(s===1&&!req.protectedNodes.length)mark(result,a,b,true);
+    else if(s===1&&(!req.protectedNodes.length||req.exemptSwapEndpoints&&req.protectedNodes.every(x=>x===a||x===b)))mark(result,a,b,true);
    }
    if(!req.protectedNodes.length)return this.finish(result,ctx,key,unrestricted.reason);
    // This is a conservative fallback, not an impossibility oracle for colors.
@@ -137,7 +139,15 @@ class ColorEligibilityAnalyzer{
   return final;
  }
  macroWitnesses(result,ctx){
-  const d=this.model.degree,held=new Set(result.protectedNodes),candidates=new Set(result.candidateNodes),colors=result.colorByNode;
+  const d=this.model.degree,colors=result.colorByNode;
+  // Reuse bounded O(d) scratch arrays for every sparse macro instead of
+  // allocating Maps/Sets for each candidate. Epoch stamps avoid clearing a
+  // degree-sized array between macros. The existing degree*25 working-space
+  // estimate covers these 14 bytes/address of scratch storage.
+  const held=new Uint8Array(d),candidates=new Uint8Array(d),sourceEpoch=new Uint32Array(d),destinationEpoch=new Uint32Array(d),mapping=new Uint32Array(d);
+  for(const x of result.protectedNodes)held[x]=1;
+  for(const x of result.candidateNodes)candidates[x]=1;
+  let epoch=0;
   const primitive=this.compiled.moves.map(move=>({word:[move.index],support:Array.from(move.perm).flatMap((dst,src)=>src===dst?[]:[src,dst]),trusted:true}));
   const cache=this.colorCache;
   let operations=[];
@@ -145,33 +155,40 @@ class ColorEligibilityAnalyzer{
    if(cache.schemaVersion===1&&cache.kind==='color-macros'&&cache.degree===d&&cache.modelSignature===this.signature&&Array.isArray(cache.operations))operations=cache.operations;
    else ctx.stats.colorCacheError='color_macro_cache_mismatch';
   }
-  for(const op of [...primitive,...operations]){
+  for(let opIndex=0;opIndex<primitive.length+operations.length;opIndex++){
+   const isPrimitive=opIndex<primitive.length,op=isPrimitive?primitive[opIndex]:operations[opIndex-primitive.length];
    ctx.check();ctx.stats.macroTests++;
    if(!op||!Array.isArray(op.word)||!op.word.length||op.word.length>5000||!Array.isArray(op.support)||op.support.length%2||op.support.length>d*2){ctx.stats.invalidMacros++;continue;}
-   const mapping=new Map(),destinations=new Set();let valid=true,preserves=true;
+   epoch=(epoch+1)>>>0;
+   if(!epoch){sourceEpoch.fill(0);destinationEpoch.fill(0);epoch=1;}
+   const violations=[];let valid=true;
    for(let i=0;i<op.support.length;i+=2){
     ctx.tick();const a=op.support[i],b=op.support[i+1];
-    if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||a>=d||b<0||b>=d||a===b||mapping.has(a)||destinations.has(b)){valid=false;break;}
-    mapping.set(a,b);destinations.add(b);if(held.has(b)&&colors[a]!==colors[b])preserves=false;
+    if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||a>=d||b<0||b>=d||a===b||sourceEpoch[a]===epoch||destinationEpoch[b]===epoch){valid=false;break;}
+    sourceEpoch[a]=destinationEpoch[b]=epoch;mapping[a]=b;
+    if(held[b]&&colors[a]!==colors[b])violations.push(b);
    }
-   if(!valid||mapping.size!==destinations.size||[...mapping.keys()].some(x=>!destinations.has(x))){ctx.stats.invalidMacros++;continue;}
-   if(!preserves)continue;
-   const pairs=[];
-   for(const [a,b]of mapping)if(a<b&&mapping.get(b)===a&&candidates.has(a)&&candidates.has(b)&&!eligibilityReady(result,a,b))pairs.push([a,b]);
+   if(valid)for(let i=0;i<op.support.length;i+=2)if(destinationEpoch[op.support[i]]!==epoch){valid=false;break;}
+   if(!valid){ctx.stats.invalidMacros++;continue;}
+   if(violations.length&&!result.exemptSwapEndpoints||violations.length>2)continue;
+   let pairs=[];
+   const preservesPair=(a,b)=>violations.every(x=>x===a||x===b);
+   for(let i=0;i<op.support.length;i+=2){const a=op.support[i],b=op.support[i+1];if(a<b&&sourceEpoch[b]===epoch&&mapping[b]===a&&candidates[a]&&candidates[b]&&!eligibilityReady(result,a,b)&&preservesPair(a,b))pairs.push([a,b]);}
    if(!pairs.length)continue;
    const memo=this.verifiedOperations.get(op);
-   let verified=op.trusted===true&&primitive.includes(op)?true:
+   let verified=isPrimitive?true:
     memo&&memo.word.length===op.word.length&&memo.support.length===op.support.length&&memo.word.every((x,i)=>x===op.word[i])&&memo.support.every((x,i)=>x===op.support[i])?memo.valid:undefined;
    if(verified===undefined){
     ctx.stats.macroVerifications++;let p=identity(d);
     for(const move of op.word){ctx.tick(d);if(!Number.isInteger(move)||move<0||move>=this.compiled.moves.length){valid=false;break;}p=compose(p,this.compiled.moves[move].perm);}
-    verified=valid&&p.every((dst,src)=>dst===(mapping.get(src)??src));this.verifiedOperations.set(op,{valid:verified,word:op.word.slice(),support:op.support.slice()});
+    verified=valid&&p.every((dst,src)=>dst===(sourceEpoch[src]===epoch?mapping[src]:src));this.verifiedOperations.set(op,{valid:verified,word:op.word.slice(),support:op.support.slice()});
    }
    if(!verified){ctx.stats.invalidMacros++;continue;}
    if(result.protection==='throughout'){
     let current=colors.slice();
-    for(const move of op.word){ctx.tick(d);const next=new Array(d),perm=this.compiled.moves[move].perm;for(let x=0;x<d;x++)next[perm[x]]=current[x];current=next;if(result.protectedNodes.some(x=>current[x]!==colors[x])){preserves=false;break;}}
-    if(!preserves)continue;
+    for(const move of op.word){ctx.tick(d);const next=new Array(d),perm=this.compiled.moves[move].perm;for(let x=0;x<d;x++)next[perm[x]]=current[x];current=next;for(const x of result.protectedNodes)if(current[x]!==colors[x]&&!violations.includes(x))violations.push(x);if(violations.length>2||violations.length&&!result.exemptSwapEndpoints)break;}
+    if(violations.length&&!result.exemptSwapEndpoints)continue;
+    pairs=pairs.filter(([a,b])=>preservesPair(a,b));if(!pairs.length)continue;
    }
    for(const [a,b]of pairs){mark(result,a,b,true);mark(result,b,a,true);ctx.stats.macroWitnessPairs+=2;}
    retainWitness(result,op.word,pairs,ctx);

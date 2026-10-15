@@ -5,6 +5,7 @@
 // an impossibility certificate: color transporters are not point stabilizers.
 const {modelSignature}=require('./full-solve.cjs');
 const {search}=require('./search.cjs');
+const {pairOperations}=require('./macro-index.cjs');
 
 function verifyColorWitness(model,request,word){
  const d=model.degree,p=Array.from({length:d},(_,i)=>i);
@@ -23,12 +24,14 @@ function catalogWitness(model,request,cache,{deadline,maxOutputMoves=5000}={}){
  if(!cache||cache.kind!=='color-macros'||cache.schemaVersion!==1||cache.degree!==model.degree||cache.modelSignature!==modelSignature(model)||!Array.isArray(cache.operations))return done({status:'unknown',reason:'color_catalog_unavailable'});
  const [a,b]=request.swap,held=new Set(request.protected),colors=request.colorByNode;
  let best=null;
- for(const op of cache.operations){
+ // The first valid entry is the shortest catalog witness: pair lists are
+ // sorted by move count. Failed words are not trusted merely by their support.
+ for(const op of pairOperations(cache,a,b)){
   if((stats.catalogOperations++&63)===0&&performance.now()>=deadline)break;
   if(!op||!Array.isArray(op.word)||!op.word.length||op.word.length>maxOutputMoves||best&&op.word.length>=best.length||!Array.isArray(op.support)||op.support.length%2)continue;
   let pa=a,pb=b,colorsMatch=true;
   for(let i=0;i<op.support.length;i+=2){const source=op.support[i],dest=op.support[i+1];if(source===a)pa=dest;if(source===b)pb=dest;if(held.has(dest)&&colors[source]!==colors[dest]){colorsMatch=false;break;}}
-  if(colorsMatch&&pa===b&&pb===a&&verifyColorWitness(model,request,op.word)){best=op.word.slice();if(best.length===1)break;}
+  if(colorsMatch&&pa===b&&pb===a&&verifyColorWitness(model,request,op.word)){best=op.word.slice();break;}
  }
  return done(best?{status:'solved',moveIndices:best,optimal:best.length===1,lowerBound:1,method:'color_hold_short_catalog'}:{status:'unknown',reason:'no_catalog_color_witness'});
 }

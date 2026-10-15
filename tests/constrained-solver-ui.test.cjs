@@ -42,19 +42,26 @@ function oneMoveCase(m){
 }
 function assertRequestSatisfied(app,before,request){
   const first=app.core().mapSnapshot(app.model,before),last=app.core().mapSnapshot(app.model,app.snapshot());
-  for(const node of request.protected)assert.equal(last.stickerToNode[first.nodeToSticker[node]],node,'protected sticker returned to original node');
-  assert.equal(last.stickerToNode[first.nodeToSticker[request.swap[0]]],request.swap[1]);
-  assert.equal(last.stickerToNode[first.nodeToSticker[request.swap[1]]],request.swap[0]);
+  if(request.colorByNode){
+    const colors=app.core().colorsFromSnapshot(app.model,app.snapshot(),last);
+    for(const node of request.protected)assert.equal(colors[node],request.colorByNode[node],'protected location retains its requested color');
+    assert.equal(colors[request.swap[0]],request.colorByNode[request.swap[1]],'first endpoint receives the second requested color');
+    assert.equal(colors[request.swap[1]],request.colorByNode[request.swap[0]],'second endpoint receives the first requested color');
+  }else{
+    for(const node of request.protected)assert.equal(last.stickerToNode[first.nodeToSticker[node]],node,'protected sticker returned to original node');
+    assert.equal(last.stickerToNode[first.nodeToSticker[request.swap[0]]],request.swap[1]);
+    assert.equal(last.stickerToNode[first.nodeToSticker[request.swap[1]]],request.swap[0]);
+  }
 }
 
 test('inactive solver leaves normal ring turns unchanged and keeps solver help out of the ring panel',async()=>{
   const app=host();assert.equal(app.ui().state().active,false);assert.equal(app.workers.length,0);
   assert.equal(app.element('csReadme'),null);assert.equal(app.element('csNodeOverlay').hidden,true);
-  app.click('cw');await app.settle();assert.equal(app.snapshot().history.length,1);
+  app.context.PUZZLE_API.select('R');app.click('cw');await app.settle();assert.equal(app.snapshot().history.length,1);
   await app.ready();assert.equal(app.element('csNodeOverlay').hidden,false);
   assert.equal(app.element('csReadmeToggle'),null);
   app.ui().setActive(false);assert.equal(app.element('csReadme'),null);assert.equal(app.element('csNodeOverlay').hidden,true);
-  app.click('cw');await app.settle();assert.equal(app.snapshot().history.length,2);
+  app.context.PUZZLE_API.select('R');app.click('cw');await app.settle();assert.equal(app.snapshot().history.length,2);
 });
 
 test('held selection and explicit Go execute a verified sequence and clear endpoints while retaining holds',async()=>{
@@ -79,8 +86,8 @@ test('puzzle letter shortcuts remain blocked while a solver toolbar button has f
   assert.equal(app.snapshot().history.length,0,'button focus must not leak into the native document move shortcut');
 });
 
-test('held nodes cannot also be a swap endpoint; selecting one endpoint twice does not launch',async()=>{
-  const app=host(),c=oneMoveCase(app.model);await app.ready();app.ui().setTool('hold');const [held]=app.nodeIds(c.held);app.ui().selectNode(held);app.ui().setTool('swap');app.ui().selectNode(held);assert.equal(app.workers.length,0);
+test('held nodes may be swap endpoints; selecting one endpoint twice does not launch',async()=>{
+  const app=host(),c=oneMoveCase(app.model);await app.ready();app.ui().setTool('hold');const [held]=app.nodeIds(c.held);app.ui().selectNode(held);app.ui().setTool('swap');app.ui().selectNode(held);assert.equal(app.workers.length,0);assert.deepEqual(Array.from(app.ui().state().pair),[held]);assert.deepEqual(Array.from(app.ui().state().held),[held]);assert.deepEqual(Array.from(app.ui().state().effectiveHeld),[]);app.click('csPairA');
   const [one]=app.nodeIds(c.pair);app.ui().selectNode(one);app.ui().selectNode(one);await app.flush();assert.equal(app.workers.length,0);assert.equal(app.snapshot().history.length,0);
 });
 
@@ -120,15 +127,14 @@ test('long legal solutions execute all moves across the 300-move game API bounda
   app.workers[0].reply(payload);await app.settle(1200);assert.equal(app.snapshot().history.length,indices.length);assertRequestSatisfied(app,before,payload.request);
 });
 
-test('pause and resume remain usable during constrained-solver execution',async()=>{
+test('Stop commits only the active legal turn and returns to manual selection',async()=>{
   const app=host();await app.ready();await app.choose({held:[1],pair:[0,3]});const payload=await app.payload();assert.equal(payload.result.status,'solved');
   // Pad the independently verified witness with cancelling turns so this tests
-  // pause timing even when the color solver finds a single-move solution.
+  // turn-boundary stopping even when the color solver finds a single-move solution.
   const padding=Array.from({length:3},()=>[0,app.model.moves[0].inverse]).flat(),indices=[...padding,...payload.result.moveIndices];
   payload.result={...payload.result,moveIndices:indices,sequence:indices.map(i=>app.model.moves[i].name),permutation:app.core().permutation(app.model,indices),optimal:false};payload.engineMoves=indices.map(i=>app.model.moves[i].engineMove);
-  app.element('speed').value='1';app.element('speed').dispatch('input');app.workers[0].reply(payload);await app.advance(0);await app.advance(200);app.click('pause');assert.equal(app.snapshot().paused,true);
-  const atPause=app.snapshot().history.length;await app.advance(5000);assert.equal(app.snapshot().history.length,atPause);assert.equal(app.ui().state().phase,'executing');
-  app.click('pause');assert.equal(app.snapshot().paused,false);await app.settle();assert.equal(app.snapshot().history.length,payload.result.moveIndices.length);
+  const before=app.snapshot();app.element('speed').value='1';app.element('speed').dispatch('input');app.workers[0].reply(payload);await app.advance(0);await app.advance(200);app.click('pause');assert.equal(app.snapshot().paused,false);assert.equal(app.ui().state().phase,'executing');
+  await app.settle();assert.equal(app.snapshot().history.length,1);const start=app.core().mapSnapshot(app.model,before).stickerToNode,end=app.core().mapSnapshot(app.model,app.snapshot()).stickerToNode;for(const [id,node]of Object.entries(start))assert.equal(end[id],app.model.moves[indices[0]].perm[node],'exact active permutation committed');assert.equal(app.ui().state().held.length,0);assert.equal(app.ui().state().active,true);assert.deepEqual(Array.from(app.ui().state().pair),[]);assert.equal(String(app.element('speed').value),'1');
 });
 
 test('a shape-changing puzzle executes against occupied geometric addresses',async()=>{
@@ -143,11 +149,11 @@ test('readme content and controls are absent from the ring panel in every featur
   app.ui().setActive(false);assert.equal(app.element('csReadme'),null);assert.equal(app.element('csReadmeToggle'),null);
 });
 
-test('all 34 game pages expose an optional solver and enter selection mode without changing their state',async()=>{
+test('all catalog game pages expose an optional solver and enter selection mode without changing their state',async()=>{
   const manifest=JSON.parse(fs.readFileSync(path.join(games,'constrained-solver-models/manifest.json'),'utf8'));
   const ids=Array.isArray(manifest)?manifest.map(x=>x.id):manifest.models?.map(x=>x.id)||manifest.puzzles?.map(x=>x.id);
-  assert.equal(ids.length,34);
-  for(const id of ids){const app=host(id),before=JSON.stringify(app.snapshot().stickers);assert(app.element('constrainedSolverToggle'),id);await app.ready();assert.equal(JSON.stringify(app.snapshot().stickers),before,id+' activation preserves state');assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,app.model.stickerCount,id+' all physical nodes selectable');app.ui().setActive(false);assert.equal(app.element('csReadme'),null,id);}
+  assert.equal(ids.length,37);assert(ids.includes('axis'));assert(ids.includes('cube9'));assert(ids.includes('cube10'));
+  for(const id of ids){const app=host(id),before=JSON.stringify(app.snapshot().stickers);assert(app.element('constrainedSolverToggle'),id);await app.ready();assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'all',id+' manual setup labels');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),true,id+' manual setup highlights');assert.equal(app.ui().blocksManualMoves(),true,id+' manual moves blocked');assert.equal(JSON.stringify(app.snapshot().stickers),before,id+' activation preserves state');assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,app.model.stickerCount,id+' all physical nodes selectable');app.ui().setActive(false);assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'some',id+' default labels restored');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),id!=='homer',id+' default outlines restored');assert.equal(app.ui().blocksManualMoves(),false,id+' manual moves unlocked');assert.equal(app.element('csReadme'),null,id);}
 });
 
 test('toggle holds and Go preserve stationary references during playback and only holds afterward',async()=>{
@@ -156,16 +162,33 @@ test('toggle holds and Go preserve stationary references during playback and onl
   app.ui().selectNode(fixed);assert.equal(app.ui().state().held.length,0,'Selecting the same node releases it');
   app.click('csHold');app.ui().selectNode(fixed);app.click('csSwap');for(const id of pairIds)app.ui().selectNode(id);
   assert.equal(app.ui().state().phase,'selecting');assert.equal(app.snapshot().history.length,0);assert.equal(app.workers.length,0,'choosing B does not plan or move');
-  await app.advance(0);const anchors=clean(app.ui().state().anchors);assert.equal(anchors.length,3);assert.deepEqual(anchors.filter(a=>a.label).map(a=>a.label),['A','B']);
+  await app.advance(0);const anchors=clean(app.ui().state().anchors);assert.equal(anchors.length,3);assert.deepEqual(anchors.filter(a=>a.label).map(a=>a.label),['1','2']);
   const layer=app.element('csAnchorBackdrop'),marks=[];layer.drawing.clearRect=()=>marks.length=0;layer.drawing.arc=(x,y,r)=>marks.push({x,y,r});
   const g=app.model.moves.findIndex(m=>m.perm[c.held[0]]!==c.held[0]),inv=app.model.moves.findIndex(m=>m.perm.every((x,j)=>app.model.moves[g].perm[x]===j));assert(g>=0&&inv>=0);
-  app.click('csGo');const worker=app.workers.at(-1),indices=[g,inv,c.move];
+  app.context.PuzzleAxisDisplay.choose('U');app.click('csGo');assert.equal(String(app.element('speed').value),'1','manual constrained playback switches to Slow');const worker=app.workers.at(-1),indices=[g,inv,c.move];
   worker.reply({id:worker.request.id,type:'result',result:{status:'solved',moveIndices:indices,optimal:false},modelFingerprint:app.core().modelFingerprint(app.model)});
-  await app.advance(45);assert.equal(app.ui().state().phase,'executing');assert.deepEqual(clean(app.ui().state().anchors),anchors);
+  await app.advance(45);assert.equal(app.ui().state().phase,'executing');assert.equal(String(app.element('speed').value),'1');assert.deepEqual(clean(app.ui().state().anchors),anchors);
   app.element('rings').bounds={left:0,top:0,width:650,height:460};app.win.dispatch('resize');await app.advance(0);
   const v=app.context.PUZZLE_SOLVER_BRIDGE.viewport();for(const a of anchors)assert(marks.some(m=>Math.hypot(m.x-v.x-a.x*v.scale,m.y-v.y-a.y*v.scale)<1e-6),'reference follows the viewport, not a moving piece');
   await app.settle();assert.deepEqual(Array.from(app.ui().state().held),[fixed]);assert.deepEqual(Array.from(app.ui().state().pair),[]);assert.deepEqual(clean(app.ui().state().anchors).map(({r,...a})=>a),anchors.filter(a=>a.id===fixed).map(({r,...a})=>a));assert.equal(app.ui().state().pairTarget,0);assert.equal(app.element('csGo').disabled,true);
   const end=app.core().mapSnapshot(app.model,app.snapshot());assert.equal(end.stickerToNode[pairIds[0]],c.pair[1]);assert.equal(end.stickerToNode[pairIds[1]],c.pair[0]);
-  assert.equal(layer.hidden,false);assert.equal(app.element('csStepProgressBar').value,3);assert.equal(app.element('csStepProgressBar').max,3);
+  assert.equal(String(app.element('speed').value),'1','manual mode retains its All labels playback rate after completion');assert.equal(app.context.PuzzleAxisDisplay.selection('U'),null,'completed manual playback clears the previously highlighted axis');assert.equal(layer.hidden,false);assert.equal(app.element('csStepProgressBar').value,3);assert.equal(app.element('csStepProgressBar').max,3);
   app.click('csClear');await app.advance(0);assert.equal(app.ui().state().anchors.length,0);
+});
+
+test('solver mode changes clear display selection without changing puzzle moves and reset speed on cancelled checking',async()=>{
+  const app=host(),display=app.context.PuzzleAxisDisplay,c=oneMoveCase(app.model);
+  assert(display,'all games load the common display state');
+  display.choose('R');display.hover('F');assert.equal(display.selection('R'),'R');
+  const before=JSON.stringify(app.snapshot().stickers);
+  await app.ready();assert.equal(display.selection('R'),null);assert.equal(display.hovered(),null);
+  assert.equal(JSON.stringify(app.snapshot().stickers),before,'changing display mode does not turn stickers');
+  assert.equal(app.element('csPairA').querySelector('.cs-slot-label').textContent,'1');
+  assert.equal(app.element('csPairB').querySelector('.cs-slot-label').textContent,'2');
+  await app.choose(c);assert.equal(String(app.element('speed').value),'1');
+  app.ui().cancel();assert.equal(String(app.element('speed').value),'1');
+  assert.deepEqual(Array.from(app.ui().state().pair),[]);
+  display.choose('F');assert.equal(display.selection('F'),null,'idle constrained mode does not highlight a rotation axis');app.click('ringModeDefault');
+  assert.equal(display.selection('F'),null,'leaving the solver also clears a subsequently highlighted axis');
+  assert.equal(app.ui().state().active,false);assert.equal(JSON.stringify(app.snapshot().stickers),before);
 });

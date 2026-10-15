@@ -6,7 +6,7 @@
   if(model.type!=='ghost')return shared.render(ctx,model,options);
   const proxy=Object.create(model);
   proxy.mesh=piece=>model.renderMesh(piece,options.animation||null);
-  return shared.render(ctx,proxy,{...options,animation:null});
+  return shared.render(ctx,proxy,{...options,axisAnimation:options.animation,animation:null});
  }
  root.ShapeRenderer=Object.freeze({...shared,render});
  if(typeof module!=='undefined'&&module.exports)module.exports=root.ShapeRenderer;

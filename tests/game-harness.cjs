@@ -30,6 +30,7 @@ class Element{
     };
   }
   setAttribute(k,v){this.attributes[k]=v;}
+  getAttribute(k){return Object.hasOwn(this.attributes,k)?this.attributes[k]:null;}
   appendChild(el){this.children.push(el);el.parentNode=this;return el;}
   append(...els){els.forEach(el=>this.appendChild(el));}
   replaceChildren(...els){this.children=[];this.append(...els);}

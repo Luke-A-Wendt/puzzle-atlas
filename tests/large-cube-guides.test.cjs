@@ -6,7 +6,7 @@ const guideContext={};guideContext.window=guideContext;vm.createContext(guideCon
 for(const file of ['cube-guides.js','large-cube-guides.js'])vm.runInContext(fs.readFileSync(path.join(root,'dist',file),'utf8'),guideContext);
 const key=s=>s.p.join(',')+'|'+s.n.join(',');
 let checked=0;
-for(const n of [5,6,7,8]){
+for(const n of [5,6,7,8,9,10]){
   const ctx={CUBE_SIZE:n};ctx.window=ctx;vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(path.join(root,'dist/games/nxn-engine.js'),'utf8'),ctx);
   const E=ctx.CubeEngine,solved=E.makeSolved(),home=new Map(solved.map(s=>[s.id,s])),slots=new Map(solved.map(s=>[key(s),s]));
@@ -15,7 +15,7 @@ for(const n of [5,6,7,8]){
   const kind=s=>s.p.filter(v=>Math.abs(v)===E.extent).length;
   const centersPreserved=s=>assert(s.filter(x=>kind(x)===1).every(x=>x.color===slots.get(key(x)).color),'center colors preserved');
   const actualGuide=guideContext.LARGE_CUBE_GUIDES['cube'+n];
-  assert.equal(actualGuide.steps.filter(s=>s.title.startsWith('3×3 stage · ')).length,guideContext.CUBE_GUIDES.cube3.steps.length,'complete embedded 3×3 phase');
+  assert.equal(actualGuide.steps.filter(s=>s.title.startsWith('3×3×3 stage · ')).length,guideContext.CUBE_GUIDES.cube3.steps.length,'complete embedded 3×3 phase');
   const codes=(title)=>[...actualGuide.steps.find(s=>s.title===title).body.matchAll(/<code>([^<]+)<\/code>/g)].map(x=>x[1]);
   const cycleAlgorithms=codes('Finish awkward edges · a controlled wing cycle');
   const parityAlgorithms=codes(n%2?'Edge parity · repair a reversed wing pair':'Edge pairing parity · repair one wing orbit');
@@ -57,8 +57,9 @@ for(const n of [5,6,7,8]){
     checked+=2;
   }
   const centers=actualGuide.steps.find(s=>s.title==='A precise center tool · cycle just three pieces');
-  const rows=[...centers.body.matchAll(/<tr><td>(Ri{1,3})<\/td><td>(Li{1,3}|M)<\/td><td>row (\d+), col (\d+)<\/td><td>row (\d+), col (\d+)<\/td><td>row (\d+), col (\d+)<\/td><\/tr>/g)];
-  assert.equal(rows.length,n===5?2:n===6?4:n===7?6:9);
+  const rows=[...centers.body.matchAll(/<tr><td>(Ri{1,3}|Riv)<\/td><td>(Li{1,3}|Liv|M)<\/td><td>row (\d+), col (\d+)<\/td><td>row (\d+), col (\d+)<\/td><td>row (\d+), col (\d+)<\/td><\/tr>/g)];
+  const h=Math.floor((n-2)/2), centerCount=6*((n-2)**2-(n%2));
+  assert.equal(rows.length,h*(h+n%2));
   const centerSeeds=[];
   for(const [,A,B,ur,uc,f1r,f1c,f2r,f2c] of rows){
     const alg=`${A} U' ${B}' U ${A}' U' ${B} U`,after=run(alg),changes=changed(after),e=E.extent;
@@ -70,15 +71,27 @@ for(const n of [5,6,7,8]){
     assert.equal(changed(run(alg,run(alg,after))).length,0);
     checked++;
   }
-  if(n===8){
-    assert.equal(cycleAlgorithms.length,3,'all three wing depths have controlled cycles');
-    assert.equal(parityAlgorithms.length,3,'all three wing depths have parity repairs');
-    assert(actualGuide.notation.join(' ').includes('L · Li · Lii · Liii · Riii · Rii · Ri · R'),'all eight single-layer names');
-    assert(actualGuide.steps[0].body.includes('216 movable center pieces'));
-    assert(actualGuide.steps[0].body.includes('72 wings'));
+  if(n>=8){
+    assert.equal(cycleAlgorithms.length,h,'every wing depth has a controlled cycle');
+    assert.equal(parityAlgorithms.length,h,'every wing depth has a parity repair');
+    const depths=Array.from({length:h},(_,i)=>i+1),names=['L',...depths.map(d=>'L'+(d===4?'iv':'i'.repeat(d))),...(n%2?['M']:[]),...depths.slice().reverse().map(d=>'R'+(d===4?'iv':'i'.repeat(d))),'R'];
+    assert(actualGuide.notation.join(' ').includes(names.join(' · ')),'all single-layer names in physical order');
+    assert(actualGuide.steps[0].body.includes(`${centerCount} movable center pieces`));
+    assert(actualGuide.steps[0].body.includes(`${24*h} wings`));
+    assert(actualGuide.steps.some(s=>s.title===`Pair the twelve ${n-2}-piece edges`));
     assert(!actualGuide.steps.map(s=>s.body).join(' ').includes('four-piece edge'),'no stale six-cube edge width');
-    // Prove that the nine documented seed positions represent every center
-    // family, rather than just nine variants of fewer reachable families.
+    if(n===9){
+      assert(actualGuide.steps[0].body.includes('twelve central edge pieces'));
+      assert(!actualGuide.steps.some(s=>s.title.includes('permutation parity')),'fully reduced odd cube has no even-cube PLL parity');
+      assert(parityAlgorithms.every(alg=>!alg.split(/\s+/).some(m=>/^[MES]/.test(m))),'wing repairs leave odd center frame intact');
+    }
+    if(n===10){
+      assert(actualGuide.notation.join(' ').includes('Riv: iv means fourth'));
+      const pll=codes('10×10 permutation parity · exchange two whole edges')[0];
+      assert(pll.includes('Riv2')&&pll.includes('Uiv2'),'full-depth ten-cube repair');
+    }
+    // Each displayed center-cycle row represents one distinct reachable orbit.
+    // Odd cubes additionally have six frame centers, which these cycles fix.
     const covered=new Set(),faces=Object.keys(E.configs);
     for(const seed of centerSeeds){
       assert(seed,'documented slot exists');
@@ -87,15 +100,16 @@ for(const n of [5,6,7,8]){
         const next=E.applyMove([queue[at]],face)[0],k=key(next);
         if(!orbit.has(k)){orbit.set(k,next);queue.push(next);}
       }
-      assert.equal(orbit.size,24,'each center family has 24 members');
+      assert.equal(orbit.size,24,'each movable center family has 24 members');
       for(const [k,sticker] of orbit){assert.equal(kind(sticker),1);assert(!covered.has(k),'different table rows cover different families');covered.add(k);}
       const counts=new Map();for(const s of orbit.values())counts.set(s.n.join(','),(counts.get(s.n.join(','))||0)+1);
       assert.equal(counts.size,6);assert([...counts.values()].every(v=>v===4),'each family has four centers per face');
       checked++;
     }
-    assert.equal(covered.size,216,'all 6×6 centers on six faces are covered');
-    assert(solved.filter(s=>kind(s)===1).every(s=>covered.has(key(s))));
-    assert.equal(solved.filter(s=>kind(s)===2).length/2,72,'72 two-sticker wings');
+    assert.equal(covered.size,centerCount,'all movable centers on six faces are covered');
+    const frameCenter=s=>n%2===1&&s.p.filter(v=>v!==0).length===1;
+    assert(solved.filter(s=>kind(s)===1&&!frameCenter(s)).every(s=>covered.has(key(s))));
+    assert.equal(solved.filter(s=>kind(s)===2).length/2,12*(n-2),'every edge piece counted including odd central edges');
   }
 }
-console.log(`Passed ${checked} exact guide checks: center cycles and orbit coverage, wing cycles, per-orbit parity, full 6×6/8×8 parity, and embedded 3×3 coverage.`);
+console.log(`Passed ${checked} exact guide checks: center cycles and orbit coverage, wing cycles, per-orbit parity, full 6×6/8×8/10×10 parity, and embedded 3×3 coverage.`);

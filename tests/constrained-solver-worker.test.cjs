@@ -23,7 +23,8 @@ function selectFor(core,model,snapshot,protectedNodes,swap,extra={}){
 }
 test('browser core is safe in the older minimal DOM harness and does no eager fetch',()=>{
  const ctx={document:{},globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync(path.join(root,'constrained-solver-core.js'),'utf8'),ctx);
- assert.equal(ctx.ConstrainedSolverCore.assetBase,null);assert.equal(ctx.ConstrainedSolverCore.modelIds.length,34);
+ const ids=JSON.parse(fs.readFileSync(path.join(root,'constrained-solver-models/manifest.json'),'utf8')).models.map(model=>model.id).sort();
+ assert.equal(ctx.ConstrainedSolverCore.assetBase,null);assert.deepEqual(Array.from(ctx.ConstrainedSolverCore.modelIds).sort(),ids);
 });
 test('worker honors the longer retry budget while bounding time, storage and output',async()=>{
  const worker=browser('constrained-solver-worker.js'),engine=engineFor('cube2'),snapshot=engine.getState(),budgets=[];
@@ -38,7 +39,7 @@ test('worker honors the longer retry budget while bounding time, storage and out
  assert.equal(budgets[1].maxMs,10000);assert.equal(budgets[1].searchMs,1500);
  assert.equal(budgets[2].maxMs,10000);assert.equal(budgets[2].searchMs,1500);assert.equal(budgets[2].maxOutputMoves,5000);assert.equal(budgets[2].maxStorageBytes,48*1024*1024);
 });
-test('all 34 browser move models map their actual engines, including changed shape poses',async()=>{
+test('all catalog browser move models map their actual engines, including changed shape poses',async()=>{
  const helper=browser('constrained-solver-core.js'),core=helper.ctx.ConstrainedSolverCore;
  for(const id of core.modelIds){const engine=engineFor(id),model=await core.loadModel(id);assert.equal(model.id,id);assert(Object.isFrozen(model));let before=core.mapSnapshot(model,engine.getState());
   for(const i of [0,Math.floor(model.moves.length/2),model.moves.length-1]){engine.apply(model.moves[i].engineMove);const after=core.mapSnapshot(model,engine.getState());for(const [sticker,node]of Object.entries(before.stickerToNode))assert.equal(after.stickerToNode[sticker],model.moves[i].perm[node],id+' node '+sticker);before=after;}
@@ -90,7 +91,7 @@ test('worker rejects overlapping selections, animation, unsupported jumbling and
  const bad=await worker.send({id:1,modelId:'cube2',snapshot,selection:{protectedStickerIds:[ids[0]],swapStickerIds:ids.slice(0,2)}});assert.equal(bad.result.status,'invalid');assert.match(bad.result.reason,/protected/);
  const animating=await worker.send({id:2,modelId:'cube2',snapshot:{stickers:snapshot,animating:true},selection:{swapStickerIds:ids.slice(0,2)}});assert.equal(animating.result.status,'invalid');assert.match(animating.result.reason,/finish/);
  const heli=engineFor('helicopter'),heliState=heli.getState(),jumble=await worker.send({id:3,modelId:'helicopter',snapshot:{stickers:heliState,advanced:true},selection:{swapStickerIds:heliState.slice(0,2).map(s=>s.id)}});assert.equal(jumble.result.status,'invalid');assert.match(jumble.result.reason,/jumbling/);
- const mismatch=await browser('constrained-solver-worker.js',{tamper:true}).send({id:4,modelId:'cube2',snapshot,selection:{swapStickerIds:ids.slice(0,2)}});assert.equal(mismatch.result.status,'unknown');assert.equal(mismatch.result.reason,'model_integrity_error');assert.match(mismatch.result.detail,/does not match this release/);
+ const mismatch=await browser('constrained-solver-worker.js',{tamper:true}).send({id:4,modelId:'cube2',snapshot,selection:{swapStickerIds:ids.slice(0,2)}});assert.equal(mismatch.result.status,'unknown');assert.equal(mismatch.result.reason,'model_integrity_error');assert.match(mismatch.result.detail,/release|version/);
 });
 
 test('manual worker resumes its actual projected frontier instead of rechecking earlier transitions',async()=>{
@@ -143,4 +144,20 @@ test('manual worker independently rejects a bad session witness before returning
  worker.ctx.require('./manual-session.cjs').ManualSwapSession=class{advance(){return {status:'solved',moveIndices:[0],search:{budgetMs:3000,canContinue:false}};}};
  const reply=await worker.send({task:'manual-swap',id:1,modelId:'cube2',snapshot,selection:selectFor(core,engine.model,snapshot,[],[0,6])});
  assert.equal(reply.result.status,'unknown');assert.equal(reply.result.reason,'internal_witness_verification_failed');assert.equal(reply.result.search.canContinue,false);assert.deepEqual(reply.engineMoves,[]);
+});
+
+test('manual browser worker swaps two cube4 centers while preserving every other color, including cache-unavailable compensation',async()=>{
+ const core=browser('constrained-solver-core.js').ctx.ConstrainedSolverCore;
+ for(const unavailableColorCache of [false,true]){
+  const worker=browser('constrained-solver-worker.js',{unavailableColorCache}),engine=engineFor('cube4'),model=engine.model,snapshot=engine.getState(),swap=[10,22];
+  const held=Array.from({length:model.degree},(_,i)=>i).filter(i=>!swap.includes(i)),selection=selectFor(core,model,snapshot,held,swap,{holdSemantics:'color'});
+  const beforeColors=core.colorsFromSnapshot(model,snapshot),before=core.mapSnapshot(model,snapshot);
+  const reply=await worker.send({id:1,task:'manual-swap',modelId:'cube4',snapshot,selection,options:{maxSearchStates:0}});
+  assert.equal(reply.result.status,'solved',reply.result.reason);
+  assert.equal(reply.result.method,unavailableColorCache?'same_color_compensated_transposition':'manual_short_catalog');
+  assert.equal(reply.result.stats.transitions,0);reply.engineMoves.forEach(engine.apply);
+  const colors=core.colorsFromSnapshot(model,engine.getState()),after=core.mapSnapshot(model,engine.getState());
+  for(const n of held)assert.equal(colors[n],beforeColors[n]);
+  assert.equal(after.stickerToNode[before.nodeToSticker[10]],22);assert.equal(after.stickerToNode[before.nodeToSticker[22]],10);
+ }
 });

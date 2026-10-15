@@ -12,11 +12,14 @@ for(const [name,expected]of Object.entries(manifest.files)){
  count++;
 }
 let checked=0;
+const catalog=JSON.parse(fs.readFileSync(path.join(root,'games/constrained-solver-models/manifest.json'),'utf8'));
+const modelIds=catalog.models.map(model=>model.id).sort();
+if(!modelIds.length||new Set(modelIds).size!==modelIds.length)throw Error('Invalid solver catalog');
 for(const file of ['constrained-solver-core.js','constrained-solver-worker.js']){
  const code=fs.readFileSync(path.join(root,'games',file),'utf8');
  for(const [variable,folder]of [['fingerprints','constrained-solver-models'],['fullCacheFingerprints','constrained-solver-caches'],['colorCacheFingerprints','color-solver-caches']]){
   const match=new RegExp('const '+variable+'=(\\{[^;]+\\});').exec(code);if(!match)throw Error('Missing '+variable+' in '+file);
-  const values=JSON.parse(match[1]);if(Object.keys(values).length!==34)throw Error('Expected all 34 puzzles in '+variable);
+  const values=JSON.parse(match[1]);if(JSON.stringify(Object.keys(values).sort())!==JSON.stringify(modelIds))throw Error('Expected the complete puzzle catalog in '+variable);
   for(const [id,expected]of Object.entries(values)){
    if(sha(fs.readFileSync(path.join(root,'games',folder,id+'.json')))!==expected)throw Error('Mismatched solver data: '+file+' / '+folder+'/'+id+'.json');
    checked++;

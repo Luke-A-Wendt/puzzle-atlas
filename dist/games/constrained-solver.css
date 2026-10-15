@@ -7,6 +7,7 @@
 .ring-panel-head .cs-mode-switch button:disabled{opacity:.5}
 .cs-mode-switch[aria-busy="true"]{border-color:#5d5869}
 #constrainedSolverControls[hidden],#csNodeOverlay[hidden],#csAnchorBackdrop[hidden],#csCancel[hidden],#csRetry[hidden]{display:none!important}
+.cs-toolbar[hidden],#csHeldCount[hidden]{display:none!important}
 #csGo[hidden],#csAutoProgress[hidden],#csClear[hidden],.cs-tools[hidden],.cs-hold-label[hidden]{display:none!important}
 #csAutoProgressBar[hidden],#csAutoProgressLabel[hidden]{display:none!important}
 #csAutoNotice[hidden],#csAutoNoticeProgress[hidden],#csAutoNoticeRetry[hidden],#csAutoNoticeDismiss[hidden]{display:none!important}
@@ -85,3 +86,95 @@
 /* Keep display controls accessible in either ring-map mode. */
 .ring-panel-head{flex-wrap:wrap}
 @container ring-map-panel (max-width:560px){.ring-panel-head .cs-mode-switch{order:3;flex:1 1 100%}.ring-panel-head .cs-mode-switch button{flex:1}}
+
+/* A mode switch clears presentation selection without changing move semantics. */
+body.puzzle-axis-muted .ring-key.active{color:var(--ink);border-color:transparent;background:transparent;font-weight:400}
+
+#csSuggestHolds[hidden],#csShowGoal[hidden],.mirror-active #csShowGoal{display:none!important}
+.cs-show-goal{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.cs-show-goal[aria-pressed="true"]{background:#eeeeef;border-color:#eeeeef;color:#14151c}
+.cs-goal-preview .cs-node-overlay{cursor:default}
+
+#csAutoNoticeReload[hidden]{display:none!important}
+.ring-panel-head .cs-show-goal{flex:0 0 auto;font-size:10px;min-height:25px;padding:3px 7px}
+.cs-goal-preview:not(.cs-active) .cs-node-overlay{pointer-events:none}
+
+/* Only live actions and useful results occupy space. Help stays in tooltips. */
+.cs-controls{display:flex;flex-direction:column;gap:5px;padding:5px 9px}
+.cs-toolbar{gap:5px;flex-wrap:nowrap;min-width:0}
+.cs-hold-label{display:none}
+.cs-tools{flex:1 1 auto;min-width:0;padding:0;border:0;border-radius:7px;background:none}
+.cs-tools button{min-height:32px;padding:3px 6px;border-color:var(--line);background:#23232d;font-size:10px;white-space:normal;line-height:1.15}
+.cs-toolbar>.small{min-height:32px;padding:4px 6px;white-space:normal;line-height:1.15}
+.cs-held-count{font-size:10px;min-width:32px}
+.cs-search-actions{margin:0;gap:5px}
+.cs-search-actions>button{min-height:30px;padding:3px 7px;font-size:10px;line-height:1.2;white-space:normal}
+.cs-selection{margin:0;gap:5px;flex-wrap:nowrap}
+.cs-pair-chip{grid-template-rows:auto;min-height:36px;padding:4px 6px;column-gap:5px}
+.cs-pair-chip .cs-slot-label{grid-row:1;width:20px;height:20px}
+.cs-pair-chip .cs-slot-action{display:none}
+.cs-pair-chip .cs-slot-value{font-size:10px}
+.cs-go{width:64px;min-width:64px;flex:0 0 64px;padding:3px 5px;font-size:11px;line-height:1.15;white-space:normal}
+.cs-eligibility,.cs-status{margin:0;min-height:0;line-height:1.35;font-size:10px;max-width:none}
+.cs-eligibility:empty,.cs-status:empty{display:none}
+.cs-search-progress,.cs-auto-progress{margin:0;min-height:0;gap:3px;font-size:10px;line-height:1.25}
+.cs-search-progress progress,.cs-auto-progress progress{height:5px}
+#csStepProgressLabel{margin:0}
+.cs-bottom{display:none}
+/* Reserve the same compact feedback space before, during, and after a manual
+   swap. Automatic steps keep exactly two progress bars and no duplicate count
+   or changing status row. No measured heights or per-frame layout reads. */
+.cs-feedback{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:30px;column-gap:6px;row-gap:0;min-width:0}
+.cs-progress-slot{grid-column:1;grid-row:1;display:grid;grid-template-columns:minmax(0,1fr);align-items:center;min-width:0;height:30px}
+.cs-progress-slot>.cs-search-progress,.cs-progress-slot>.cs-auto-progress{grid-area:1 / 1;min-width:0;width:100%;margin:0}
+.cs-feedback>.cs-search-actions{grid-column:2;grid-row:1;align-self:center;flex-wrap:nowrap;min-width:0;max-width:132px}
+.cs-feedback>.cs-search-actions>button{height:30px;min-height:30px;min-width:0;max-width:132px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-detail-slot{grid-column:1;grid-row:1;display:grid;grid-template-columns:minmax(0,1fr);align-items:center;height:30px;min-width:0}
+.cs-detail-slot[hidden]{display:none!important}
+.cs-detail-slot>.cs-status,.cs-detail-slot>.cs-eligibility{grid-area:1 / 1;min-width:0;max-height:30px;margin:0;line-height:14px;overflow:auto;overflow-wrap:anywhere;scrollbar-width:thin}
+.cs-detail-slot>.cs-status[hidden],.cs-detail-slot>.cs-eligibility[hidden]{display:none!important}
+.cs-progress-slot #csAutoProgressLabel,.cs-progress-slot #csStepProgressLabel,.cs-progress-slot #csSearchProgressLabel{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.cs-auto-active .cs-feedback{grid-template-rows:44px;row-gap:0}
+.cs-auto-active .cs-progress-slot{height:44px}
+.cs-auto-active .cs-detail-slot{display:none}
+.action-panel>.cs-auto-notice{grid-column:1/-1;grid-row:2;font-size:11px;padding:5px 7px}
+.action-panel>.cs-auto-notice[data-state="loading"]{grid-column:7;grid-row:1;min-width:0;flex-wrap:nowrap;gap:4px;padding:0;border:0;background:none;font-size:10px;line-height:1.25}
+.cs-auto-notice[data-state="loading"] #csAutoNoticeText{min-width:0;flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-auto-notice[data-state="loading"] #csAutoNoticeProgress{flex:0 0 32px}
+.action-panel.cs-notice-visible #journalActivity{visibility:hidden}
+@container ring-map-panel (max-width:700px){
+ .ring-panel-head{display:flex;flex-wrap:wrap;gap:4px;padding:4px 7px}
+ .ring-panel-head h2{flex:0 0 64px;min-width:0;font-size:11px;white-space:nowrap;overflow:visible}
+ .ring-panel-head .cs-mode-switch{order:0;flex:1 1 calc(100% - 76px);min-width:0;gap:2px;padding:2px}
+ .ring-panel-head .cs-mode-switch button{flex:1 1 0;min-width:0;min-height:28px;padding:3px 4px;font-size:10px;line-height:1.15;white-space:normal}
+ .ring-panel-head>button,.ring-panel-head>#ringFocus{order:1;flex:1 1 0;min-width:0;min-height:32px;height:32px;padding:2px 3px;font-size:10px;line-height:1.1;white-space:normal;overflow-wrap:normal}
+}
+/* Same layout in older phone browsers without container queries. */
+@media(max-width:850px) and (orientation:portrait),(max-width:680px){
+ .ring-panel-head{display:flex;flex-wrap:wrap;gap:4px;padding:4px 7px}
+ .ring-panel-head h2{flex:0 0 64px;min-width:0;font-size:11px;white-space:nowrap;overflow:visible}
+ .ring-panel-head .cs-mode-switch{order:0;flex:1 1 calc(100% - 76px);min-width:0;gap:2px;padding:2px}
+ .ring-panel-head .cs-mode-switch button{flex:1 1 0;min-width:0;min-height:30px;padding:3px 4px;font-size:10px;line-height:1.15;white-space:normal}
+ .ring-panel-head>button,.ring-panel-head>#ringFocus{order:1;flex:1 1 0;min-width:0;min-height:34px;height:34px;padding:2px 3px;font-size:10px;line-height:1.15;white-space:normal;overflow-wrap:normal}
+ .cs-controls{padding:5px 8px;gap:4px}
+ .cs-tools button,.cs-toolbar>.small,.cs-search-actions>button{min-height:32px;font-size:10px}
+ .cs-pair-chip{min-height:36px}.cs-go{min-height:36px}
+ .cs-status,.cs-eligibility{font-size:10px}
+ .action-panel>.cs-auto-notice{grid-column:1/-1;grid-row:3}
+ .action-panel>.cs-auto-notice[data-state="loading"]{grid-column:10/13;grid-row:2;display:block;max-height:34px;overflow:hidden}
+ .cs-auto-notice[data-state="loading"] #csAutoNoticeText{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;max-height:26px;line-height:13px}
+ .cs-auto-notice[data-state="loading"] #csAutoNoticeProgress{display:block;width:100%;height:3px;margin-top:1px}
+ .action-panel.cs-notice-visible .action-meta{visibility:hidden}
+}
+
+/* One compact action row when space permits; two intact groups on a phone.
+   Fixed, short pair fields keep the controls steady as endpoints are changed. */
+.cs-action-row{display:flex;align-items:center;flex-wrap:wrap;gap:5px 8px;min-width:0}
+.cs-action-row>.cs-toolbar,.cs-action-row>.cs-selection{flex:0 0 auto;gap:5px;min-width:0;flex-wrap:nowrap;margin:0}
+.cs-action-row .cs-tools{flex:0 0 auto;min-width:0;width:auto}
+.cs-action-row .cs-tools button,.cs-action-row .cs-toolbar>.small{min-height:32px;height:32px;padding:3px 7px;white-space:nowrap;font-size:10px;line-height:1.2}
+.cs-action-row .cs-held-count{min-width:40px;font-size:10px}
+.cs-action-row .cs-pair-chip{flex:0 0 auto;min-width:0;min-height:32px;height:32px;padding:4px 6px;grid-template-columns:20px 52px;column-gap:5px}
+.cs-action-row .cs-pair-chip .cs-slot-value{width:52px;min-width:0;font-size:10px;line-height:1.2}
+.cs-action-row .cs-go{flex:0 0 36px;width:36px;min-width:36px;min-height:32px;height:32px;padding:3px 6px;white-space:nowrap}
+.cs-action-row .cs-swap-arrow{font-size:13px}

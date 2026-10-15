@@ -1,0 +1,25 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const manifest=require('../dist/games/constrained-solver-models/manifest.json');
+const {createPage}=require('./solver-dom.cjs');
+const puzzles=Object.keys(manifest.fullSolveCaches);
+for(const puzzle of puzzles)test(puzzle+' provides independent compact display controls with safe defaults',()=>{
+ const app=createPage(puzzle),display=app.context.PuzzleAxisDisplay;
+ const label=app.element('viewLabelMode'),highlights=app.element('viewHighlightToggle'),rings=app.element('ringLabelToggle');
+ assert(label&&highlights&&rings,'all three controls are present');
+ assert.equal(label.parentElement.className,'view-display-tools','settings occupy their own compact control lane');
+ assert.equal(label.parentElement.parentElement.classList.contains('view-header-toolbar'),true,'visibility settings share the title header above the canvas');
+ assert.equal(rings.parentElement.children.indexOf(rings),rings.parentElement.children.indexOf(app.element('ringFocus'))+1,'ring label toggle sits next to the ring visibility control');
+ assert.equal(label.textContent,'All labels');assert.equal(display.labelMode(),'some');assert.match(label.title,/Show all available axis labels/);assert.match(label.getAttribute('aria-label'),/^Show all axis labels/);
+ assert.equal(highlights.textContent,puzzle==='homer'?'Show highlights':'Hide highlights');assert.equal(rings.textContent,'Hide labels');
+ const initial=JSON.stringify(app.snapshot().stickers);
+ app.click('viewLabelMode');assert.equal(display.labelMode(),'all');assert.equal(label.textContent,'No labels');assert.match(label.getAttribute('aria-label'),/^Hide axis labels/);
+ app.click('viewLabelMode');assert.equal(display.labelMode(),'none');assert.equal(label.textContent,'Some labels');assert.match(label.getAttribute('aria-label'),/^Show some axis labels/);
+ app.click('viewLabelMode');assert.equal(display.labelMode(),'some');assert.equal(label.textContent,'All labels');
+ app.click('viewHighlightToggle');assert.equal(display.highlights3D(),puzzle==='homer');assert.equal(highlights.textContent,puzzle==='homer'?'Hide highlights':'Show highlights');
+ app.click('ringLabelToggle');assert.equal(display.ringLabelsVisible(),false);assert.equal(rings.textContent,'Show labels');
+ assert.equal(JSON.stringify(app.snapshot().stickers),initial,'display-only controls never alter a puzzle state');
+ assert.equal(display.selection('U'),null,'no rotation axis is selected on opening a puzzle');display.choose('U');assert.equal(display.selection('U'),'U','ring highlighting remains available independently of 3D highlights');
+ app.document.dispatch('DOMContentLoaded');
+ assert.equal(app.document.querySelectorAll('#viewLabelMode').length,1,'late DOMContentLoaded does not duplicate controls');
+});

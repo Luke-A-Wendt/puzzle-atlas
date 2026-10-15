@@ -33,12 +33,12 @@ for(const type of ['skewb','jing','masterskewb']){
   assert(api.move(cfg.id));settle();assert(api.move(cfg.id+"'"));settle();assert(api.snapshot().solved);
  }
  // Actual slider handler governs manual moves, scrambles, solves, and speed
- // changes during an active move. Pause freezes both geometry and progress.
+ // changes during an active move. Stop discards only the unfinished turn and remaining queue.
  api.reset();els.speed.value='1';els.speed.events.input();api.move('L');tick(1300);assert(api.snapshot().animating);tick(100);assert(!api.snapshot().animating);
  els.undo.events.click();settle();assert(api.snapshot().solved);
  els.speed.value='5';els.speed.events.input();api.move('L');tick(110);assert(!api.snapshot().animating);api.reset();
- els.speed.value='1';els.speed.events.input();api.randomize();tick(300);assert.equal(api.snapshot().history.length,0);els.pause.events.click();const paused=JSON.stringify(api.snapshot().pieces);tick(3000);assert.equal(JSON.stringify(api.snapshot().pieces),paused);assert(api.snapshot().paused);els.pause.events.click();
- els.speed.value='5';els.speed.events.input();tick(100);assert.equal(api.snapshot().history.length,1);settle();assert(!api.snapshot().solved);assert.equal(api.snapshot().history.length,24);const seed=api.snapshot().seed;
+ els.speed.value='1';els.speed.events.input();api.randomize();assert.equal(els.speed.value,'5');tick(50);assert.equal(api.snapshot().history.length,0);els.pause.events.click();const stopped=JSON.stringify(api.snapshot().pieces);tick(3000);assert.equal(JSON.stringify(api.snapshot().pieces),stopped);assert.equal(api.snapshot().paused,false);assert.equal(api.snapshot().mode,'idle');assert.equal(els.speed.value,'3');
+ api.randomize();tick(110);assert.equal(api.snapshot().history.length,1);settle();assert(!api.snapshot().solved);assert.equal(api.snapshot().history.length,24);const seed=api.snapshot().seed;
  assert(api.runMoves("L R' D B L2"));settle();assert.equal(api.snapshot().history.length,29);
  assertAutoSolveDelegates(context);
  // A constrained stage uses this same playback API and honors live speed changes.
@@ -50,5 +50,5 @@ for(const type of ['skewb','jing','masterskewb']){
  const geometry=context.OctaRingGeometry.create(model);
  for(const cfg of model.configs){api.reset();api.select(cfg.id);tick();const viewport=geometry.render(els.rings.getContext('2d'),{width:560,height:500,selected:cfg.id}).viewport;dispatchPath({dispatch:(name,event)=>els.rings.events[name](event)},dragPath(geometry,cfg.id,1),viewport);settle();assert.equal(api.snapshot().history.at(-1).face,cfg.id);assert.equal(api.snapshot().history.at(-1).dir,1);}
  api.reset();api.select('R');els.ringFocus.events.click();tick();writeRender(type+'-paths.png',els.rings);
- console.log(type+': controls, all sides, guide moves, undo, fresh scramble, pause, real speed handlers, Auto Solve delegation, connected ring dragging and canvas render PASS');
+ console.log(type+': controls, all sides, guide moves, undo, fresh scramble, Stop, real speed handlers, Auto Solve delegation, connected ring dragging and canvas render PASS');
 }

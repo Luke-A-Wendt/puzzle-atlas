@@ -2,7 +2,30 @@
  * loops encode rotation within a face, through the same fixed sticker nodes. */
 (function(root){
 'use strict';
-const TAU=2*Math.PI,mod=(x,n)=>(x%n+n)%n;
+const TAU=2*Math.PI,mod=(x,n)=>(x%n+n)%n,clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function drawAxisBadges(ctx,candidates,w,h,points,drawLeader){
+ const mode=root.PuzzleAxisDisplay?.labelMode?.()||'some';if(mode==='none')return [];
+ const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]),cx=w/2,cy=h/2;
+ const rx=Math.min(w/2-22,Math.max(w*.25,...xs.map(x=>Math.abs(x-cx)))+20),ry=Math.min(h/2-24,Math.max(h*.25,...ys.map(y=>Math.abs(y-cy)))+20),placed=[],targets=[];
+ ctx.save();ctx.font='600 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+ for(const item of candidates.filter(item=>mode==='all'||item.front).sort((a,b)=>(b.active-a.active)||(b.front-a.front))){
+  const r=Math.max(11,ctx.measureText(item.label||item.id).width/2+5),dx=item.p[0]-cx,dy=item.p[1]-cy,angle=Math.hypot(dx,dy)>3?Math.atan2(dy/ry,dx/rx):(-Math.PI/2+item.index*.8);
+  let base=item.front?item.p:[cx+rx*Math.cos(angle),cy+ry*Math.sin(angle)],best=null;
+  const offsets=[0,1,-1,2,-2,3,-3,4,-4,5,-5,6,-6];
+  for(const offset of offsets){const p=item.front?[base[0]+(offset?Math.cos(angle+offset*.7)*24:0),base[1]+(offset?Math.sin(angle+offset*.7)*24:0)]:[cx+rx*Math.cos(angle+offset*.15),cy+ry*Math.sin(angle+offset*.15)];
+   p[0]=clamp(p[0],r+7,w-r-7);p[1]=clamp(p[1],r+7,h-r-7);
+   const overlap=placed.reduce((sum,q)=>sum+Math.max(0,r+q.r+5-Math.hypot(p[0]-q.x,p[1]-q.y)),0),score=overlap*100+Math.abs(offset);
+   if(!best||score<best.score)best={p,score};if(!overlap)break;
+  }
+  const [x,y]=best.p,leader=Math.hypot(x-item.p[0],y-item.p[1])>r+3;
+  if(mode==='some'&&leader)continue;
+  placed.push({x,y,r});targets.push({face:item.id,x,y,r,leader});
+  const palette=root.PuzzleAxisDisplay?.palette?.(item.active||item.hover)||{fill:item.active||item.hover?'#f3f3f5':'#101116',stroke:item.active||item.hover?'#101116':'#f3f3f5',text:item.active||item.hover?'#101116':'#f3f3f5'};
+  if(leader){ctx.setLineDash(item.front?[]:[3,4]);ctx.strokeStyle=item.active?'rgba(243,243,243,.72)':'rgba(243,243,243,.34)';ctx.lineWidth=1;targets[targets.length-1].leaderSegments=drawLeader?.(item.world,[x,y])||[];}
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=palette.fill;ctx.fill();ctx.setLineDash([]);ctx.strokeStyle=palette.stroke;ctx.lineWidth=item.active?1.6:1.2;ctx.stroke();ctx.fillStyle=palette.text;ctx.fillText(item.label||item.id,x,y+.5);
+ }
+ ctx.restore();return targets;
+}
 function install(G){
  if(G.faceRings)return G;
  const originalInterpolate=G.interpolateSticker,originalAngle=G.angleAt;
@@ -85,7 +108,7 @@ function install(G){
    ctx.globalAlpha=options.focus===false?.72:.28;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#797087';ctx.lineWidth=.7/scale;ctx.stroke();
   }
   G.drawFaceRings(ctx,selected,{scale,focus:options.focus});
-  const r=G.getRing(selected);ctx.globalAlpha=1;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#baacfb';ctx.lineWidth=2/scale;ctx.stroke();
+  if(selected){const r=G.getRing(selected);ctx.globalAlpha=1;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#baacfb';ctx.lineWidth=2/scale;ctx.stroke();}
   ctx.restore();
  };
  G.drawNode=function(ctx,p,color,active,scale){
@@ -94,11 +117,41 @@ function install(G){
   if(active){ctx.beginPath();ctx.arc(p.x,p.y,radius+halo,0,TAU);ctx.fillStyle='#17131f';ctx.fill();ctx.strokeStyle='#d3bdff';ctx.lineWidth=.85/scale;ctx.stroke();}
   ctx.beginPath();ctx.arc(p.x,p.y,radius,0,TAU);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=active?'#ffffff':'#111019';ctx.lineWidth=(active?1.15:.75)/scale;ctx.stroke();
  };
- G.drawAxisLabel=function(ctx,selected,label,scale){
-  const r=G.getRing(selected),angle=r.axis===0?0:r.axis===1?-Math.PI/2:Math.PI;
-  const x=r.cx+r.r*Math.cos(angle),y=r.cy+r.r*Math.sin(angle),radius=(String(label).length>2?13:10)/scale;
-  ctx.beginPath();ctx.arc(x,y,radius,0,TAU);ctx.fillStyle='#241d34';ctx.fill();ctx.strokeStyle='#baacfb';ctx.lineWidth=1/scale;ctx.stroke();
-  ctx.font='600 '+(11/scale)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#ece1ff';ctx.fillText(label,x,y+.5/scale);
+ G.drawAxisLabel=function(ctx,selected,label,scale,options={}){
+  if(!selected)return;const r=G.getRing(selected),angle=options.angle??(r.axis===0?0:r.axis===1?-Math.PI/2:Math.PI);
+  const x=r.cx+r.r*Math.cos(angle),y=r.cy+r.r*Math.sin(angle),radius=(String(label).length>2?14:11)/scale;
+  const palette=root.PuzzleAxisDisplay?.palette?.(options.active)||{fill:options.active?'#f3f3f5':'#101116',stroke:options.active?'#101116':'#f3f3f5',text:options.active?'#101116':'#f3f3f5'};
+  ctx.beginPath();ctx.arc(x,y,radius,0,TAU);ctx.fillStyle=palette.fill;ctx.fill();ctx.strokeStyle=palette.stroke;ctx.lineWidth=(options.active?1.6:1.2)/scale;ctx.stroke();
+  ctx.font='700 '+(11/scale)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=palette.text;ctx.fillText(label,x,y+.5/scale);
+ };
+ G.drawAxisLabels=function(ctx,selected,scale,labelFor=id=>id){
+  const display=root.PuzzleAxisDisplay;if(display?.ringLabelsVisible?.()===false)return [];
+  const ids=[...new Set([selected,...(display?.ringAxes?.()||[])].filter(id=>id&&G.rings.some(r=>r.name===id)))],placed=[];
+  for(const id of ids){const r=G.getRing(id),base=r.axis===0?0:r.axis===1?-Math.PI/2:Math.PI,radius=(String(labelFor(id)).length>2?14:11)/scale;let angle=base;
+   for(const shift of [0,.18,-.18,.36,-.36,.54,-.54]){const a=base+shift,x=r.cx+r.r*Math.cos(a),y=r.cy+r.r*Math.sin(a);if(placed.every(p=>Math.hypot(x-p.x,y-p.y)>radius+p.radius+3/scale)){angle=a;break;}}
+   placed.push({face:id,x:r.cx+r.r*Math.cos(angle),y:r.cy+r.r*Math.sin(angle),radius});G.drawAxisLabel(ctx,id,labelFor(id),scale,{active:id===selected||id===display?.hovered?.(),angle});
+  }
+  return placed;
+ };
+ // A badge on an inner slice is anchored to that slice on its most visible
+ // adjacent face. Front outer badges use face centers; rear badges sit outside
+ // the silhouette with a faint leader back to the projected face center.
+ G.draw3DAxisLabels=function(ctx,{engine,camera,project,eye,distance,selected,spacing=.5075,labelFor=id=>id,width,height,drawLeader}){
+  const dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0),mul=(v,k)=>v.map(x=>x*k),display=root.PuzzleAxisDisplay,hover=display?.hovered?.(),outer=['U','R','F','D','L','B'];
+  const ids=[...new Set([...outer,selected,hover].filter(id=>id&&engine.configs[id]))],candidates=[];
+  const dist=n=>typeof distance==='function'?distance(n):distance;
+  for(const face of ids){const cfg=engine.configs[face],isOuter=outer.includes(face);let normal=[0,0,0],point;
+   if(isOuter){normal[cfg.axis]=Math.sign(cfg.layer);point=mul(normal,dist(normal));}
+   else{let best=-Infinity;for(let axis=0;axis<3;axis++)if(axis!==cfg.axis)for(const sign of [-1,1]){const n=[0,0,0];n[axis]=sign;const score=camera(n)[2];if(score>best){best=score;normal=n;}}
+    point=mul(normal,dist(normal));point[cfg.axis]=cfg.layer*spacing;const tangent=[0,1,2].find(axis=>axis!==cfg.axis&&normal[axis]===0);point[tangent]=dist(normal)*.56;
+   }
+   const nv=camera(normal),cv=camera(point),front=!isOuter||dot(nv,[-cv[0],-cv[1],eye-cv[2]])>=.32;
+   candidates.push({id:face,label:labelFor(face),world:cv,p:project(cv),active:face===selected,hover:face===hover,front,index:candidates.length});
+  }
+  const extents=[0,1,2].map(axis=>[-1,1].map(sign=>{const n=[0,0,0];n[axis]=sign;return sign*dist(n);})),points=[];
+  for(const x of extents[0])for(const y of extents[1])for(const z of extents[2])points.push(project(camera([x,y,z])));
+  const targets=drawAxisBadges(ctx,candidates,width||ctx.canvas.width,height||ctx.canvas.height,points,drawLeader);
+  display?.publish3DAxes?.(ids);display?.publish3DLabelTargets?.(targets);return targets;
  };
  return G;
 }

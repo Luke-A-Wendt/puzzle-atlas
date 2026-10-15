@@ -13,14 +13,16 @@ function versioned(value,revision){
  params.delete('v');if(revision)params.set('v',revision);
  return base+(params.size?'?'+params:'')+hash;
 }
-function normalizeHTML(text){return text.replace(/<meta name="atlas-release" content="[^"]*">/g,'').replace(/\b(src|href)="([^"]+)"/g,(_,attr,value)=>attr+'="'+versioned(value,null)+'"');}
+function versionedSources(value,revision){return value.split(',').map(item=>item.replace(/^(\s*)(\S+)/,(_,space,url)=>space+versioned(url,revision))).join(',');}
+function stampReferences(text,revision){return text.replace(/\b(src|href)="([^"]+)"/g,(_,attr,value)=>attr+'="'+versioned(value,revision)+'"').replace(/\bsrcset="([^"]+)"/g,(_,value)=>'srcset="'+versionedSources(value,revision)+'"');}
+function normalizeHTML(text){return stampReferences(text.replace(/<meta name="atlas-release" content="[^"]*">/g,''),null);}
 fs.writeFileSync(path.join(root,'.nojekyll'),'');
 const list=files(),digest=crypto.createHash('sha256');
 for(const name of list){const bytes=fs.readFileSync(path.join(root,name));digest.update(name+'\0');digest.update(name.endsWith('.html')?normalizeHTML(bytes.toString('utf8')):bytes);}
 const release=digest.digest('hex').slice(0,20);
 for(const name of list.filter(n=>n.endsWith('.html'))){
  const file=path.join(root,name),plain=normalizeHTML(fs.readFileSync(file,'utf8'));
- const stamped=plain.replace(/\b(src|href)="([^"]+)"/g,(_,attr,value)=>attr+'="'+versioned(value,release)+'"').replace('</head>','<meta name="atlas-release" content="'+release+'"></head>');
+ const stamped=stampReferences(plain,release).replace('</head>','<meta name="atlas-release" content="'+release+'"></head>');
  fs.writeFileSync(file,stamped);
 }
 const assets=Object.fromEntries(files().map(name=>{const b=fs.readFileSync(path.join(root,name));return [name,{bytes:b.length,sha256:crypto.createHash('sha256').update(b).digest('hex')}];}));

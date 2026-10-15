@@ -1,0 +1,52 @@
+/* A full-width reading surface for the shared material, separate from the games. */
+.handbook-page{--green:#e5e5eb;--line:#34343e;--muted:#a9a9b6;color:#ededf3;overflow-x:hidden}
+.handbook-back{margin-left:auto;font-size:12px;color:#c6c6d0;white-space:nowrap}
+.handbook-back:hover{text-decoration:underline}
+.handbook-main{max-width:1080px;margin:auto;padding:48px max(4vw,24px) 60px}
+.handbook-intro{max-width:850px;margin-bottom:34px}
+.handbook-intro h1{font-size:clamp(30px,4vw,46px);font-weight:580;letter-spacing:-1.5px;line-height:1.16;margin:10px 0 15px}
+.handbook-intro>p{color:#bcbcc9;font-size:15px;line-height:1.8}
+.handbook-intro .eyebrow{font-size:10px;letter-spacing:1.5px;color:#d0d0da}
+.handbook-intro .handbook-lead{margin-top:22px;color:#dedee7}
+.handbook-intro .handbook-route{margin-top:18px;font-size:13px}
+.handbook-intro a,.handbook-content a{color:#e6e6ef;text-decoration:underline;text-underline-offset:3px}
+.handbook-content.guide-scroll{height:auto;overflow:visible;padding:0;font-size:14px;line-height:1.85;scrollbar-gutter:auto;min-width:0}
+.handbook-content .solver-guide>details,.handbook-content>.handbook-references{padding:18px 0;border-top:1px solid var(--line)}
+.handbook-content summary{color:#ededf3;font-size:15px;font-weight:560;line-height:1.5;cursor:pointer;padding-right:15px}
+.handbook-content .solver-guide>details:first-child{border-top:1px solid var(--line);padding-top:18px}
+.handbook-content .step-body,.handbook-content .solver-guide .step-body{font-size:13px;line-height:1.85;padding-top:16px}
+.handbook-content p+p{margin-top:12px}
+.handbook-content h4{font-size:14px;color:#efeff3;margin-top:24px}
+.handbook-content .solver-tech-section>summary{font-size:14px}
+.handbook-content .solver-tech-subsection>summary{font-size:13px}
+.handbook-content .solver-tech-subsection{border-color:#383840;border-left-color:#565660}
+.handbook-content .solver-tech-intro{border:0;border-radius:0;background:none;padding:0;margin:22px 0 12px}
+.handbook-content .solver-technical{margin-top:24px}
+.handbook-content .solver-tech-intro h4{font-size:15px}
+.handbook-content .solver-guide-note{font-size:12px;color:#aaaab8}
+.handbook-content .solver-tech-table th{background:#24242e;color:#ededf3}
+.handbook-content .solver-tech-table th,.handbook-content .solver-tech-table td{padding:10px 12px;border-color:#36363e;font-size:12px}
+.handbook-content .solver-tech-table{margin:17px 0}
+.handbook-content .solver-pseudocode{border-color:#42424c;background:#121219}
+.handbook-content .solver-pseudocode figcaption{background:#24242e;border-color:#42424c;color:#dedee8;font-size:11px}
+.handbook-content .solver-pseudocode code{font-size:12px;color:#e1e1eb}
+.handbook-content .solver-equation{padding:16px;background:#17171f;border-color:#383842;color:#f0f0f5;font-size:16px}
+.handbook-content .guide-reference-url{font-size:11px}
+.handbook-content .guide-bibliography li{grid-template-columns:30px minmax(0,1fr);font-size:12px}
+.handbook-content .guide-bibliography li+li{margin-top:18px}
+.handbook-content .guide-bibliography li:target{background:#282830;outline-color:#282830}
+.handbook-content .solver-tech-section:target>summary,.handbook-content .solver-tech-subsection:target>summary{color:#fff}
+.handbook-case{scroll-margin-top:28px;margin-top:14px}
+.handbook-noscript{padding:20px;border:1px solid var(--line);border-radius:8px}
+.handbook-page .site-footer{max-width:1080px}
+.help-figure-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:16px 0}
+.help-capture{margin:0;min-width:0;overflow:hidden;border:1px solid #373740;border-radius:9px;background:#13131c}
+.help-capture img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain}
+.help-capture figcaption{border-top:1px solid #33333f;padding:12px 15px;color:#bdbdc9;font-size:12px;line-height:1.7}
+.help-capture figcaption strong{color:#ededf3}
+.help-capture-note{font-size:11px!important;color:#a5a5b2!important}
+.help-control-list{margin:17px 0}
+.help-control-list>div{display:grid;grid-template-columns:125px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #34343e}
+.help-control-list dt{font-weight:650;color:#ededf3}.help-control-list dd{margin:0;min-width:0}
+@media(max-width:600px){.help-figure-grid{grid-template-columns:1fr;gap:14px}.help-control-list>div{grid-template-columns:1fr;gap:3px}.help-capture figcaption{padding:11px 13px}}
+@media(max-width:600px){.handbook-main{padding:30px 19px 40px}.handbook-intro{margin-bottom:25px}.handbook-intro>p{font-size:14px}.handbook-content .step-body,.handbook-content .solver-guide .step-body{font-size:13px}.handbook-content .solver-tech-section>summary{font-size:14px}.handbook-content .solver-tech-subsection{padding-left:8px}.handbook-content .solver-pseudocode code{font-size:11px}.handbook-page .site-header{gap:12px}.handbook-page .brand{font-size:17px}.handbook-back{font-size:11px}}

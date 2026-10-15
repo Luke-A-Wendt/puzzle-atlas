@@ -3,6 +3,29 @@
   "sourceRoot": "/workspace/scratch/249cff57c447/puzzle-atlas/dist",
   "models": [
     {
+      "id": "axis",
+      "name": "Axis Cube",
+      "degree": 168,
+      "stickerCount": 42,
+      "moves": 18,
+      "representation": "expanded-sticker-pose-domain",
+      "bytes": 71859,
+      "validation": {
+        "singleMoveChecks": 18,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 18,
+        "inverseChecks": 18,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Ring map is dynamic. Nodes are finite pose addresses, not just solved-face slots; only initialOccupied/current occupied addresses contain stickers. A frontend adapter must resolve each current ring dot by its pos, center, and normal. Never treat stickerState.slot as a destination here.",
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
       "id": "masterpyraminx",
       "name": "Master Pyraminx",
       "degree": 64,
@@ -213,6 +236,50 @@
         "sequenceSteps": 160,
         "bijectiveMoveChecks": 72,
         "inverseChecks": 72,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "cube9",
+      "name": "Cube 9×9×9",
+      "degree": 486,
+      "stickerCount": 486,
+      "moves": 81,
+      "representation": "fixed-sticker-slots",
+      "bytes": 239198,
+      "validation": {
+        "singleMoveChecks": 81,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 81,
+        "inverseChecks": 81,
+        "moveOrders": [
+          4,
+          2
+        ]
+      },
+      "notes": [
+        "Protection means each selected node returns to the same slot at the sequence endpoint, not remaining stationary during intermediate moves. Color equality is weaker than labeled-node equality."
+      ]
+    },
+    {
+      "id": "cube10",
+      "name": "Cube 10×10×10",
+      "degree": 600,
+      "stickerCount": 600,
+      "moves": 90,
+      "representation": "fixed-sticker-slots",
+      "bytes": 318033,
+      "validation": {
+        "singleMoveChecks": 90,
+        "sequenceSteps": 160,
+        "bijectiveMoveChecks": 90,
+        "inverseChecks": 90,
         "moveOrders": [
           4,
           2
@@ -744,5 +811,5 @@
       ]
     }
   ],
-  "totalBytes": 1130450
+  "totalBytes": 1759540
 }

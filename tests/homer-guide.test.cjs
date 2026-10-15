@@ -77,6 +77,6 @@ for(let seed=0;seed<128;seed++){
   const scrambled=E.scramble('homer-guide-'+seed,30).reduce((s,m)=>E.applyMove(s,m),S);
   topStage(bottomStage(scrambled));
 }
-assert.equal(guide.steps.length,5);assert(guide.notation.join(' ').includes('Mirror mode'));assert(guide.steps.every(s=>s.body.length>150));
+assert.equal(guide.steps.length,5);assert(!JSON.stringify(guide).includes('Mirror mode'));assert(guide.notation.join(' ').includes('always retains its original facial colors'));assert(guide.steps.every(s=>s.body.length>150));
 assert(guide.steps[0].body.includes('eyes')&&guide.steps[0].body.includes('muzzle')&&guide.steps[0].body.includes('neck'));
 console.log('Homer guide passed: all 648 final-layer cases and 128 full seeded solves using its actual three algorithms.');

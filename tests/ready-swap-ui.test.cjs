@@ -75,14 +75,14 @@ test('Go executes the retained word without a second search that could time out'
   assert.equal(app.requests.length,count,'a ready pair does not submit another constrained search');
   await app.settleSolver();const after=app.mapping();
   assert.equal(app.snapshot().history.length,1);assert.equal(after.stickerToNode[before.nodeToSticker[f.a]],f.b);assert.equal(after.stickerToNode[before.nodeToSticker[f.b]],f.a);
-  assert.deepEqual(clean(app.ui().state().pair),[]);assert.equal(app.element('speedText').textContent,'Normal');
+  assert.deepEqual(clean(app.ui().state().pair),[]);assert.equal(app.element('speedText').textContent,'Slow','manual mode retains All labels and the associated default rate');
 });
 
 test('unknown choices remain selectable but explicitly require checking, and a timeout never makes them ready',async()=>{
   const app=host();await app.ready();await app.answer(await app.pending(),{status:'unknown',reason:'time_limit'});
   const state=app.ui().state().eligibility;assert.deepEqual(clean(state.ready),[]);assert.deepEqual(clean(state.blocked),[]);
   assert(state.uncertain.includes(app.id(f.a)));assert(state.dimmed.includes(app.id(f.a)));
-  app.choose(f.a,f.b);assert.equal(app.element('csGo').textContent,'Check & solve');assert.equal(app.element('csGo').getAttribute('data-readiness'),'check');
+  app.choose(f.a,f.b);assert.equal(app.element('csGo').textContent,'Go');assert.equal(app.element('csGo').getAttribute('data-readiness'),'check');assert.match(app.element('csGo').title,/Search for this pair/);
   app.click('csGo');const entry=app.requests.findLast(x=>x.request.task==='manual-swap');assert(entry);
   entry.worker.reply({id:entry.request.id,type:'result',result:{status:'unknown',reason:'time_limit'}});await app.advance(0);
   assert.equal(app.snapshot().history.length,0);assert.equal(app.ui().state().phase,'selecting');assert.match(app.ui().state().status,/not proved impossible|unresolved/i);
@@ -101,7 +101,8 @@ test('adding a conflicting hold withdraws readiness immediately and stale replie
 
 test('a changed color state invalidates all old readiness and rejects late old responses',async()=>{
   const app=host();await app.ready();const old=await app.pending(),payload=await app.answer(old,readyResult(app));
-  assert(app.ui().state().eligibility.ready.length);app.context.PUZZLE_API.move('R');await app.settleSolver();
+  assert(app.ui().state().eligibility.ready.length);assert.equal(app.context.PUZZLE_API.move('R'),false,'manual puzzle turns are locked in constrained mode');
+  app.ui().setActive(false);assert.equal(app.context.PUZZLE_API.move('R'),true);await app.settleSolver();await app.ready();
   const fresh=await app.pending();assert.notEqual(fresh,old);old.worker.reply(payload,true);await app.advance(0);
   assert.deepEqual(clean(app.ui().state().eligibility.ready),[],'old color-state witnesses cannot be advertised for a new state');
   assert.equal(app.snapshot().history.length,1);

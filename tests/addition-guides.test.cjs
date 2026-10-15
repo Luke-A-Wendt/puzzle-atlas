@@ -84,5 +84,7 @@ test('New guides are self-contained, identify the exact game conventions, and ke
  assert(G.masterpyraminx.steps.some(s=>s.body.includes('can move between faces')));
  assert(G.kilominx.steps.some(s=>s.body.includes('no edge-flip or center stage')));
  assert(G.ghost.steps.some(s=>s.body.includes('directional centers')));
- assert(G.ghost.steps.some(s=>s.body.includes('ring map is hidden')));
+ assert(G.ghost.steps.some(s=>s.body.includes('ring map stays available with silver nodes')));
+ assert(G.ghost.steps.some(s=>s.body.includes('completely specified first solve')));
+ assert(!G.ghost.steps.some(s=>s.body.includes('A held attachment determines its piece’s full orientation')));
 });

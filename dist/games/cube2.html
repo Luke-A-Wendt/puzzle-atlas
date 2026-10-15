@@ -3,23 +3,28 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
-<title>2 × 2 Cube · Puzzle Atlas</title>
-<meta name="description" content="An interactive 2×2 cube with six linked rings, live 3D rotation, seeded scrambles and an animated solve journal.">
-<link rel="stylesheet" href="game-theme.css?v=8ba48de005a51b47ce10">
-<link rel="stylesheet" href="constrained-solver.css?v=8ba48de005a51b47ce10">
-<link rel="stylesheet" href="play-timer.css?v=8ba48de005a51b47ce10"><meta name="atlas-release" content="8ba48de005a51b47ce10"></head>
+<title>2×2×2 Cube · Puzzle Atlas</title>
+<meta name="description" content="An interactive 2×2×2 cube with six linked rings, live 3D rotation, seeded scrambles and an animated solve journal.">
+<link rel="stylesheet" href="game-theme.css?v=b847d94624b4531fcae9">
+<link rel="stylesheet" href="move-journal.css?v=b847d94624b4531fcae9">
+<link rel="stylesheet" href="constrained-solver.css?v=b847d94624b4531fcae9">
+<link rel="stylesheet" href="play-timer.css?v=b847d94624b4531fcae9"><meta name="atlas-release" content="b847d94624b4531fcae9"></head>
 <body class="game-cube2">
 <main class="app" id="puzzleApp">
 
-<section class="panel action-panel" aria-label="Game controls"><div class="action-group"><button id="randomize" class="primary"><span class="icon">⤨</span>Randomize</button><button id="solve"><span class="icon">✦</span>Auto solve</button><button id="pause" hidden>Pause</button><button id="undo" class="outline">↶ Undo</button><button id="reset" class="outline">Reset</button></div><div class="action-meta"><span id="status" class="status" role="status">● Solved</span><div class="seedbox"><span id="seedLabel">Start solved, or try a new scramble.</span><br><code id="seed">NO SEED YET</code></div></div></section>
+<section class="panel action-panel" aria-label="Game controls"><div class="action-group"><button id="randomize" class="primary"><span class="icon">⤨</span>Randomize</button><button id="solve"><span class="icon">✦</span>Auto solve</button><button id="pause" hidden>Stop</button><span class="journal-transport" role="group" aria-label="Move journal playback"><button id="undoSequence" class="outline journal-key" title="Undo sequence" aria-label="Undo sequence" disabled><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3h2v10H3z M12 3L5 8l7 5z"/></svg></button><button id="undo" class="outline journal-key" title="Undo one move" aria-label="Undo one move" disabled><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M12 3L5 8l7 5z"/></svg></button><button id="redo" class="outline journal-key" title="Redo one move" aria-label="Redo one move" disabled><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 3l7 5-7 5z"/></svg></button><button id="redoSequence" class="outline journal-key" title="Redo sequence" aria-label="Redo sequence" disabled><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M11 3h2v10h-2z M4 3l7 5-7 5z"/></svg></button></span><span id="journalActivity" class="journal-activity" aria-live="polite"></span><button id="reset" class="outline">Reset</button></div><div class="action-meta"><span id="status" class="status" role="status">● Solved</span></div></section>
 <div class="workspace">
-<section class="panel" id="ringPanel"><div class="panel-head ring-panel-head"><h2>Ring map</h2><button id="ringFocus" type="button" class="small outline" aria-pressed="true">Show all rings</button><span class="tag">6 RINGS · 24 STICKERS</span><button id="ringPanelHide" class="small outline" type="button" aria-expanded="true" aria-controls="ringPanel">← Hide ring map</button></div><div class="canvas-wrap ring-wrap"><canvas id="rings" tabindex="0" aria-label="Interactive ring diagram. Select a ring below, then use left and right arrow keys to turn it."></canvas><div class="canvas-caption">Select a ring · drag along its curve to turn</div></div><div class="ring-controls"><div class="selector" id="selector"></div><div class="turn-bar"><button id="ccw" title="Turn the selected ring counterclockwise"><span class="direction">↶</span>Ring left</button><div class="turn-selected"><strong id="selectedName">R</strong><span>Selected</span></div><button id="cw" title="Turn the selected ring clockwise"><span class="direction">↷</span>Ring right</button></div><p id="ringHint" class="ring-hint">Arrows rotate the ring as seen here. Each turn is one cube quarter-turn.</p></div></section>
-<section class="panel"><div class="panel-head view-panel-head"><h2>3D puzzle</h2><span class="tag">LIVE 2×2 VIEW</span><div class="view-panel-controls" id="ringTab" role="group" aria-label="View panels"><button id="ringPanelToggle" class="small outline" type="button" aria-expanded="false" aria-controls="ringPanel" hidden>Show ring map →</button><button id="guidePanelToggle" class="small outline" type="button" aria-expanded="false" hidden>Show guide ←</button></div></div><div class="canvas-wrap cube-wrap"><canvas id="cube" tabindex="0" aria-label="3D cube. Drag to rotate the view, or focus and use arrow keys. Use plus and minus to zoom."></canvas><div class="cube-top"><button id="homeView" class="small outline">Reset view</button></div><div class="canvas-caption">Drag to look around · click a face letter to select</div></div><div class="notation-panel" aria-label="Conventional notation moves"><div class="notation-heading"><span>Notation moves</span><div class="view-speed-control"><label for="speed">Animation</label><input id="speed" type="range" min="1" max="5" value="3" aria-label="Animation speed"><span id="speedText">Normal</span></div><label class="inverse-toggle"><input id="notationInverse" type="checkbox" aria-label="Use inverse notation moves"> Inverse (′)</label></div><div class="notation-buttons" id="notationButtons"></div><p>Clockwise looking at the named face. Use these buttons for the guide.</p></div><div class="cube-bottom"><div class="metric"><div><strong id="moveCount">0</strong><span>Your turns</span></div><div><strong id="solvedFaces">6 / 6</strong><span>Uniform faces</span></div></div><div class="legend" aria-label="Solved starting face colors" title="Solved starting face colors"><span><i class="swatch" style="background:#eeeef6"></i>U · White</span><span><i class="swatch" style="background:#f4ce48"></i>D · Yellow</span><span><i class="swatch" style="background:#39bd8b"></i>F · Green</span><span><i class="swatch" style="background:#4c90ef"></i>B · Blue</span><span><i class="swatch" style="background:#ee596e"></i>R · Red</span><span><i class="swatch" style="background:#f29a4b"></i>L · Orange</span></div></div></section>
+<section class="panel" id="ringPanel"><div class="panel-head ring-panel-head"><h2>Ring map</h2><button id="ringFocus" type="button" class="small outline" aria-pressed="true">Show all rings</button><span class="tag">6 RINGS · 24 STICKERS</span><button id="ringPanelHide" class="small outline" type="button" aria-expanded="true" aria-controls="ringPanel">← Hide ring map</button></div><div class="canvas-wrap ring-wrap"><canvas id="rings" tabindex="0" aria-label="Interactive ring diagram. Select a ring below, then use left and right arrow keys to turn it."></canvas><div class="canvas-caption">Select a node · drag along its curve to turn</div></div><div class="ring-controls"><div class="selector" id="selector"></div><div class="turn-bar"><button id="ccw" title="Turn the selected ring counterclockwise"><span class="direction">↶</span>Turn left</button><div class="turn-selected"><strong id="selectedName">R</strong><span>Selected</span></div><button id="cw" title="Turn the selected ring clockwise"><span class="direction">↷</span>Turn right</button></div><p id="ringHint" class="ring-hint">Arrows rotate the ring as seen here. Each turn is one cube quarter-turn.</p></div></section>
+<section class="panel"><div class="panel-head view-panel-head"><h2>3D puzzle</h2><span class="tag">LIVE 2×2×2 VIEW</span><div class="view-panel-controls" id="ringTab" role="group" aria-label="View panels"><button id="ringPanelToggle" class="small outline" type="button" aria-expanded="false" aria-controls="ringPanel" hidden>Show ring map →</button><button id="guidePanelToggle" class="small outline" type="button" aria-expanded="false" hidden>Show guide ←</button></div></div><div class="canvas-wrap cube-wrap"><canvas id="cube" tabindex="0" aria-label="3D cube. Drag to rotate the view, or focus and use arrow keys. Use plus and minus to zoom."></canvas><div class="cube-top"><button id="homeView" class="small outline">Reset view</button></div><div class="canvas-caption">Drag to look around · click a face letter to select</div></div><div class="notation-panel" aria-label="Conventional notation moves"><div class="notation-heading"><span>Notation moves</span><div class="view-speed-control"><label for="speed">Animation</label><input id="speed" type="range" min="1" max="5" value="3" aria-label="Animation speed"><span id="speedText">Normal</span></div><label class="inverse-toggle"><input id="notationInverse" type="checkbox" aria-label="Use inverse notation moves"> Inverse (′)</label></div><div class="notation-buttons" id="notationButtons"></div><p>Clockwise looking at the named face. Use these buttons for the guide.</p></div><div class="cube-bottom"><div class="metric"><div><strong id="moveCount">0</strong><span>Your turns</span></div><div><strong id="solvedFaces">6 / 6</strong><span>Uniform faces</span></div></div><div class="legend" aria-label="Solved starting face colors" title="Solved starting face colors"><span><i class="swatch" style="background:#eeeef6"></i>U · White</span><span><i class="swatch" style="background:#f4ce48"></i>D · Yellow</span><span><i class="swatch" style="background:#39bd8b"></i>F · Green</span><span><i class="swatch" style="background:#4c90ef"></i>B · Blue</span><span><i class="swatch" style="background:#ee596e"></i>R · Red</span><span><i class="swatch" style="background:#f29a4b"></i>L · Orange</span></div></div></section>
 </div>
 
-<section class="panel log-panel"><details class="journal" id="journalPanel"><summary aria-label="Move journal and keyboard help"><h2 id="logTitle">Move journal</h2><span class="journal-hint">Moves &amp; help</span></summary><div id="log" class="log" role="log" aria-live="off"><span class="empty">Your moves will appear here. Try a ring or press Randomize.</span></div><p id="message" class="message" role="status">Every ring turn is a legal cube move.</p><details class="journal-help"><summary>How to play &amp; keyboard shortcuts</summary><p id="cubeNote">The highlighted ring and cube layer are linked. Each turn moves four corner pieces; there are no middle slices.</p><p>Make all six cube faces a single color. Click a ring’s exposed arc or its letter button to select it, then use either turn arrow. You can also drag along that ring; release after a short arc to make one quarter-turn. At crossings, use the letter buttons to choose precisely.</p><p>The 24 dots are the cube’s 24 stickers. Each dot sits where two rings cross. Turning an outer layer also rotates its own face; those dots move between intersections as the belt dots travel along the ring.</p><p>Use <kbd>←</kbd> and <kbd>→</kbd> to turn the selected ring. <kbd>U</kbd> <kbd>D</kbd> <kbd>L</kbd> <kbd>R</kbd> <kbd>F</kbd> <kbd>B</kbd> make standard cube moves; hold <kbd>Shift</kbd> for inverse. A prime (′) means inverse, and 2 means a half-turn. With the cube focused, arrow keys change the view and <kbd>+</kbd>/<kbd>−</kbd> zoom.</p><p>Randomize continues from the current position and applies 20 seeded legal turns. Every click creates a fresh seed. Auto solve opens the Constrained Solver and works from the current arrangement, pausing between stages and highlighting solved nodes that later stages protect. It does not need recorded moves or promise the shortest solution; difficult states may reach the computation limit. The journal prints each move as it finishes. The puzzle uses local drawing code and does not require an account.</p></details></details><div class="log-tools"><button id="copy" class="small outline">Copy moves</button></div></section>
+<section class="panel log-panel"><details class="journal" id="journalPanel"><summary aria-label="Move journal and keyboard help"><h2 id="logTitle">Move journal</h2><span class="journal-hint">Moves &amp; help</span></summary><div id="log" class="log" role="log" aria-live="off"><span class="empty">Your moves will appear here. Try a ring or press Randomize.</span></div><p id="message" class="message" role="status">Every ring turn is a legal cube move.</p><details class="journal-help"><summary>How to play &amp; keyboard shortcuts</summary><p id="cubeNote" hidden></p><p>Select an axis below the 3D view, or select a ring, node, or axis label. Both panels share the selected axis. Grab and drag a ring to turn it. In 3D, Rotate ↶ is positive (counterclockwise) and Rotate ↷ is negative (clockwise), looking inward from the selected axis’s outer end. During a move, the axis button and applied rotation button light up together. Inner cube slices follow their named face; M follows L, E follows D, and S follows F. Drag the 3D puzzle to orbit; scroll or pinch to zoom.</p><p>Use <kbd>←</kbd> and <kbd>→</kbd> to turn the selected ring. <kbd>U</kbd> <kbd>D</kbd> <kbd>L</kbd> <kbd>R</kbd> <kbd>F</kbd> <kbd>B</kbd> make standard cube moves; hold <kbd>Shift</kbd> for inverse. A prime (′) means inverse, and 2 means a half-turn. With the cube focused, arrow keys change the view and <kbd>+</kbd>/<kbd>−</kbd> zoom.</p><p>Use the top playback-rate selector for ½× through 2× animation. During Auto Solve, Stop requests the end of the current sequence; click Stop now to finish only the current turn. Manual constrained Stop finishes only the current turn. A partial sequence may not yet restore held colors. Randomize and journal replay stop at the last completed turn.</p><p><a href="../solver-handbook.html?v=b847d94624b4531fcae9#how-to-play" target="_blank" rel="noopener" aria-label="Open the illustrated How to play (opens in a new tab)">Open the illustrated How to play</a> for annotated ring-map and 3D examples, held colors, selection, playback, labels, and goal preview. The puzzle’s Solution guide explains its specific solving method.</p></details></details><div class="seedbox" hidden><span id="seedLabel">Start solved, or try a new scramble.</span><br><code id="seed">NO SEED YET</code></div><div class="log-tools"><button id="copy" class="small outline">Copy moves</button></div></section>
 
 </main><div class="toast" id="toast" role="status"></div>
+<script src="play-controls.js?v=b847d94624b4531fcae9"></script>
+<script src="puzzle-axis-display.js?v=b847d94624b4531fcae9"></script>
+<script src="move-journal.js?v=b847d94624b4531fcae9"></script>
+<script src="puzzle-selection-3d.js?v=b847d94624b4531fcae9"></script>
 <script>
 /* Exact integer-coordinate 2×2 cube model. No runtime dependencies. */
 (function (root) {
@@ -281,7 +286,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 
 </script>
-<script src="cube-face-tracks.js?v=8ba48de005a51b47ce10"></script>
+<script src="cube-face-tracks.js?v=b847d94624b4531fcae9"></script>
 <script>
 (function(){
 'use strict';
@@ -301,30 +306,36 @@ function makeSeed(){seedCounter++;const bytes=new Uint32Array(2);if(globalThis.c
 function currentMove(){return animation?animation.move:null;}
 function locked(){return !!animation||mode!=='idle';}
 function uniformFaces(){const groups=new Map();stickers.forEach(s=>{const k=s.n.join(',');if(!groups.has(k))groups.set(k,new Set());groups.get(k).add(s.color);});return [...groups.values()].filter(v=>v.size===1).length;}
-let scrambleSpeedActive=false;
+let scrambleSpeedActive=false,sequenceDefaultsActive=false;
+function restorePlaybackDefaults(options={}){
+ sequenceDefaultsActive=false;scrambleSpeedActive=false;if(options.preserveSettings)return;const changed=$('speed').value!=='3';$('speed').value='3';$('speedText').textContent='Normal';window.PuzzlePlaybackControls.syncSpeed();if(changed)window.PuzzleFeedback?.pulse?.($('speed'));
+ window.PuzzleAxisDisplay?.resetDefaults?.({pulse:true});window.PuzzleSelection3D?.clearHover?.();
+}
 function updateUI(){
- $('ringFocus').textContent=ringFocused?'Show all rings':'Focus selected rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
- if(scrambleSpeedActive&&mode!=='scramble'){scrambleSpeedActive=false;$('speed').value='3';$('speedText').textContent='Normal';}
+ $('ringFocus').textContent=ringFocused?'Show all rings':'Focus rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
+ if(sequenceDefaultsActive&&!locked()&&!window.ConstrainedSolverUI?.journalBusy?.()&&!window.PuzzleJournal?.isReplaying?.())restorePlaybackDefaults();
  const solved=E.isSolved(stickers),busy=locked();
- document.querySelectorAll('.notation-key').forEach(b=>b.disabled=busy);
+ document.querySelectorAll('.notation-key').forEach(b=>b.disabled=busy||!!window.ConstrainedSolverUI?.blocksManualMoves?.());
  $('status').className='status'+(busy?' busy':solved?'':' mixed');
- $('status').textContent=busy?(paused?'Ⅱ Paused':mode==='solve'?'✦ Solving':mode==='scramble'?'⤨ Scrambling':mode==='algorithm'?'↻ Solving':'↻ Turning'):(solved?'● Solved':'● In play');
+ $('status').textContent=busy?(mode==='solve'?'✦ Solving':mode==='scramble'?'⤨ Scrambling':mode==='algorithm'?'↻ Solving':'↻ Turning'):(solved?'● Solved':'● In play');
  $('moveCount').textContent=userTurns;$('solvedFaces').textContent=uniformFaces()+' / 6';
- $('selectedName').textContent=selected;
- document.querySelectorAll('.ring-key').forEach(b=>{b.classList.toggle('active',b.dataset.face===selected);b.setAttribute('aria-pressed',String(b.dataset.face===selected));b.disabled=busy;});
- $('ccw').disabled=busy;$('cw').disabled=busy;$('randomize').disabled=busy;
+ $('selectedName').textContent=window.PuzzleAxisDisplay?.selection(selected,animation)||'Select axis';
+ document.querySelectorAll('.ring-key').forEach(b=>{b.classList.toggle('active',b.dataset.face===visualAxis());b.setAttribute('aria-pressed',String(b.dataset.face===visualAxis()));b.disabled=busy;});
+ $('ccw').disabled=busy||!!window.ConstrainedSolverUI?.blocksManualMoves?.()||!window.PuzzleAxisDisplay?.selection(selected,animation);$('cw').disabled=busy||!!window.ConstrainedSolverUI?.blocksManualMoves?.()||!window.PuzzleAxisDisplay?.selection(selected,animation);$('randomize').disabled=busy;
  $('solve').disabled=busy||solved;$('undo').disabled=busy||!history.length;
- $('pause').hidden=mode==='idle';$('pause').textContent=mode==='scramble'?'Stop':paused?'Resume':'Pause';$('pause').disabled=false;
+ $('pause').hidden=mode==='idle';$('pause').textContent='Stop';$('pause').disabled=false;
  $('copy').disabled=!journal.some(j=>j.move);
  $('cubeNote').textContent=selected+' · '+G.getRing(selected).label+' layer. Highlighted stickers belong to this slice. '+'One turn rotates four corners and their twelve stickers.';
  const cw={face:selected,dir:-E.configs[selected].turn},ccw=E.invertMove(cw);
  $('cw').title='Clockwise on diagram · '+E.moveLabel(cw);$('ccw').title='Counterclockwise on diagram · '+E.moveLabel(ccw);
- dirty=true;window.ConstrainedSolverUI?.syncTransport?.();
+ dirty=true;window.ConstrainedSolverUI?.syncTransport?.();window.PuzzleJournal?.sync?.();
 }
-function setSelected(face){selected=face;updateUI();}
-function addLabel(label){journal.push({label});const el=document.createElement('div');el.className='log-label';el.textContent=label;$('log').appendChild(el);}
+function visualAxis(){return window.PuzzleAxisDisplay?window.PuzzleAxisDisplay.selection(selected,animation):selected;}
+function setSelected(face){selected=face;window.PuzzleAxisDisplay?.choose?.(face);updateUI();}
+function addLabel(label){if(window.PuzzleJournal){journal=window.PuzzleJournal.label(label);return;}journal.push({label});const el=document.createElement('div');el.className='log-label';el.textContent=label;$('log').appendChild(el);}
 function clearJournal(){journal=[];$('log').replaceChildren();}
 function addMove(move,source){
+ if(window.PuzzleJournal){journal=window.PuzzleJournal.record(move,source);return;}
  if(!journal.length)$('log').replaceChildren();
  $('log').querySelectorAll('.current').forEach(n=>n.classList.remove('current'));
  journal.push({move:E.normalizeMove(move),source});
@@ -333,19 +344,19 @@ function addMove(move,source){
  el.append(index,document.createTextNode(E.moveLabel(move).replace("'",'′')));$('log').appendChild(el);$('log').scrollTop=$('log').scrollHeight;
 }
 // Explicit puzzle turns always honor the speed chosen in this control.
-function duration(){return [0,1400,850,450,240,110][+$('speed').value];}
-function beginMove(move,source){
- const m=E.normalizeMove(move);selected=m.face;ringDrag=null;
+function duration(){return window.PuzzlePlaybackControls.duration(+$('speed').value);}
+function beginMove(move,source){window.PuzzleSelection3D?.clearHover?.();if(source!=='manual')window.PuzzleAxisDisplay?.clear?.();
+ const m=E.normalizeMove(move);selected=m.face;if(source==='manual')window.PuzzleAxisDisplay?.choose?.(m.face);ringDrag=null;
  animation={move:m,source,before:stickers,after:E.applyMove(stickers,m),start:performance.now(),duration:duration()*(m.turns===2?1.35:1)};
  updateUI();
 }
-function manual(move){if(locked())return;if(!journal.length)clearJournal();beginMove(move,'manual');}
+function manual(move){if(locked()||window.ConstrainedSolverUI?.blocksManualMoves?.())return;if(!journal.length)clearJournal();beginMove(move,'manual');}
 function turn(screenDirection){manual({face:selected,dir:-screenDirection*E.configs[selected].turn,turns:1});}
 function finishMove(){
  const a=animation;stickers=a.after;animation=null;
- if(a.source==='solve'||a.source==='undo')history.pop();else history.push(a.move);
+ if(a.source==='solve'||a.source==='undo'||a.source==='journal-undo')history.pop();else history.push(a.move);
  if(a.source==='manual'||a.source==='algorithm')userTurns++;
- if(a.source==='undo')userTurns=Math.max(0,userTurns-1);
+ if(a.source==='undo')userTurns=Math.max(0,userTurns-1);if(a.source==='journal-undo'||a.source==='journal-redo')userTurns=Math.max(0,userTurns+window.PuzzleJournal.replayTurnDelta());
  addMove(a.move,a.source);
  if(stopRequested){
   if(mode!=='idle')sequenceDone++;
@@ -362,14 +373,14 @@ function finishMove(){
  }else $('message').textContent=E.isSolved(stickers)?'Solved. All six faces are uniform.':(a.source==='undo'?'Undid the last recorded turn.':'Played '+E.moveLabel(a.move)+'.');
  updateUI();
 }
-function startSequence(moves,type){if(type==='scramble'){scrambleSpeedActive=true;$('speed').value='5';$('speedText').textContent='Fast';}stopRequested=false;mode=type;queue=moves.slice();sequenceTotal=queue.length;sequenceDone=0;paused=false;const first=queue.shift();if(first)beginMove(first,type);else{mode='idle';updateUI();}}
+function startSequence(moves,type){sequenceDefaultsActive=type!=='journal-undo'&&type!=='journal-redo';if(type==='scramble'){scrambleSpeedActive=true;window.PuzzleAxisDisplay?.setLabelMode?.('none',{resetSpeed:true});$('speed').value='5';$('speedText').textContent='Fast';window.PuzzlePlaybackControls.syncSpeed();window.PuzzleFeedback?.pulse?.($('speed'));}stopRequested=false;mode=type;queue=moves.slice();sequenceTotal=queue.length;sequenceDone=0;paused=false;const first=queue.shift();if(first)beginMove(first,type);else{mode='idle';updateUI();}}
 function randomize(){
  if(locked())return;seed=makeSeed();
- const moves=E.scramble(seed,20);addLabel('Scramble · 20 legal turns');$('seedLabel').textContent='Fresh seed · continues current state';$('seed').textContent=seed;
+ const moves=E.scramble(seed,20);addLabel('Scramble · 20 legal turns');$('seedLabel').textContent='Fresh seed · continues current state';$('seed').textContent=seed;window.PuzzleJournal?.setSeed?.(seed);
  $('logTitle').textContent='Move journal';$('message').textContent='Scrambling the current position…';startSequence(moves,'scramble');
 }
 function solve(){if(locked()||E.isSolved(stickers))return false;const solver=window.ConstrainedSolverUI;if(!solver||typeof solver.autoSolve!=='function'){toast('Constrained Solver is unavailable. Reload this puzzle to try again.');return false;}return solver.autoSolve();}
-function reset(){animation=null;queue=[];mode='idle';paused=false;sequenceTotal=0;sequenceDone=0;stopRequested=false;ringDrag=null;stickers=E.makeSolved();history=[];userTurns=0;seed=null;clearJournal();$('log').innerHTML='<span class="empty">Your moves will appear here. Try a ring or press Randomize.</span>';$('seedLabel').textContent='Start solved, or try a new scramble.';$('seed').textContent='NO SEED YET';$('logTitle').textContent='Move journal';$('message').textContent='Reset to the solved starting state.';updateUI();}
+function reset(){restorePlaybackDefaults();window.PuzzleJournal?.reset?.();animation=null;queue=[];mode='idle';paused=false;sequenceTotal=0;sequenceDone=0;stopRequested=false;ringDrag=null;stickers=E.makeSolved();history=[];userTurns=0;seed=null;clearJournal();$('log').innerHTML='<span class="empty">Your moves will appear here. Try a ring or press Randomize.</span>';$('seedLabel').textContent='Start solved, or try a new scramble.';$('seed').textContent='NO SEED YET';$('logTitle').textContent='Move journal';$('message').textContent='Reset to the solved starting state.';updateUI();}
 // Cancel queued turns while committing the active turn at its exact legal endpoint.
 function stopAfterCurrentMove(){
  if(!animation&&mode==='idle')return false;
@@ -378,21 +389,28 @@ function stopAfterCurrentMove(){
  if(!animation){mode='idle';stopRequested=false;$('message').textContent='Stopped at a legal move boundary.';}
  updateUI();return true;
 }
-function stopScrambleNow(){
- if(mode!=='scramble')return false;
- // State is committed only in finishMove; discard the uncommitted animation.
+function stopScrambleNow(){if(mode!=='scramble')return false;return stopPlaybackNow();}
+
+function resumePlayback(){if(paused){if(animation)animation.start+=performance.now()-pauseAt;paused=false;updateUI();}}
+function stopPlaybackNow(){
+ if(!animation&&mode==='idle'&&!window.PuzzleJournal?.isReplaying?.())return false;
+ const replaying=window.PuzzleJournal?.isReplaying?.(),scrambling=mode==='scramble';
+ // Rendering interpolates an uncommitted turn; its pre-turn state remains exact.
+ // Preserve the journal cursor and future so replay can resume from this boundary.
  animation=null;queue=[];mode='idle';paused=false;stopRequested=false;ringDrag=null;
- $('message').textContent='Randomizing stopped · '+sequenceDone+' completed turns. The unfinished turn was canceled.';
+ window.PuzzleJournal?.stopReplay?.();restorePlaybackDefaults({preserveSettings:!!replaying});
+ $('message').textContent=(replaying?'Journal playback':scrambling?'Randomizing':'Sequence')+' stopped at the last completed turn. The unfinished turn was canceled.';
  updateUI();return true;
 }
-function resumePlayback(){if(paused){if(animation)animation.start+=performance.now()-pauseAt;paused=false;updateUI();}}
-function togglePause(){if(window.ConstrainedSolverUI?.autoStopActive?.())return window.ConstrainedSolverUI.stopAuto();if(mode==='scramble')return stopScrambleNow();if(mode==='idle')return;if(paused){if(animation)animation.start+=performance.now()-pauseAt;paused=false;}else{pauseAt=performance.now();paused=true;}updateUI();}
+function stopPlayback(){const ui=window.ConstrainedSolverUI;if(ui?.autoStopActive?.())return ui.stopAuto();if(ui?.manualStopActive?.())return ui.stop();return stopPlaybackNow();}
 function resize(){for(const [name,canvas]of [['rings',ringsCanvas],['cube',cubeCanvas]]){const b=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);sizes[name]={w:b.width,h:b.height};canvas.width=Math.round(b.width*dpr);canvas.height=Math.round(b.height*dpr);canvas.getContext('2d').setTransform(dpr,0,0,dpr,0,0);}dirty=true;}
 function ringPoint(event){const b=ringsCanvas.getBoundingClientRect();return{x:(event.clientX-b.left-ringViewport.ox)/ringViewport.scale,y:(event.clientY-b.top-ringViewport.oy)/ringViewport.scale};}
 function nearestRing(p){return G.nearestRing(p,selected);}
 // Read-only overlay bridge: these are the exact marks from the existing draw pass.
-let solverRingNodes=[];
+let solverRingNodes=[],ringLabelTargets=[];
 window.PUZZLE_SOLVER_BRIDGE=Object.freeze({
+ isBusy:locked,
+ axesForNode:id=>{const sticker=stickers.find(s=>String(s.id)===String(id));return sticker?Object.keys(E.configs).filter(face=>E.selected(sticker,{face,dir:1})):[];},
  viewport:()=>({x:ringViewport.ox??ringViewport.cx??0,y:ringViewport.oy??ringViewport.cy??0,scale:ringViewport.scale}),
  nodes:()=>solverRingNodes.map(node=>({...node})),
  refreshControls:updateUI,
@@ -404,17 +422,17 @@ function drawRings(t){
  const{w,h}=sizes.rings;rc.clearRect(0,0,w,h);const scale=Math.min((w-34)/500,(h-30)/500),ring=G.getRing(selected);
  ringViewport={scale,ox:(w-500*scale)/2,oy:(h-500*scale)/2-5};
  rc.save();rc.translate(ringViewport.ox,ringViewport.oy);rc.scale(scale,scale);
- G.drawTracks(rc,selected,scale,{focus:ringFocused});
+ const shownAxis=visualAxis();G.drawTracks(rc,shownAxis,scale,{focus:ringFocused});
  const active=animation,conf=active?E.configs[active.move.face]:null;
  if(ringDrag&&!ringDrag.r.companion&&Math.abs(ringDrag.total)>.025){rc.beginPath();rc.arc(ring.cx,ring.cy,ring.r,ringDrag.angle-ringDrag.total,ringDrag.angle,ringDrag.total<0);rc.lineWidth=4/scale;rc.strokeStyle='rgba(226,211,255,.7)';rc.stroke();}
  const list=active?active.before:stickers;
  list.forEach((s,i)=>{
   const p=active?G.interpolateSticker(s,active.after[i],ring,t,conf.turn*active.move.dir*active.move.turns):G.position(s);
-  const willMove=s.p[ring.axis]===ring.layer&&(s.n[ring.axis]===0||s.p.some((v,a)=>a!==ring.axis&&v!==0));
+  const willMove=!!shownAxis&&s.p[ring.axis]===ring.layer&&(s.n[ring.axis]===0||s.p.some((v,a)=>a!==ring.axis&&v!==0));
   G.drawNode(rc,p,palette[s.color],willMove,scale);
   solverRingNodes.push({stickerId:String(s.id),x:ringViewport.ox+p.x*scale,y:ringViewport.oy+p.y*scale,r:G.nodeRadius(scale)*scale,color:palette[s.color],highlighted:willMove,highlightLineWidth:1.15,highlightOuterRadius:(G.nodeRadius(scale)+Math.min(1.8/scale,G.nodeSpacing*.075))*scale});
  });
- G.drawAxisLabel(rc,selected,selected,scale);
+ ringLabelTargets=G.drawAxisLabels(rc,shownAxis,scale);
  rc.restore();
 }
 function rot(v,axis,a){const c=Math.cos(a),s=Math.sin(a),[x,y,z]=v;return axis===0?[x,c*y-s*z,s*y+c*z]:axis===1?[c*x+s*z,y,-s*x+c*z]:[c*x-s*y,s*x+c*y,z];}
@@ -426,40 +444,34 @@ const normals=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 function basis(n){const axis=n.findIndex(v=>v!==0);return axis===0?[[0,1,0],[0,0,1]]:axis===1?[[1,0,0],[0,0,1]]:[[1,0,0],[0,1,0]];}
 // Face names describe fixed move axes; camera orbit carries their badges with the cube.
 let faceTargets=[];
-function drawCubeFaceLabels(project,eye,distance){
- faceTargets=[];
- for(const face of ['U','R','F','D','L','B']){
-  const cfg=E.configs[face],normal=[0,0,0];normal[cfg.axis]=Math.sign(cfg.layer);
-  const nv=camera(normal),cv=camera(mul(normal,typeof distance==='function'?distance(normal):distance));
-  if(dot(nv,[-cv[0],-cv[1],eye-cv[2]])<.32)continue;
-  const [x,y]=project(cv),chosen=selected[0]===face;
-  faceTargets.push({face,x,y});cc.beginPath();cc.arc(x,y,chosen?13:12,0,Math.PI*2);
-  cc.fillStyle=chosen?'#e1d5ff':'rgba(13,12,20,.86)';cc.fill();
-  cc.strokeStyle=chosen?'#fff':'rgba(255,255,255,.62)';cc.lineWidth=1.2;cc.stroke();
-  cc.fillStyle=chosen?'#292037':'#fff';cc.font='700 12px system-ui';cc.textAlign='center';cc.textBaseline='middle';cc.fillText(face,x,y+.4);
- }
+function drawCubeFaceLabels(project,eye,distance,selection3D){
+ faceTargets=G.draw3DAxisLabels(cc,{engine:E,camera,project,eye,distance,drawLeader:selection3D?.leader,selected:visualAxis(),width:sizes.cube.w,height:sizes.cube.h,spacing:.5075});
 }
 function drawCube(t){
  const{w,h}=sizes.cube;cc.clearRect(0,0,w,h);
  const scale=Math.min(w,h)*.245*view.zoom,eye=7.7;
  function project(v){const q=eye/(eye-v[2]);return[w/2+v[0]*scale*q,h*.475-v[1]*scale*q];}
  cc.save();cc.translate(w/2,h*.86);cc.scale(1,.22);const shadow=cc.createRadialGradient(0,0,2,0,0,w*.28);shadow.addColorStop(0,'rgba(0,0,0,.35)');shadow.addColorStop(1,'rgba(0,0,0,0)');cc.fillStyle=shadow;cc.beginPath();cc.arc(0,0,w*.28,0,Math.PI*2);cc.fill();cc.restore();
- const faces=[],active=animation,cfg=active?E.configs[active.move.face]:null,angle=active?cfg.turn*active.move.dir*active.move.turns*Math.PI/2*t:0;
+ const faces=[],anchors=[],shownAxis=visualAxis(),shownCfg=shownAxis?E.configs[shownAxis]:null,active=animation,cfg=active?E.configs[active.move.face]:null,angle=active?cfg.turn*active.move.dir*active.move.turns*Math.PI/2*t:0;
  function transform(v,p){return camera(active&&p[cfg.axis]===cfg.layer?rot(v,cfg.axis,angle):v);}
- function polygon(p,n,offset,half,color,sticker){
+ function polygon(p,n,offset,half,color,sticker,stickerId){
   const center=add(mul(p,.5075),mul(n,offset));const cv=transform(center,p),nv=transform(n,p);
+  if(sticker)anchors.push({id:stickerId,center:cv,normal:nv,selected:!!shownCfg&&p[shownCfg.axis]===shownCfg.layer&&(n[shownCfg.axis]===0||p.some((v,a)=>a!==shownCfg.axis&&v!==0))});
   if(dot(nv,[-cv[0],-cv[1],eye-cv[2]])<=0)return;
   const [u,v]=basis(n),k=half*.17;
   const coords=sticker?[[-half+k,-half],[half-k,-half],[half,-half+k],[half,half-k],[half-k,half],[-half+k,half],[-half,half-k],[-half,-half+k]]:[[-half,-half],[half,-half],[half,half],[-half,half]];
   const points=coords.map(([a,b])=>transform(add(center,add(mul(u,a),mul(v,b))),p));
-  const chosen=p[E.configs[selected].axis]===E.configs[selected].layer;
-  faces.push({points,depth:cv[2]+(sticker?.001:0),color,sticker,chosen,light:clamp(.77+.23*dot(nv,[-.2,.55,.81]),.62,1)});
+  const chosen=window.PuzzleAxisDisplay?.highlights3D?.()!==false&&!!shownCfg&&p[shownCfg.axis]===shownCfg.layer;
+  faces.push({points,outline:points,center:cv,normal:nv,stickerId,ringSelected:chosen&&(n[shownCfg.axis]===0||p.some((v,a)=>a!==shownCfg.axis&&v!==0)),depth:cv[2]+(sticker?.001:0),color,sticker,chosen,light:clamp(.77+.23*dot(nv,[-.2,.55,.81]),.62,1)});
  }
  for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1]){for(const n of normals)polygon([x,y,z],n,.483,.481,'#191820',false);}
- for(const s of active?active.before:stickers)polygon(s.p,s.n,.486,.411,palette[s.color],true);
+ for(const s of active?active.before:stickers)polygon(s.p,s.n,.486,.411,palette[s.color],true,s.id);
+ const selection3D=window.PuzzleSelection3D?.begin(cc,{canvas:cubeCanvas,project,eye,width:w,height:h,radius:Math.sqrt(3)*(1*.5075+.53),occluders:faces});
+ for(const anchor of anchors)selection3D?.track?.(anchor);
  faces.sort((a,b)=>a.depth-b.depth);
- for(const f of faces){const pts=f.points.map(project);cc.beginPath();pts.forEach((p,i)=>i?cc.lineTo(...p):cc.moveTo(...p));cc.closePath();cc.fillStyle=f.color;cc.fill();if(f.sticker){cc.fillStyle='rgba(0,0,0,'+(1-f.light)+')';cc.fill();cc.strokeStyle=f.chosen?'rgba(243,229,255,.58)':'rgba(255,255,255,.09)';cc.lineWidth=f.chosen?1.15:.6;}else{cc.strokeStyle=f.chosen?'#574769':'#302e3b';cc.lineWidth=.8;}cc.stroke();}
- drawCubeFaceLabels(project,eye,.5075+.53);
+ for(const f of faces){const pts=f.points.map(project);cc.beginPath();pts.forEach((p,i)=>i?cc.lineTo(...p):cc.moveTo(...p));cc.closePath();cc.fillStyle=f.color;cc.fill();if(f.sticker){cc.fillStyle='rgba(0,0,0,'+(1-f.light)+')';cc.fill();cc.strokeStyle=f.chosen?'rgba(243,243,243,.58)':'rgba(255,255,255,.09)';cc.lineWidth=f.chosen?1.15:.6;}else{cc.strokeStyle=f.chosen?'#574769':'#302e3b';cc.lineWidth=.8;}cc.stroke();if(f.sticker)selection3D?.face({id:f.stickerId,points:f.points,outline:f.outline,center:f.center,normal:f.normal,selected:f.ringSelected});else selection3D?.pickFace?.({id:null,points:f.points});}
+ drawCubeFaceLabels(project,eye,.5075+.53,selection3D);
+ selection3D?.finish();
 }
 function frame(now){lastTimestamp=now;let t=0;
  if(animation){t=clamp(((paused?pauseAt:now)-animation.start)/animation.duration,0,1);if(t>=1&&!paused){finishMove();if(mode!=='idle'&&queue.length)beginMove(queue.shift(),mode);t=0;}dirty=true;}
@@ -470,8 +482,8 @@ for(const [axis,faces] of [['X · LEFT / RIGHT',['L','R']],['Y · UP / DOWN',['U
  faces.forEach(face=>{const b=document.createElement('button');b.type='button';b.className='ring-key';b.dataset.face=face;b.textContent=face;b.title='Select '+G.getRing(face).label+' ring';b.setAttribute('aria-label',b.title);b.addEventListener('click',()=>setSelected(face));buttons.appendChild(b);});group.append(label,buttons);$('selector').appendChild(group);
 }
 $('ringFocus').addEventListener('click',()=>{ringFocused=!ringFocused;ringDrag=null;updateUI();});
-$('ccw').addEventListener('click',()=>turn(-1));$('cw').addEventListener('click',()=>turn(1));$('randomize').addEventListener('click',randomize);$('solve').addEventListener('click',solve);$('pause').addEventListener('click',togglePause);$('reset').addEventListener('click',reset);
-$('undo').addEventListener('click',()=>{if(!locked()&&history.length)beginMove(E.invertMove(history[history.length-1]),'undo');});
+$('ccw').addEventListener('click',()=>turn(-1));$('cw').addEventListener('click',()=>turn(1));$('randomize').addEventListener('click',randomize);$('solve').addEventListener('click',solve);$('pause').addEventListener('click',stopPlayback);$('reset').addEventListener('click',reset);
+$('undo').addEventListener('click',()=>window.PuzzleJournal?.navigate(-1,false));
 $('homeView').addEventListener('click',()=>{view={yaw:-.62,pitch:.48,zoom:1};dirty=true;});
 $('speed').addEventListener('input',()=>{
  $('speedText').textContent=['','Slow','Gentle','Normal','Quick','Fast'][+$('speed').value];
@@ -484,15 +496,17 @@ $('copy').addEventListener('click',async()=>{
  try{await navigator.clipboard.writeText(text);toast('Moves copied.');}catch(_){const field=document.createElement('textarea');field.value=text;field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();const copied=document.execCommand('copy');field.remove();toast(copied?'Moves copied.':'Copy is unavailable in this browser.');}
 });
 ringsCanvas.addEventListener('pointerdown',e=>{
- if(locked()||e.button>0)return;const p=ringPoint(e),nearest=nearestRing(p);if(!nearest||nearest.d*ringViewport.scale>13)return;setSelected(nearest.r.name);
+ if(locked()||e.button>0)return;const p=ringPoint(e),labelHit=ringLabelTargets.find(label=>Math.hypot(label.x-p.x,label.y-p.y)<=label.radius+3/ringViewport.scale);const nearest=labelHit?{r:G.getRing(labelHit.face),d:0}:nearestRing(p);if(!nearest||nearest.d*ringViewport.scale>13){window.PuzzleAxisDisplay?.clear?.();ringDrag=null;dirty=true;return;}setSelected(nearest.r.name);
  ringDrag={pointer:e.pointerId,r:nearest.r,viewport:{...ringViewport},angle:G.angleAt(p,nearest.r),total:0,startX:e.clientX,startY:e.clientY};ringsCanvas.setPointerCapture(e.pointerId);ringsCanvas.focus({preventScroll:true});dirty=true;
 });
-ringsCanvas.addEventListener('pointermove',e=>{if(!ringDrag||e.pointerId!==ringDrag.pointer)return;const p=ringPoint(e),r=ringDrag.r||G.getRing(selected),a=G.angleAt(p,r);ringDrag.total+=mod(a-ringDrag.angle+Math.PI,Math.PI*2)-Math.PI;ringDrag.angle=a;dirty=true;});
+ringsCanvas.addEventListener('pointermove',e=>{if(!ringDrag){const near=nearestRing(ringPoint(e));window.PuzzleAxisDisplay?.hover?.(near&&near.d*ringViewport.scale<13?near.r.name:null);dirty=true;return;}if(e.pointerId!==ringDrag.pointer)return;const p=ringPoint(e),r=ringDrag.r||G.getRing(selected),a=G.angleAt(p,r);ringDrag.total+=mod(a-ringDrag.angle+Math.PI,Math.PI*2)-Math.PI;ringDrag.angle=a;dirty=true;});
+ringsCanvas.addEventListener('pointerleave',()=>{window.PuzzleAxisDisplay?.hover?.(null);dirty=true;});
 function endRing(e,cancel){if(!ringDrag||e.pointerId!==ringDrag.pointer)return;const delta=ringDrag.total;ringDrag=null;dirty=true;if(!cancel&&Math.abs(delta)>.20)turn(delta>0?1:-1);}
 ringsCanvas.addEventListener('pointerup',e=>endRing(e,false));ringsCanvas.addEventListener('pointercancel',e=>endRing(e,true));ringsCanvas.addEventListener('lostpointercapture',e=>endRing(e,true));
-cubeCanvas.addEventListener('pointerdown',e=>{if(e.button>0)return;cubePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,moved:false});cubeCanvas.setPointerCapture(e.pointerId);cubeCanvas.focus({preventScroll:true});if(cubePointers.size===2){cubePointers.forEach(p=>p.moved=true);const [a,b]=[...cubePointers.values()];pinchDistance=Math.hypot(a.x-b.x,a.y-b.y);}});
-cubeCanvas.addEventListener('pointermove',e=>{const old=cubePointers.get(e.pointerId);if(!old)return;const next={x:e.clientX,y:e.clientY,startX:old.startX,startY:old.startY,moved:old.moved||Math.hypot(e.clientX-old.startX,e.clientY-old.startY)>6};cubePointers.set(e.pointerId,next);if(cubePointers.size===2){const[a,b]=[...cubePointers.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinchDistance>0)view.zoom=clamp(view.zoom*d/pinchDistance,.6,1.5);pinchDistance=d;}else{view.yaw+=(next.x-old.x)*.009;view.pitch=clamp(view.pitch+(next.y-old.y)*.009,-Math.PI/2,Math.PI/2);}dirty=true;});
-for(const event of ['pointerup','pointercancel','lostpointercapture'])cubeCanvas.addEventListener(event,e=>{const p=cubePointers.get(e.pointerId);if(event==='pointerup'&&p&&!p.moved&&cubePointers.size===1&&!locked()){const b=cubeCanvas.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;const hit=faceTargets.find(f=>Math.hypot(f.x-x,f.y-y)<17);if(hit)setSelected(hit.face);}cubePointers.delete(e.pointerId);pinchDistance=0;});
+cubeCanvas.addEventListener('pointerdown',e=>{if(e.button>0)return;window.PuzzleSelection3D?.clearHover?.(cubeCanvas);cubePointers.set(e.pointerId,{x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,moved:false});cubeCanvas.setPointerCapture(e.pointerId);cubeCanvas.focus({preventScroll:true});if(cubePointers.size===2){cubePointers.forEach(p=>p.moved=true);const [a,b]=[...cubePointers.values()];pinchDistance=Math.hypot(a.x-b.x,a.y-b.y);}});
+cubeCanvas.addEventListener('pointermove',e=>{const old=cubePointers.get(e.pointerId);if(!old){const b=cubeCanvas.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;if(locked()||faceTargets.some(f=>Math.hypot(f.x-x,f.y-y)<17))window.PuzzleSelection3D?.clearHover?.(cubeCanvas);else window.PuzzleSelection3D?.hover?.(cubeCanvas,x,y);return;}window.PuzzleSelection3D?.clearHover?.(cubeCanvas);const next={x:e.clientX,y:e.clientY,startX:old.startX,startY:old.startY,moved:old.moved||Math.hypot(e.clientX-old.startX,e.clientY-old.startY)>6};cubePointers.set(e.pointerId,next);if(cubePointers.size===2){const[a,b]=[...cubePointers.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinchDistance>0)view.zoom=clamp(view.zoom*d/pinchDistance,.6,1.5);pinchDistance=d;}else{view.yaw+=(next.x-old.x)*.009;view.pitch=clamp(view.pitch+(next.y-old.y)*.009,-Math.PI/2,Math.PI/2);}dirty=true;});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])cubeCanvas.addEventListener(event,e=>{const p=cubePointers.get(e.pointerId);if(event==='pointerup'&&p&&!p.moved&&cubePointers.size===1&&!locked()){const b=cubeCanvas.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;const hit=faceTargets.find(f=>Math.hypot(f.x-x,f.y-y)<17);if(hit)setSelected(hit.face);else window.PuzzleSelection3D?.select?.(cubeCanvas,x,y);}cubePointers.delete(e.pointerId);pinchDistance=0;});
+cubeCanvas.addEventListener('pointerleave',()=>window.PuzzleSelection3D?.clearHover?.(cubeCanvas));
 cubeCanvas.addEventListener('wheel',e=>{e.preventDefault();view.zoom=clamp(view.zoom*Math.exp(-e.deltaY*.001),.6,1.5);dirty=true;},{passive:false});
 document.addEventListener('keydown',e=>{
  if(e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select'))return;
@@ -515,35 +529,25 @@ function parseAtlasMove(move){
  return E.normalizeMove({face:match[1],turns:match[2]?2:1,dir:match[3]?-1:1});
 }
 function notationLabel(face){return face;}
-function updateNotationLabels(){
- const inverse=$('notationInverse').checked;
- document.querySelectorAll('.notation-key').forEach(b=>{
-  b.textContent=notationLabel(b.dataset.face)+(inverse?'′':'');
-  b.setAttribute('aria-label','Turn '+notationLabel(b.dataset.face)+(inverse?' counterclockwise':' clockwise')+' using puzzle notation');
- });
-}
-for(const face of notationFaces){
- const b=document.createElement('button');b.type='button';b.className='notation-key';b.dataset.face=face;
- b.addEventListener('click',()=>manual({face,dir:$('notationInverse').checked?-1:1}));
- $('notationButtons').appendChild(b);
-}
-$('notationInverse').addEventListener('change',updateNotationLabels);updateNotationLabels();
-window.PUZZLE_API=Object.freeze({stopAfterCurrentMove,stopScrambleNow,resumePlayback,
+window.PuzzlePlaybackControls.installNotation({faces:notationFaces,label:notationLabel,onMove:manual});
+window.PUZZLE_API=Object.freeze({invertMove:E.invertMove,moveLabel:E.moveLabel,stopAfterCurrentMove,stopScrambleNow,stopPlaybackNow,restorePlaybackDefaults,resumePlayback,
  puzzle:'cube2',
  snapshot:()=>window.RingCube.snapshot(),
- move:move=>{if(locked())return false;manual(parseAtlasMove(move));return true;},
+ move:move=>{if(locked()||window.ConstrainedSolverUI?.blocksManualMoves?.())return false;manual(parseAtlasMove(move));return true;},
  runMoves:(moves,options={})=>{
   if(locked())return false;
   const list=(typeof moves==='string'?moves.trim().split(/\s+/):moves).filter(Boolean).map(parseAtlasMove);
   if(!list.length||list.length>300)return false;
-  if(!journal.length)clearJournal();addLabel(typeof options?.label==='string'?options.label.slice(0,120):'Guide practice');startSequence(list,'algorithm');return true;
+  if(!journal.length)clearJournal();if(options.journalReplay&&!window.PuzzleJournal?.isReplaying())return false;if(!options.journalReplay)addLabel(typeof options?.label==='string'?options.label.slice(0,120):'Guide practice');startSequence(list,options.journalReplay==='undo'?'journal-undo':options.journalReplay==='redo'?'journal-redo':'algorithm');return true;
  },
  reset:()=>{reset();return true;},
  randomize:()=>{if(locked())return false;randomize();return true;},
  solve,
  select:face=>{if(locked()||!E.configs[face])return false;setSelected(face);return true;},
+ viewAxis:face=>{const cfg=E.configs[face];if(!cfg)return false;const n=[0,0,0];n[cfg.axis]=Math.sign(cfg.layer)||-Math.sign(cfg.turn);view.yaw=-Math.atan2(n[0],n[2]);view.pitch=Math.atan2(n[1],Math.hypot(n[0],n[2]));dirty=true;return true;},
  
 });
+window.PuzzleJournal?.attach?.(window.PUZZLE_API);
 if(window.parent!==window){
  window.parent.postMessage({type:'puzzle-ready',puzzle:'cube2'},window.location.origin);
  let lastReportedHeight=0,heightReportPending=false;
@@ -559,8 +563,8 @@ if(window.parent!==window){
 })();
 
 </script>
-<script src="play-timer.js?v=8ba48de005a51b47ce10"></script>
-<script src="ring-panel.js?v=8ba48de005a51b47ce10"></script>
-<script src="constrained-solver-core.js?v=8ba48de005a51b47ce10"></script>
-<script src="constrained-solver.js?v=8ba48de005a51b47ce10"></script>
+<script src="play-timer.js?v=b847d94624b4531fcae9"></script>
+<script src="ring-panel.js?v=b847d94624b4531fcae9"></script>
+<script src="constrained-solver-core.js?v=b847d94624b4531fcae9"></script>
+<script src="constrained-solver.js?v=b847d94624b4531fcae9"></script>
 </body></html>

@@ -9,7 +9,7 @@
   let open = true;
 
   function sync() {
-    const available = !document.body.classList.contains('mirror-active');
+    const available = !document.body.classList.contains('rings-unavailable');
     if (!available && window.ConstrainedSolverUI?.state().active) window.ConstrainedSolverUI.closePanel();
     const visible = open && available;
     panel.inert = !visible;
@@ -40,8 +40,8 @@
       guideToggle.hidden = event.data.open;
     }
   });
-  // Mirror mode owns its existing visibility rule; it does not overwrite the
-  // user's panel preference when returning to colored play.
+  // Shape-changing mechanisms may temporarily lack a valid fixed ring map.
+  // Mirror mode is only a palette choice and preserves the panel preference.
   if (typeof MutationObserver !== 'undefined') new MutationObserver(sync).observe(document.body, {attributes: true, attributeFilter: ['class']});
   sync();
 })();

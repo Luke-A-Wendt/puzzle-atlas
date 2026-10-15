@@ -91,7 +91,7 @@ function verifyPage(name){
   const before=app.snapshot().stickers,beforeNodes=nodes(),cfg=E.configs[face];
   const move={face,dir,turns},after=E.applyMove(before,move),signature=shapeSignature(capture);
   assert(api.move(move),name+' accepts test move');
-  const duration=1400*(turns===2?1.35:1);let previous=0;
+  const duration=app.context.PuzzlePlaybackControls.duration(app.elements.get('speed').value)*(turns===2?1.35:1);let previous=0;
   for(const fraction of fractions){
    app.frame((fraction-previous)*duration);previous=fraction;
    assert(app.snapshot().animating,name+' samples a live native move');

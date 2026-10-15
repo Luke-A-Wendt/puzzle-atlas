@@ -24,12 +24,16 @@ modules['./shorten.cjs']=read('shorten');
 modules['./group.cjs']=replaceOnce(read('group'),'const now = () => Number(process.hrtime.bigint()) / 1e6;','const now = () => performance.now();');
 modules['./atlas-adapter.cjs']=adapter;
 modules['./auto-adapter.cjs']=autoAdapter;
+modules['./guided-plan.cjs']=read('guided-plan');
 modules['./full-solve.cjs']=read('full-solve');
 modules['./eligibility.cjs']=read('eligibility');
 modules['./eligibility-status.cjs']=read('eligibility-status');
 modules['./color-solve.cjs']=read('color-solve');
+modules['./macro-index.cjs']=read('macro-index');
 modules['./color-eligibility.cjs']=read('color-eligibility');
 modules['./cached-swap.cjs']=read('cached-swap');
+modules['./permutation-membership.cjs']=read('permutation-membership');
+modules['./color-compensation.cjs']=read('color-compensation');
 modules['./manual-session.cjs']=read('manual-session');
 const manifest=JSON.parse(fs.readFileSync(path.join(backend,'data/manifest.json'),'utf8'));
 fs.mkdirSync(modelDir,{recursive:true});
@@ -130,12 +134,12 @@ async function loadModel(id){
 function freeze(value){if(value&&typeof value==='object'&&!Object.isFrozen(value)){for(const v of Object.values(value))freeze(v);Object.freeze(value);}return value;}
 `;
 const coreIndex=portable.slice(0,portable.indexOf('function solveSync(')).replace("const {search}=require('./search.cjs');\n",'')+'\nmodule.exports={normalize,verify,permutation};\n';
-const helper=banner+'(function(root){\n\'use strict\';\n'+bundle({'./index.cjs':coreIndex,'./atlas-adapter.cjs':adapter,'./auto-adapter.cjs':autoAdapter,'./eligibility-status.cjs':modules['./eligibility-status.cjs']})+`
+const helper=banner+'(function(root){\n\'use strict\';\n'+bundle({'./index.cjs':coreIndex,'./atlas-adapter.cjs':adapter,'./auto-adapter.cjs':autoAdapter,'./guided-plan.cjs':modules['./guided-plan.cjs'],'./eligibility-status.cjs':modules['./eligibility-status.cjs']})+`
 const core=require('./index.cjs'),bridge=require('./atlas-adapter.cjs'),autoBridge=require('./auto-adapter.cjs');
 const scriptURL=typeof document==='object'?(document.currentScript?.src||document.baseURI):null;
 const assetBase=scriptURL&&typeof URL==='function'?new URL('.',scriptURL):null;
 ${loading}
-root.ConstrainedSolverCore=Object.freeze({...core,...bridge,...autoBridge,...require('./eligibility-status.cjs'),loadModel,modelFingerprint,modelIds:Object.freeze(Object.keys(fingerprints)),assetBase:assetBase?.href??null,assetRelease,workerURL:assetBase?new URL('constrained-solver-worker.js?v='+assetRelease,assetBase).href:null});
+root.ConstrainedSolverCore=Object.freeze({...core,...bridge,...autoBridge,...require('./guided-plan.cjs'),...require('./eligibility-status.cjs'),loadModel,modelFingerprint,modelIds:Object.freeze(Object.keys(fingerprints)),assetBase:assetBase?.href??null,assetRelease,workerURL:assetBase?new URL('constrained-solver-worker.js?v='+assetRelease,assetBase).href:null});
 })(globalThis);
 `;
 fs.writeFileSync(path.join(out,'constrained-solver-core.js'),helper);
@@ -183,6 +187,7 @@ function manualOptionsFor(raw={}){
 function cacheResult(key,result){if(!['solved','impossible'].includes(result.status))return;const text=JSON.stringify(result),bytes=text.length*2;if(bytes>cacheLimit)return;while(cacheBytes+bytes>cacheLimit&&resultCache.size){const k=resultCache.keys().next().value;cacheBytes-=resultCache.get(k).length*2;resultCache.delete(k);}resultCache.set(key,text);cacheBytes+=bytes;}
 self.onmessage=async event=>{
  const message=event.data||{},id=message.id;
+ if(message.expectedRelease&&message.expectedRelease!==assetRelease){self.postMessage({id,type:'result',workerRelease:assetRelease,result:{status:'unknown',reason:'release_mismatch',detail:'This puzzle tab and its solver are from different releases. Reload the puzzle to use the current release; no moves were made.',optimal:false}});return;}
  if(busy){self.postMessage({id,type:'result',result:{status:'unknown',reason:'worker_busy',optimal:false}});return;}
  busy=true;
  try{
@@ -194,7 +199,7 @@ self.onmessage=async event=>{
    const mapping=bridge.mapSnapshot(model,message.snapshot),selection=message.selection??{};
    const ids=selection.protectedStickerIds??[];if(!Array.isArray(ids))throw Error('Protected sticker IDs must be an array');
    const held=ids.map(id=>{const n=mapping.stickerToNode[String(id)];if(n===undefined)throw Error('Unknown current sticker '+id);return n;});
-   const request={protected:held,occupiedNodes:mapping.occupiedNodes,mode:selection.mode??'protected_swap',protection:selection.protection??'endpoint',...(selection.holdSemantics==='color'?{holdSemantics:'color',colorByNode:bridge.colorsFromSnapshot(model,message.snapshot,mapping)}:{})},options=eligibilityOptionsFor(message.options);
+   const request={protected:held,occupiedNodes:mapping.occupiedNodes,mode:selection.mode??'protected_swap',protection:selection.protection??'endpoint',...(selection.holdSemantics==='color'?{holdSemantics:'color',colorByNode:bridge.colorsFromSnapshot(model,message.snapshot,mapping),...(selection.exemptSwapEndpoints!==undefined?{exemptSwapEndpoints:selection.exemptSwapEndpoints}:{})}:{})},options=eligibilityOptionsFor(message.options);
    if(!eligibilityAnalyzer||eligibilityAnalyzer.model!==model)eligibilityAnalyzer=new EligibilityAnalyzer(model,null,{cacheBytes:2*1024*1024});
    let cacheError;
    if(held.length&&request.protection==='endpoint'&&!eligibilityAnalyzer.cache){try{eligibilityAnalyzer.setCache(await loadFullCache(model.id));}catch(e){cacheError=e.message;}}
@@ -203,7 +208,7 @@ self.onmessage=async event=>{
    if(cacheError)result.detail=cacheError;
    self.postMessage({id,type:'result',result,modelFingerprint:modelFingerprint(model.id)});return;
   }
-  if(message.task==='full-solve'){
+  if(message.task==='full-solve'||message.task==='guided-solve'){
    const request=autoBridge.autoRequestFromSnapshot(model,message.snapshot),options=autoOptionsFor(message.options);
    progress('loading-cache');
    let cache;try{cache=await loadFullCache(model.id);}catch(e){self.postMessage({id,type:'result',result:{status:'unknown',reason:e.code||'cache_unavailable',detail:e.message,optimal:false}});return;}
@@ -211,6 +216,15 @@ self.onmessage=async event=>{
    let result=fullSolver.solveFull(model,request,{...options,cache});
    if(result.status==='solved')progress('verifying');
    if(result.status==='solved'&&!autoBridge.verifyAutoPlan(model,message.snapshot,result))result={status:'unknown',reason:'internal_auto_witness_verification_failed',optimal:false};
+   if(result.status==='solved'&&message.task==='guided-solve'){
+    const guided=require('./guided-plan.cjs'),mapping=bridge.mapSnapshot(model,message.snapshot),ids=message.selection?.protectedStickerIds??[];
+    if(!Array.isArray(ids))throw Error('Protected sticker IDs must be an array');
+    const protectedNodes=ids.map(id=>{const n=mapping.stickerToNode[String(id)];if(n===undefined)throw Error('Unknown current sticker '+id);return n;});
+    const checkpoints=guided.groupGuidedPlan(model,request,result,{protectedNodes,exactProgress:!!message.snapshot?.mirrorMode});
+    if(checkpoints.status==='solved'&&!guided.verifyGuidedPlan(model,message.snapshot,checkpoints))result={status:'unknown',reason:'internal_guided_witness_verification_failed',optimal:false};
+    else result=checkpoints;
+   }
+
    const engineStages=result.status==='solved'?result.stages.map(stage=>({...stage,engineMoves:stage.moveIndices.map(i=>({...model.moves[i].engineMove}))})):[];
    self.postMessage({id,type:'result',result,engineStages,modelFingerprint:modelFingerprint(model.id)});return;
   }
