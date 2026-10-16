@@ -6,7 +6,7 @@ An interactive atlas of puzzles, with 3D views, ring maps, detailed solution gui
 
 Explore a puzzle in three dimensions, follow its moves on a ring map, or experiment with solving selected pieces while preserving others.
 
-<img width="1849" height="932" alt="image" src="docs/screenshot.png" />
+<img width="1846" height="931" alt="image" src="https://github.com/user-attachments/assets/02cdb22f-0de1-4ecd-8639-12e3ca9ad73f" />
 
 ## Features
 
