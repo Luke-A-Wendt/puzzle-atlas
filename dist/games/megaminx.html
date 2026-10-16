@@ -5,26 +5,23 @@
 <meta name="color-scheme" content="dark">
 <title>Megaminx · Puzzle Atlas</title>
 <meta name="description" content="Play a Megaminx through twelve interactive rings, with a live 3D puzzle, seeded scrambles and an animated solve journal.">
-<link rel="stylesheet" href="game-theme.css?v=b847d94624b4531fcae9">
-<link rel="stylesheet" href="move-journal.css?v=b847d94624b4531fcae9">
-<link rel="stylesheet" href="constrained-solver.css?v=b847d94624b4531fcae9">
-<link rel="stylesheet" href="play-timer.css?v=b847d94624b4531fcae9"><meta name="atlas-release" content="b847d94624b4531fcae9"></head>
+<link rel="stylesheet" href="game-theme.css?v=f81ab9621e40989af073">
+<link rel="stylesheet" href="move-journal.css?v=f81ab9621e40989af073">
+<link rel="stylesheet" href="constrained-solver.css?v=f81ab9621e40989af073">
+<link rel="stylesheet" href="play-timer.css?v=f81ab9621e40989af073"><meta name="atlas-release" content="f81ab9621e40989af073"></head>
 <body class="game-megaminx">
 <main class="app" id="puzzleApp">
 
 <section class="panel action-panel" aria-label="Game controls"><div class="action-group"><button id="randomize" class="primary"><span class="icon">⤨</span>Randomize</button><button id="solve"><span class="icon">✦</span>Auto solve</button><button id="pause" hidden>Stop</button><span class="journal-transport" role="group" aria-label="Move journal playback"><button id="undoSequence" class="outline journal-key" title="Undo sequence" aria-label="Undo sequence" disabled><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3h2v10H3z M12 3L5 8l7 5z"/></svg></button><button id="undo" class="outline journal-key" title="Undo one move" aria-label="Undo one move" disabled><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M12 3L5 8l7 5z"/></svg></button><button id="redo" class="outline journal-key" title="Redo one move" aria-label="Redo one move" disabled><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 3l7 5-7 5z"/></svg></button><button id="redoSequence" class="outline journal-key" title="Redo sequence" aria-label="Redo sequence" disabled><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M11 3h2v10h-2z M4 3l7 5-7 5z"/></svg></button></span><span id="journalActivity" class="journal-activity" aria-live="polite"></span><button id="reset" class="outline">Reset</button></div><div class="action-meta"><span id="status" class="status" role="status">● Solved</span></div></section>
 <div class="workspace">
 <section class="panel" id="ringPanel"><div class="panel-head ring-panel-head"><h2>Ring map</h2><button id="ringFocus" class="small outline" aria-pressed="true">Show all rings</button><button id="ringPanelHide" class="small outline" type="button" aria-expanded="true" aria-controls="ringPanel">← Hide ring map</button></div><div class="canvas-wrap ring-wrap"><canvas id="rings" tabindex="0" aria-label="Connected rings show where each color moves. Click a ring to select its axis, then drag along it or use the arrow keys."></canvas><div class="canvas-caption">Bright rings show the selected turn</div></div><div class="ring-controls"><div class="selector" id="selector"></div><div class="turn-bar"><button id="ccw" title="Turn the selected ring counterclockwise"><span class="direction">↶</span>Turn left</button><div class="turn-selected"><strong id="selectedName">A</strong><span>Selected</span></div><button id="cw" title="Turn the selected ring clockwise"><span class="direction">↷</span>Turn right</button></div><p id="ringHint" class="ring-hint">Arrows rotate the ring as seen here. Each step is a 72° face turn.</p></div></section>
-<section class="panel"><div class="panel-head view-panel-head"><h2>3D puzzle</h2><span class="tag">LIVE 3D VIEW</span><div class="view-panel-controls" id="ringTab" role="group" aria-label="View panels"><button id="ringPanelToggle" class="small outline" type="button" aria-expanded="false" aria-controls="ringPanel" hidden>Show ring map →</button><button id="guidePanelToggle" class="small outline" type="button" aria-expanded="false" hidden>Show guide ←</button></div></div><div class="canvas-wrap cube-wrap"><canvas id="cube" tabindex="0" aria-label="3D Megaminx. Drag to rotate the view, or focus and use arrow keys. Use plus and minus to zoom."></canvas><div class="cube-top"><button id="faceView" class="small outline">View selected face</button> <button id="homeView" class="small outline">Reset view</button></div><div class="canvas-caption">Drag to look around · scroll or pinch to zoom</div></div><div class="notation-panel" aria-label="Conventional notation moves"><div class="notation-heading"><span>Notation moves</span><div class="view-speed-control"><label for="speed">Animation</label><input id="speed" type="range" min="1" max="5" value="3" aria-label="Animation speed"><span id="speedText">Normal</span></div><label class="inverse-toggle"><input id="notationInverse" type="checkbox" aria-label="Use inverse notation moves"> Inverse (′)</label></div><div class="notation-buttons" id="notationButtons"></div><p>Clockwise looking at the named face. Use these buttons for the guide.</p></div><div class="cube-bottom"><div class="metric"><div><strong id="moveCount">0</strong><span>Your turns</span></div><div><strong id="solvedFaces">12 / 12</strong><span>Uniform faces</span></div></div><div class="legend" id="legend" aria-label="Face colors"></div></div></section>
+<section class="panel"><div class="panel-head view-panel-head"><h2>3D puzzle</h2><span class="tag">LIVE 3D VIEW</span><div class="view-panel-controls" id="ringTab" role="group" aria-label="View panels"><button id="ringPanelToggle" class="small outline" type="button" aria-expanded="false" aria-controls="ringPanel" hidden>Show ring map →</button><button id="guidePanelToggle" class="small outline" type="button" aria-expanded="false" hidden>Show guide ←</button></div></div><div class="canvas-wrap cube-wrap"><canvas id="cube" tabindex="0" aria-label="3D Megaminx. Drag to rotate the view, or focus and use arrow keys. Use plus and minus to zoom."></canvas><div class="cube-top"><button id="faceView" class="small outline">View selected face</button> <button id="homeView" class="small outline">Reset view</button></div><div class="canvas-caption">Drag to look around · scroll or pinch to zoom</div></div><div class="notation-panel" aria-label="Conventional notation moves"><div class="notation-heading"><span>Notation moves</span><div class="view-speed-control"><label for="speed">Animation</label><input id="speed" type="range" min="1" max="7" value="3" aria-label="Animation speed"><span id="speedText">Normal</span></div><label class="inverse-toggle"><input id="notationInverse" type="checkbox" aria-label="Use inverse notation moves"> Inverse (′)</label></div><div class="notation-buttons" id="notationButtons"></div><p>Clockwise looking at the named face. Use these buttons for the guide.</p></div><div class="cube-bottom"><div class="metric"><div><strong id="moveCount">0</strong><span>Your turns</span></div><div><strong id="solvedFaces">12 / 12</strong><span>Uniform faces</span></div></div><div class="legend" id="legend" aria-label="Face colors"></div></div></section>
 </div>
 
-<section class="panel log-panel"><details class="journal" id="journalPanel"><summary aria-label="Move journal and keyboard help"><h2 id="logTitle">Move journal</h2><span class="journal-hint">Moves &amp; help</span></summary><div id="log" class="log" role="log" aria-live="off"><span class="empty">Your moves will appear here. Try a ring or press Randomize.</span></div><p id="message" class="message" role="status">Every ring turn is a legal Megaminx move.</p><details class="journal-help"><summary>How to play &amp; keyboard shortcuts</summary><p id="cubeNote" hidden></p><p>Select an axis below the 3D view, or select a ring, node, or axis label. Both panels share the selected axis. Grab and drag a ring to turn it. In 3D, Rotate ↶ is positive (counterclockwise) and Rotate ↷ is negative (clockwise), looking inward from the selected axis’s outer end. During a move, the axis button and applied rotation button light up together. Inner cube slices follow their named face; M follows L, E follows D, and S follows F. Drag the 3D puzzle to orbit; scroll or pinch to zoom.</p><p>Use <kbd>←</kbd> and <kbd>→</kbd> for the selected ring. Keys <kbd>A</kbd> through <kbd>L</kbd> turn the matching face; hold <kbd>Shift</kbd> for the inverse. Face names A–L are local to this game. A prime (′) means counterclockwise viewed from outside that face; 2 means two 72° steps. The arrow buttons follow the ring’s on-screen direction, which can differ from a face’s notation.</p><p>Use the top playback-rate selector for ½× through 2× animation. During Auto Solve, Stop requests the end of the current sequence; click Stop now to finish only the current turn. Manual constrained Stop finishes only the current turn. A partial sequence may not yet restore held colors. Randomize and journal replay stop at the last completed turn.</p><p><a href="../solver-handbook.html?v=b847d94624b4531fcae9#how-to-play" target="_blank" rel="noopener" aria-label="Open the illustrated How to play (opens in a new tab)">Open the illustrated How to play</a> for annotated ring-map and 3D examples, held colors, selection, playback, labels, and goal preview. The puzzle’s Solution guide explains its specific solving method.</p></details></details><div class="seedbox" hidden><span id="seedLabel">Start solved, or try a new scramble.</span><br><code id="seed">NO SEED YET</code></div><div class="log-tools"><button id="copy" class="small outline">Copy moves</button></div></section>
+<section class="panel log-panel"><details class="journal" id="journalPanel"><summary aria-label="Move journal and keyboard help"><h2 id="logTitle">Move journal</h2><span class="journal-hint">Moves &amp; help</span></summary><div id="log" class="log" role="log" aria-live="off"><span class="empty">Your moves will appear here. Try a ring or press Randomize.</span></div><p id="message" class="message" role="status">Every ring turn is a legal Megaminx move.</p><details class="journal-help"><summary>How to play &amp; keyboard shortcuts</summary><p id="cubeNote" hidden></p><p>Select an axis below the 3D view, or select a ring, node, or axis label. Both panels share the selected axis. Grab and drag a ring to turn it. In 3D, ↶ Rotate is positive (counterclockwise) and Rotate ↷ is negative (clockwise), looking inward from the selected axis’s outer end. During a move, the axis button and applied rotation button light up together. Inner cube slices follow their named face; M follows L, E follows D, and S follows F. Drag the 3D puzzle to orbit; scroll or pinch to zoom. The ring map stays at its default position and scale; ring dragging and node selection remain available.</p><p>Use <kbd>←</kbd> and <kbd>→</kbd> for the selected ring. Keys <kbd>A</kbd> through <kbd>L</kbd> turn the matching face; hold <kbd>Shift</kbd> for the inverse. Face names A–L are local to this game. A prime (′) means counterclockwise viewed from outside that face; 2 means two 72° steps. The arrow buttons follow the ring’s on-screen direction, which can differ from a face’s notation.</p><p>Use the top playback-rate selector for ½× through 8× animation. During Auto Solve, Stop requests the end of the current sequence; click Stop now to finish only the current turn. Manual constrained Stop finishes only the current turn. A partial sequence may not yet restore held colors. Randomize and journal replay stop at the last completed turn.</p><p><a href="../solver-handbook.html?v=f81ab9621e40989af073#how-to-play" target="_blank" rel="noopener" aria-label="Open the illustrated How to play (opens in a new tab)">Open the illustrated How to play</a> for annotated ring-map and 3D examples, held colors, selection, playback, labels, and goal preview. The puzzle’s Solution guide explains its specific solving method.</p></details></details><div class="seedbox" hidden><span id="seedLabel">Start solved, or try a new scramble.</span><br><code id="seed">NO SEED YET</code></div><div class="log-tools"><button id="copy" class="small outline">Copy moves</button></div></section>
 
 </main><div class="toast" id="toast" role="status"></div>
-<script src="play-controls.js?v=b847d94624b4531fcae9"></script>
-<script src="puzzle-axis-display.js?v=b847d94624b4531fcae9"></script>
-<script src="move-journal.js?v=b847d94624b4531fcae9"></script>
-<script src="puzzle-selection-3d.js?v=b847d94624b4531fcae9"></script>
+<script src="game-controls.bundle.js?v=f81ab9621e40989af073" data-sources="ring-map-navigation.js play-controls.js puzzle-axis-display.js move-journal.js puzzle-selection-3d.js"></script>
 <script>
 /* Megaminx geometry and exact legal face permutations. No external dependencies.
    A–L are game-local face labels; a positive move is clockwise as seen outside.
@@ -213,10 +210,10 @@
 })(typeof globalThis!=='undefined'?globalThis:this);
 
 </script>
-<script src="balanced-ring-projection.js?v=b847d94624b4531fcae9"></script>
-<script src="connected-ring-belts.js?v=b847d94624b4531fcae9"></script>
-<script src="connected-rings.js?v=b847d94624b4531fcae9"></script>
-<script src="face-grouped-rings.js?v=b847d94624b4531fcae9"></script>
+<script src="balanced-ring-projection.js?v=f81ab9621e40989af073"></script>
+<script src="connected-ring-belts.js?v=f81ab9621e40989af073"></script>
+<script src="connected-rings.js?v=f81ab9621e40989af073"></script>
+<script src="face-grouped-rings.js?v=f81ab9621e40989af073"></script>
 <script>window.MegaRings=FaceGroupedRings.createFixed(MegaEngine);</script>
 <script>
 (function(){
@@ -238,8 +235,8 @@ function locked(){return !!animation||mode!=='idle';}
 function uniformFaces(){const groups=new Map();stickers.forEach(s=>{const k=E.slots[s.slot].face;if(!groups.has(k))groups.set(k,new Set());groups.get(k).add(s.color);});return [...groups.values()].filter(v=>v.size===1).length;}
 let scrambleSpeedActive=false,sequenceDefaultsActive=false;
 function restorePlaybackDefaults(options={}){
- sequenceDefaultsActive=false;scrambleSpeedActive=false;if(options.preserveSettings)return;const changed=$('speed').value!=='3';$('speed').value='3';$('speedText').textContent='Normal';window.PuzzlePlaybackControls.syncSpeed();if(changed)window.PuzzleFeedback?.pulse?.($('speed'));
- window.PuzzleAxisDisplay?.resetDefaults?.({pulse:true});window.PuzzleSelection3D?.clearHover?.();
+ // End sequence bookkeeping only. User display and speed choices last until page reload.
+ sequenceDefaultsActive=false;scrambleSpeedActive=false;window.PuzzleSelection3D?.clearHover?.();
 }
 function updateUI(){
  if(sequenceDefaultsActive&&!locked()&&!window.ConstrainedSolverUI?.journalBusy?.()&&!window.PuzzleJournal?.isReplaying?.())restorePlaybackDefaults();
@@ -249,7 +246,7 @@ function updateUI(){
  $('status').textContent=busy?(mode==='solve'?'✦ Solving':mode==='scramble'?'⤨ Scrambling':mode==='algorithm'?'↻ Solving':'↻ Turning'):(solved?'● Solved':'● In play');
  $('moveCount').textContent=userTurns;$('solvedFaces').textContent=uniformFaces()+' / 12';
  $('selectedName').textContent=window.PuzzleAxisDisplay?.selection(selected,animation)||'Select axis';
- $('ringFocus').textContent=ringFocused?'Show all rings':'Focus rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
+ $('ringFocus').textContent=ringFocused?'Show all rings':'Focus on rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
  document.querySelectorAll('.ring-key').forEach(b=>{b.classList.toggle('active',b.dataset.face===shown);b.setAttribute('aria-pressed',String(b.dataset.face===shown));b.disabled=busy;});
  $('ccw').disabled=busy||!!window.ConstrainedSolverUI?.blocksManualMoves?.()||!window.PuzzleAxisDisplay?.selection(selected,animation);$('cw').disabled=busy||!!window.ConstrainedSolverUI?.blocksManualMoves?.()||!window.PuzzleAxisDisplay?.selection(selected,animation);$('randomize').disabled=busy;
  $('solve').disabled=busy||solved;$('undo').disabled=busy||!history.length;
@@ -303,7 +300,7 @@ function finishMove(){
  }else $('message').textContent=E.isSolved(stickers)?'Solved. All twelve faces are uniform.':(a.source==='undo'?'Undid the last recorded turn.':'Played '+E.moveLabel(a.move)+'.');
  updateUI();
 }
-function startSequence(moves,type){sequenceDefaultsActive=type!=='journal-undo'&&type!=='journal-redo';if(type==='scramble'){scrambleSpeedActive=true;window.PuzzleAxisDisplay?.setLabelMode?.('none',{resetSpeed:true});$('speed').value='5';$('speedText').textContent='Fast';window.PuzzlePlaybackControls.syncSpeed();window.PuzzleFeedback?.pulse?.($('speed'));}stopRequested=false;mode=type;queue=moves.slice();sequenceTotal=queue.length;sequenceDone=0;paused=false;const first=queue.shift();if(first)beginMove(first,type);else{mode='idle';updateUI();}}
+function startSequence(moves,type){sequenceDefaultsActive=type!=='journal-undo'&&type!=='journal-redo';stopRequested=false;mode=type;queue=moves.slice();sequenceTotal=queue.length;sequenceDone=0;paused=false;const first=queue.shift();if(first)beginMove(first,type);else{mode='idle';updateUI();}}
 function randomize(){
  if(locked())return;seed=makeSeed();
  const moves=E.scramble(seed,40);addLabel('Scramble · 40 legal turns');$('seedLabel').textContent='Fresh seed · continues current state';$('seed').textContent=seed;window.PuzzleJournal?.setSeed?.(seed);
@@ -425,7 +422,7 @@ $('ccw').addEventListener('click',()=>turn(-1));$('cw').addEventListener('click'
 $('undo').addEventListener('click',()=>window.PuzzleJournal?.navigate(-1,false));
 $('homeView').addEventListener('click',()=>{view={yaw:-.34,pitch:.38,zoom:1};dirty=true;});
 $('speed').addEventListener('input',()=>{
- $('speedText').textContent=['','Slow','Gentle','Normal','Quick','Fast'][+$('speed').value];
+ $('speedText').textContent=['','0.5×','0.75×','1×','1.5×','2×','4×','8×'][+$('speed').value];
  if(animation){const now=paused?pauseAt:performance.now(),progress=clamp((now-animation.start)/animation.duration,0,1),nextDuration=duration()*(animation.move.turns===2?1.35:1);
   animation.start=now-progress*nextDuration;animation.duration=nextDuration;}
  dirty=true;
@@ -434,6 +431,7 @@ $('copy').addEventListener('click',async()=>{
  const text=journal.map(j=>j.label?'\n'+j.label+':':E.moveLabel(j.move)).join(' ').trim();
  try{await navigator.clipboard.writeText(text);toast('Moves copied.');}catch(_){const field=document.createElement('textarea');field.value=text;field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();const copied=document.execCommand('copy');field.remove();toast(copied?'Moves copied.':'Copy is unavailable in this browser.');}
 });
+window.RingMapNavigation?.bind({canvas:ringsCanvas,busy:locked,requestRender:()=>{dirty=true;},cancel:()=>{ringDrag=null;dirty=true;},hit:event=>{const p=ringPoint(event),near=G.nearestRing(p,selected),x=p.x*ringViewport.scale+ringViewport.cx,y=p.y*ringViewport.scale+ringViewport.cy;return ringLabelTargets.some(label=>Math.hypot(label.x-x,label.y-y)<=label.r+3)||!!near&&near.distance*ringViewport.scale<=13;}});
 ringsCanvas.addEventListener('pointerdown',e=>{
  if(locked()||e.button>0)return;const p=ringPoint(e),labelHit=ringLabelTargets.find(label=>Math.hypot(label.x-(p.x*ringViewport.scale+ringViewport.cx),label.y-(p.y*ringViewport.scale+ringViewport.cy))<=label.r+3);const nearest=labelHit?{ring:G.getRing(labelHit.id),distance:0}:G.nearestRing(p,selected);if(!nearest||nearest.distance*ringViewport.scale>13){window.PuzzleAxisDisplay?.clear?.();ringDrag=null;dirty=true;return;}const ring=nearest.ring;setSelected(ring.face||ring.name);
  ringDrag={pointer:e.pointerId,ring,angle:G.dragAngle(p,ring),total:0,startX:e.clientX,startY:e.clientY};ringsCanvas.setPointerCapture(e.pointerId);ringsCanvas.focus({preventScroll:true});dirty=true;
@@ -501,8 +499,5 @@ if(window.parent!==window){
 })();
 
 </script>
-<script src="play-timer.js?v=b847d94624b4531fcae9"></script>
-<script src="ring-panel.js?v=b847d94624b4531fcae9"></script>
-<script src="constrained-solver-core.js?v=b847d94624b4531fcae9"></script>
-<script src="constrained-solver.js?v=b847d94624b4531fcae9"></script>
+<script src="game-solver.bundle.js?v=f81ab9621e40989af073" data-sources="play-timer.js ring-panel.js constrained-solver-core.js constrained-solver.js"></script>
 </body></html>

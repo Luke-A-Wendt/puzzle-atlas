@@ -2,6 +2,7 @@
 'use strict';
 // Stamp a complete static export, then record every deployed file's bytes.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+require('./build-game-runtime.cjs').build();
 const root=path.resolve(__dirname,'../dist'),manifest='release-manifest.json';
 function files(dir=root){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?files(path.join(dir,e.name)):[path.relative(root,path.join(dir,e.name)).split(path.sep).join('/')]).filter(n=>n!==manifest).sort();}
 function versioned(value,revision){

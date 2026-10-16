@@ -48,12 +48,27 @@ function headerWidth(header,style,context){
    if(child.tagName==='H2'){assert.equal(style(child)['white-space'],'nowrap');if(style(child).position==='absolute')continue;needed+=measure(displayedText(child,style),style(child));visible++;continue;}
    const buttons=child.tagName==='BUTTON'?[child]:child.children.filter(e=>e.tagName==='BUTTON'&&!e.hidden&&style(e).display!=='none');
    if(!buttons.length)continue;visible++;
-   needed+=buttons.reduce((sum,button)=>{const st=style(button);assert.equal(st['white-space'],'nowrap',button.id+' caption stays on a single line');const w=intrinsic(button,style),h=px(st,'height',px(st,'min-height'));check({textContent:displayedText(button,style)},st,w,h,context+' '+button.id);return sum+w;},0)+Math.max(0,buttons.length-1)*px(style(child),'gap');
+   needed+=buttons.reduce((sum,button)=>{const st=style(button);assert.equal(st['white-space'],'nowrap',button.id+' caption stays on a single line');const w=intrinsic(button,style),h=px(st,'height',px(st,'min-height'));if(st['max-width']&&st['max-width']!=='none')assert.ok(px(st,'max-width')>=w,context+' '+button.id+' maximum width must not clip its intrinsic caption');check({textContent:displayedText(button,style)},st,w,h,context+' '+button.id);return sum+w;},0)+Math.max(0,buttons.length-1)*px(style(child),'gap');
   }
   needed+=Math.max(0,visible-1)*px(style(header),'gap');
  return needed;
 }
-for(const puzzle of puzzles)test(puzzle+' retains native selector styling in 3D and keeps one readable mobile header line',async()=>{
+function headerRows(header,style,available,context){
+ const items=[];
+ for(const child of header.children.filter(e=>e.nodeType!==3&&!e.hidden&&style(e).display!=='none')){
+  const cs=style(child);let width=0;
+  if(child.tagName==='H2'){if(cs.position==='absolute')continue;width=measure(displayedText(child,style),cs);}
+  else {const buttons=child.tagName==='BUTTON'?[child]:child.children.filter(e=>e.tagName==='BUTTON'&&!e.hidden&&style(e).display!=='none');if(!buttons.length)continue;width=buttons.reduce((sum,button)=>sum+intrinsic(button,style),0)+Math.max(0,buttons.length-1)*px(cs,'gap');}
+  assert.ok(width<=available,`${context}: intact ${child.id||child.tagName} group needs ${width.toFixed(1)}px, available ${available.toFixed(1)}px`);
+  items.push({width,order:px(cs,'order'),full:cs['flex-basis']==='100%'});
+ }
+ items.sort((a,b)=>a.order-b.order);
+ const rows=[];let row=0;const gap=px(style(header),'gap');
+ for(const item of items){if(row&&(item.full||row+gap+item.width>available)){rows.push(row);row=0;}row+=(row?gap:0)+item.width;if(item.full){rows.push(row);row=0;}}
+ if(row)rows.push(row);
+ return rows;
+}
+for(const puzzle of puzzles)test(puzzle+' retains native selector styling in 3D and keeps readable full action captions without clipping',async()=>{
  const app=createPage(puzzle);await app.flush();app.element('guidePanelToggle').hidden=false;
  const header=app.document.querySelector('.view-header-toolbar');
  assert.equal(header.nextSibling,app.element('cube').parentElement);
@@ -62,7 +77,7 @@ for(const puzzle of puzzles)test(puzzle+' retains native selector styling in 3D 
  for(const width of [...widths,1280])for(const mode of ['none','some','all']){
   app.context.PuzzleAxisDisplay.setLabelMode(mode);
   const style=createCascade(app,puzzle,width,width>680?600:width-8),panel=width>680?600:innerWidth(width,app,style),hs=style(header),available=panel-px(hs,'padding-left')-px(hs,'padding-right');
-  assert.equal(hs['flex-wrap'],'nowrap');
+  assert.equal(hs['flex-wrap'],'wrap');
   const native=app.element('selector').querySelectorAll('*'),copied=app.element('viewRingSelector').querySelectorAll('*');assert.equal(copied.length,native.length);
   for(let i=0;i<native.length;i++)for(const property of ['display','font-size','min-height','padding-left','padding-right','gap','grid-template-columns'])assert.equal(style(copied[i])[property],style(native[i])[property],puzzle+' duplicate '+property);
   const needed=headerWidth(header,style,puzzle+' '+width+'px');
@@ -71,8 +86,10 @@ for(const puzzle of puzzles)test(puzzle+' retains native selector styling in 3D 
    assert.equal(px(style(button),'padding-'+side),px(style(app.element('csShowGoal')),'padding-'+side),'3D padding matches the full-padding ring-map action');
   }
   if(width<=680)for(const id of ['ringFocus','ringLabelToggle','ringPanelHide'])for(const side of ['left','right'])assert.equal(px(style(app.element(id)),'padding-'+side),3,id+' existing mobile ring-map spacing stays unchanged');
-  if(width>=360&&puzzle!=='helicopter')assert.ok(needed<=available,`${puzzle} ${width}px header needs ${needed.toFixed(1)}px, available ${available.toFixed(1)}px`);
-  else assert.equal(hs['overflow-x'],'auto','very narrow optional-feature combinations remain reachable without clipped text');
+  const rows=headerRows(header,style,available,puzzle+' '+width+'px');
+  assert.ok(rows.length<=(puzzle==='helicopter'?3:2),'full caption groups use at most two phone rows (three with advanced controls)');
+  if(width>=360&&width<=680&&!header.classList.contains('has-mirror-toggle')&&puzzle!=='helicopter')assert.equal(rows.length,1,'ordinary phone headers keep a single row');
+  assert.equal(hs['overflow-x'],'visible','no header control requires horizontal scrolling');
   assert.equal(style(app.element('notationButtons').closest('.notation-panel')).display,'none');
  }
 });
@@ -80,19 +97,38 @@ for(const puzzle of puzzles)test(puzzle+' retains native selector styling in 3D 
 for(const puzzle of ['axis','ghost','mirror','flatdiamond','pyramorphix','mastermorphix'])test(puzzle+' fits mirror-on and longest single-line header captions at phone widths',async()=>{
  const app=createPage(puzzle);await app.flush();app.element('guidePanelToggle').hidden=false;app.click('mirrorMode');await app.flush();
  app.context.PuzzleAxisDisplay.setLabelMode('none');app.context.PuzzleAxisDisplay.setHighlights3D(false);
- assert.equal(app.element('viewLabelMode').textContent,'Some labels');assert.equal(app.element('viewHighlightToggle').textContent,'Show highlights');
+ assert.equal(app.element('viewLabelMode').textContent,'Show some labels');assert.equal(app.element('viewHighlightToggle').textContent,'Show highlights');
  const header=app.document.querySelector('.view-header-toolbar'),heading=header.querySelector('h2');assert.equal(heading.getAttribute('aria-label'),'3D puzzle');
  assert(header.classList.contains('has-mirror-toggle'));
  assert.equal(app.element('guidePanelToggle').getAttribute('aria-label'),'Show guide');
  for(const width of [360,412,1280]){
   const style=createCascade(app,puzzle,width,width>680?600:width-8),panel=width>680?600:innerWidth(width,app,style),hs=style(header),available=panel-px(hs,'padding-left')-px(hs,'padding-right');
   const needed=headerWidth(header,style,puzzle+' mirror-on '+width+'px');
-  assert.ok(needed<=available,`${puzzle} mirror-on ${width}px header needs ${needed.toFixed(1)}px, available ${available.toFixed(1)}px`);
-  assert.equal(style(heading).position==='absolute',width<=380,'only narrow mirror headers trade visual title space for full button padding');
-  assert.equal(displayedText(app.element('guidePanelToggle'),style),width<=680?'Guide ←':'Show guide ←');
-  if(process.env.REPORT_HEADER_WIDTHS)console.log(`${puzzle} mirror-on ${width}px: ${needed.toFixed(2)}/${available.toFixed(2)}px`);
+  const rows=headerRows(header,style,available,puzzle+' mirror-on '+width+'px');
+  assert.equal(rows.length,needed<=available?1:2,'mirror headers wrap only when their complete captions need more than the available width');
+  assert.notEqual(style(app.element('viewDisplayTools'))['flex-basis'],'100%','mirror controls must not force a second row');
+  assert.notEqual(style(heading).position,'absolute','3D heading stays visible');
+  assert.equal(displayedText(app.element('guidePanelToggle'),style),'Show guide ←');
+  if(process.env.REPORT_HEADER_WIDTHS)console.log(`${puzzle} mirror-on ${width}px: ${rows.map(x=>x.toFixed(2)).join(' + ')}/${available.toFixed(2)}px`);
  }
 });
+
+for(const puzzle of ['axis','ghost','mirror','flatdiamond','pyramorphix','mastermorphix'])test(puzzle+' keeps the default mirror header on one row at Pixel/S9-wide phone widths',async()=>{
+ const app=createPage(puzzle);await app.flush();app.element('guidePanelToggle').hidden=false;
+ const header=app.document.querySelector('.view-header-toolbar');
+ for(const width of [412,440]){
+  const style=createCascade(app,puzzle,width),hs=style(header),available=innerWidth(width,app,style)-px(hs,'padding-left')-px(hs,'padding-right');
+  const needed=headerWidth(header,style,puzzle+' default mirror '+width+'px');
+  assert.ok(needed<=available,`${puzzle}: complete controls need ${needed.toFixed(1)}px, available ${available.toFixed(1)}px`);
+  assert.equal(headerRows(header,style,available,puzzle+' default mirror '+width+'px').length,1,'a mirror capability alone must not create a blank second row');
+ }
+ for(const width of [1280,1920]){
+  const style=createCascade(app,puzzle,width,600),label=style(app.element('viewLabelMode'));
+  assert.equal(label['max-width'],'none','desktop label actions have no stale 120px cap');
+  assert.equal(label['min-width'],'max-content','desktop labels reserve their actual font-dependent content width');
+ }
+});
+
 test('compact guide captions retain their accessible action through guide and ring panel toggles',async()=>{
  const app=createPage('mirror',{skipScripts:['ring-panel.js']}),messages=[];
  app.context.parent={postMessage:message=>messages.push(message)};app.loadScript('ring-panel.js');await app.flush();
@@ -106,22 +142,23 @@ test('compact guide captions retain their accessible action through guide and ri
  app.click('ringPanelHide');await app.flush();assert.equal(app.element('ringPanelToggle').hidden,false);
  app.click('ringPanelToggle');await app.flush();assert.equal(app.element('ringPanelToggle').hidden,true);
  assert.equal(guide.getAttribute('aria-label'),'Show guide');assert.equal(guide.title,'Show guide');
- for(const width of [360,412])assert.equal(displayedText(guide,createCascade(app,'mirror',width)),'Guide ←');
+ for(const width of [360,412])assert.equal(displayedText(guide,createCascade(app,'mirror',width)),'Show guide ←');
 });
 test('Helicopter Advanced controls retain native visibility without an actions disclosure',async()=>{
  const app=createPage('helicopter');await app.flush();app.click('advanced');await app.flush();
  assert.equal(app.element('mirrorMode').hidden,false);
  assert.equal(app.element('jumbleControls').hidden,false);
  assert.equal(app.element('viewActionsToggle'),null);
- for(const width of widths){const style=createCascade(app,'helicopter',width);assert.notEqual(style(app.element('jumbleControls')).display,'none');assert.equal(style(app.document.querySelector('.view-header-toolbar'))['flex-wrap'],'nowrap');}
+ for(const width of widths){const style=createCascade(app,'helicopter',width);assert.notEqual(style(app.element('jumbleControls')).display,'none');assert.equal(style(app.document.querySelector('.view-header-toolbar'))['flex-wrap'],'wrap');}
 });
 test('mobile top controls occupy two rows in requested order with a stable Stop caption',async()=>{
  const app=createPage('cube3');await app.flush();
  const group=app.document.querySelector('.action-group'),ids=group.children.filter(e=>e.nodeType!==3).map(e=>e.id||e.className);
- assert.deepEqual(ids.slice(0,6),['randomize','solve','journal-transport','playbackSpeedControl','pause','reset']);
- for(const width of widths){const style=createCascade(app,'cube3',width),panel=innerWidth(width,app,style),ps=style(app.document.querySelector('.action-panel')),available=panel-px(ps,'padding-left')-px(ps,'padding-right'),cell=(available-12)/4;
+ assert.deepEqual(ids.slice(0,6),['randomize','solve','pause','journal-transport','playbackSpeedControl','reset']);
+ for(const width of widths){const style=createCascade(app,'cube3',width),panel=innerWidth(width,app,style),ps=style(app.document.querySelector('.action-panel')),available=panel-px(ps,'padding-left')-px(ps,'padding-right'),gap=px(ps,'gap'),cell=(available-11*gap)/12;
   assert.equal(ps['grid-template-rows'],'34px 34px');
-  for(const id of ['randomize','solve','pause','reset']){const el=app.element(id);const text=el.textContent;el.textContent=text.replace(/[⤨✦]\s*/g,'');check(el,style(el),cell,34,'top '+id+' '+width+'px');el.textContent=text;}
+  for(const [id,column,row]of [['randomize','1/5','1'],['solve','5/9','1'],['pause','9/13','1'],['playbackSpeedControl','6/8','2'],['reset','8/10','2']]){const st=style(app.element(id));assert.equal(st['grid-column'],column);assert.equal(st['grid-row'],row);}
+  for(const id of ['randomize','solve','pause','reset']){const el=app.element(id),st=style(el),[start,end]=st['grid-column'].split('/').map(Number),span=end-start,space=span*cell+(span-1)*gap;const text=el.textContent;el.textContent=text.replace(/[⤨✦]\s*/g,'');check(el,st,space,34,'top '+id+' '+width+'px');el.textContent=text;}
  }
 });
 test('removed metrics strip does not consume play space at any supported width',async()=>{
@@ -133,7 +170,7 @@ test('10×10 fourth-slice labels agree in both canvases and readouts while click
  const app=createPage('cube10'),texts={cube:[],rings:[]};
  await app.flush();
  for(const id of Object.keys(texts))app.element(id).drawing.fillText=text=>texts[id].push(String(text));
- app.context.PuzzleAxisDisplay.setLabelMode('all');
+ app.context.PuzzleAxisDisplay.setLabelMode('all');app.context.PuzzleAxisDisplay.toggleRingLabels();
  const key=app.element('viewRingSelector').querySelectorAll('.ring-key').find(el=>el.dataset.face==='Riiii');assert.equal(key.textContent,'Riv');key.click();await app.advance(0);
  assert.equal(app.element('selectedName').textContent,'Riv');assert.equal(app.element('viewRingSelectedName').textContent,'Riv');
  for(const [id,labels]of Object.entries(texts)){assert(labels.includes('Riv'),id+' shows the same short label');assert(!labels.includes('Riiii'),id+' does not show a different spelling');}
@@ -153,5 +190,27 @@ test('Solved, In play and Scrambling status matches toolbar height and fits its 
   assert.equal(px(ss,'height'),px(button,'height',px(button,'min-height')),'status and buttons share a height');
   const panel=innerWidth(width,app,style),ps=style(app.document.querySelector('.action-panel')),available=panel-px(ps,'padding-left')-px(ps,'padding-right'),cell=width>680?120:(available-12)/4;
   for(const text of ['● Solved','● In play','⤨ Scrambling','✦ Solving']){status.textContent=text;check(status,ss,cell,px(ss,'height'),text+' status '+width+'px');}
+ }
+});
+
+for(const puzzle of ['cube3','megaminx','mirror'])test(puzzle+' ring display actions keep single-line captions visible in either mode',async()=>{
+ const app=createPage(puzzle);await app.flush();
+ for(const active of [false,true]){
+  app.element('ringPanel').classList.toggle('cs-active',active);
+  for(const focused of [true,false]){
+   app.element('ringFocus').textContent=focused?'Show all rings':'Focus on rings';
+   for(const width of [320,360,412,1280]){
+    const style=createCascade(app,puzzle,width,width>680?600:width-8),panel=width>680?600:innerWidth(width,app,style),head=app.document.querySelector('.ring-panel-head'),hs=style(head),available=panel-px(hs,'padding-left')-px(hs,'padding-right');
+    let row=0,rows=1;
+    for(const id of ['ringFocus','ringLabelToggle','csShowGoal','ringPanelHide']){
+     const el=app.element(id),s=style(el),w=intrinsic(el,style);
+     assert.notEqual(s.display,'none',id+' stays visible in both modes');assert.equal(s['white-space'],'nowrap',id+' never breaks its caption');
+     check(el,s,w,px(s,'height',px(s,'min-height')),puzzle+' ring header '+width+'px');
+     if(row&&row+px(hs,'gap')+w>available){rows++;row=0;}row+=(row?px(hs,'gap'):0)+w;
+     assert(row<=available,'ring header wraps intact buttons instead of clipping');
+    }
+    assert(rows<=2,'display actions occupy no more than two rows on narrow screens');
+   }
+  }
  }
 });

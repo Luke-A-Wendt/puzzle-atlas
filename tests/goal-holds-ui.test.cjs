@@ -9,9 +9,9 @@ const clean=value=>JSON.parse(JSON.stringify(value));
 const fetchFile=async url=>{const file=path.join(games,new URL(String(url),'https://atlas.test/games/').pathname.replace(/^\/games\//,''));return {ok:fs.existsSync(file),text:async()=>fs.readFileSync(file,'utf8')};};
 const catalog=JSON.parse(fs.readFileSync(path.join(games,'constrained-solver-models/manifest.json'))).models;
 function host(id='cube2'){
-  const workers=[];
+  const workers=[],fetches=[];
   class Worker{constructor(){workers.push(this);}postMessage(request){this.request=clean(request);}terminate(){this.terminated=true;}addEventListener(){}removeEventListener(){}}
-  const app=createPage(id,{globals:{Worker,fetch:fetchFile}});app.workers=workers;
+  const app=createPage(id,{globals:{Worker,fetch:url=>{fetches.push(String(url));return fetchFile(url);}}});app.workers=workers;app.fetches=fetches;
   app.model=JSON.parse(fs.readFileSync(path.join(games,'constrained-solver-models',id+'.json')));
   app.ui=app.context.ConstrainedSolverUI;app.core=app.context.ConstrainedSolverCore;
   app.ready=async()=>{app.ui.setActive(true);for(let i=0;i<100&&app.ui.state().phase==='loading';i++)await app.advance(0);assert.equal(app.ui.state().phase,'selecting',id);};
@@ -22,22 +22,32 @@ function goalAt(model){const goal=new Map();for(const [id,node]of Object.entries
 
 test('all catalog puzzles suggest exactly the current color matches and show canonical goal fills without changing the puzzle',async()=>{
   for(const {id}of catalog){
-    const app=host(id),move=app.model.moves[0].engineMove;
+    const app=host(id),move=app.model.moves[0].engineMove,solvedNodes=clean(app.context.PUZZLE_SOLVER_BRIDGE.nodes());
     assert.equal(app.context.PUZZLE_API.runMoves([move]),true,id);await app.settle();await app.ready();
     const before=app.snapshot(),mapping=app.map(),colors=app.core.colorsFromSnapshot(app.model,before,mapping),goal=goalAt(app.model);
     const list=Array.from(app.context.PUZZLE_SOLVER_BRIDGE.nodes()),first=String(list[0].stickerId),second=String(list[1].stickerId);
     app.ui.selectNode(first);app.ui.setTool('swap');app.ui.selectNode(first);app.ui.selectNode(second);
     app.click('csSuggestHolds');
     const expected=Object.entries(mapping.stickerToNode).filter(([,node])=>goal.has(node)&&goal.get(node)===colors[node]).map(([id])=>id).sort();
-    assert.deepEqual(clean(app.ui.state().held).sort(),expected,id+' suggested holds');assert.deepEqual(clean(app.ui.state().pair),[],id+' cleared pair');assert.equal(app.ui.state().tool,'hold');
+    assert.deepEqual(clean(app.ui.state().held).sort(),expected,id+' suggested holds');assert.deepEqual(clean(app.ui.state().pair),[],id+' cleared pair');assert.equal(app.ui.state().tool,'swap');
     const palette=new Map(list.map(n=>[String(app.model.colorBySticker[String(n.stickerId)]),n.color]));
     const ctx=app.element('csNodeOverlay').drawing,paint=[];let arc;
     ctx.arc=(x,y,r)=>arc={x,y,r};ctx.fill=()=>{if(arc)paint.push({...arc,color:ctx.fillStyle});};
     app.element('csShowGoal').dispatch('pointerdown',{pointerId:7});assert.equal(app.ui.state().goalPreview,true,id);await app.advance(0);
-    for(const n of list){const target=goal.get(mapping.stickerToNode[String(n.stickerId)]),expectedColor=target===undefined?'#24252e':palette.get(target)||target;
+    const previewNodes=app.context.PUZZLE_SOLVER_BRIDGE.nodes();
+    for(const n of previewNodes){const target=goal.get(mapping.stickerToNode[String(n.stickerId)]),expectedColor=n.goalColor||(target===undefined?'#24252e':palette.get(target)||target);
       assert(paint.some(p=>p.x===n.x&&p.y===n.y&&p.color===expectedColor),id+' correct goal at '+n.stickerId);
+      if(n.goalColor){
+        // Shape-changing poses can be absent in the solved shell. Their
+        // preview must show the actual solved map, not invented gray targets.
+        const home=solvedNodes.find(p=>String(p.stickerId)===String(n.stickerId));assert(home,id+' solved preview node');
+        assert.equal(n.goalColor,home.color,id+' solved face color');
+        assert(Math.abs(n.x-home.x)<1e-6&&Math.abs(n.y-home.y)<1e-6,id+' solved node position');
+        assert(Math.abs(n.r-home.r)<1e-6,id+' stable solved node radius');
+      }
     }
-    app.element('csShowGoal').dispatch('pointerup',{pointerId:7});assert.equal(app.ui.state().goalPreview,false,id);assert.deepEqual(app.snapshot(),before,id+' no engine mutation');
+    app.element('csShowGoal').dispatch('pointerup',{pointerId:7});assert.equal(app.ui.state().goalPreview,false,id);await app.advance(0);assert.deepEqual(app.snapshot(),before,id+' no engine mutation');
+    for(const n of list){const restored=app.context.PUZZLE_SOLVER_BRIDGE.nodes().find(p=>String(p.stickerId)===String(n.stickerId));assert(restored,id+' restored live node');assert.equal(restored.color,n.color);assert(Math.abs(restored.x-n.x)<1e-6&&Math.abs(restored.y-n.y)<1e-6,id+' restored live layout');}
   }
 });
 
@@ -60,7 +70,7 @@ test('goal preview blocks ring and 3D selection and Go without losing held endpo
   assert.equal(app.ui.canSelect3D(),false);assert.equal(app.ui.selectNode(ids[2]),false);assert.equal(app.ui.setTool('hold'),false);assert.equal(app.ui.clearSelection(),false);assert.equal(app.ui.suggestHolds(),false);assert.equal(app.ui.go(),false);
   app.click('csPairA');assert.equal(app.element('csSuggest'),null);app.element('csShowGoal').dispatch('pointerup');
   assert.deepEqual(clean(app.ui.state().held),before.held);assert.deepEqual(clean(app.ui.state().pair),before.pair);assert.equal(app.ui.canSelect3D(),true);
-  app.click('csSuggestHolds');assert.deepEqual(clean(app.ui.state().pair),[]);assert.equal(app.ui.state().held.length,app.model.stickerCount);assert.equal(app.ui.state().tool,'hold');
+  app.click('csSuggestHolds');assert.deepEqual(clean(app.ui.state().pair),[]);assert.equal(app.ui.state().held.length,app.model.stickerCount);assert.equal(app.ui.state().tool,'swap');
 });
 
 test('suggested holds recognize same-color replacements rather than exact home sticker identities',async()=>{
@@ -89,17 +99,73 @@ test('Suggest holds discards a paused manual search and rejects its stale comple
   assert.deepEqual(clean(app.ui.state()),before);assert.equal(app.snapshot().history.length,0);
 });
 
-test('Show goal is available on first opening in Turn rings for all catalog puzzles, without activating the solver',async()=>{
+test('Show goal is immediately available for every fresh puzzle without any model download or worker',async()=>{
   for(const {id}of catalog){
     const app=host(id),button=app.element('csShowGoal'),before=app.snapshot();
     assert.equal(button.hidden,false,id);assert.equal(app.ui.state().active,false,id);
     button.dispatch('pointerdown',{pointerId:17});
-    for(let i=0;i<100&&!app.ui.state().goalPreview;i++)await app.advance(0);
     assert.equal(app.ui.state().goalPreview,true,id);assert.equal(app.ui.state().active,false,id);
+    await app.advance(0);assert.deepEqual(app.fetches,[],id+' no solver data download');assert.equal(app.workers.length,0,id+' no worker startup');
     assert.equal(app.element('csNodeOverlay').hidden,false,id);assert.equal(app.element('csNodeOverlay').style.pointerEvents,'none',id);
     app.document.dispatch('pointerup',{pointerId:17});assert.equal(app.ui.state().goalPreview,false,id);assert.equal(app.element('csNodeOverlay').hidden,true,id);
     assert.deepEqual(app.snapshot(),before,id+' preview makes no move');
   }
+});
+
+test('Show goal remains local after turns on every puzzle, and its targets match the verified model',async()=>{
+  for(const {id}of catalog){
+    const app=host(id),goal=goalAt(app.model);
+    assert.equal(app.context.PUZZLE_API.runMoves(app.model.moves.slice(0,3).map(move=>move.engineMove)),true,id);await app.settle();
+    const map=app.map(),list=app.context.PUZZLE_SOLVER_BRIDGE.nodes(),palette=new Map(list.map(n=>[String(app.model.colorBySticker[String(n.stickerId)]),n.color]));
+    const paint=[],ctx=app.element('csNodeOverlay').drawing;let arc;
+    ctx.arc=(x,y,r)=>arc={x,y,r};ctx.fill=()=>{if(arc)paint.push({...arc,color:ctx.fillStyle});};
+    app.element('csShowGoal').dispatch('pointerdown',{pointerId:23});assert.equal(app.ui.state().goalPreview,true,id+' immediate after turns');await app.advance(0);
+    for(const n of app.context.PUZZLE_SOLVER_BRIDGE.nodes()){
+      const target=goal.get(map.stickerToNode[String(n.stickerId)]),expected=n.goalColor||(target===undefined?'#24252e':palette.get(target)||target);
+      assert(paint.some(p=>p.x===n.x&&p.y===n.y&&p.color===expected),id+' local pose target agrees with model for '+n.stickerId);
+    }
+    assert.deepEqual(app.fetches,[],id+' still no download after turns');assert.equal(app.workers.length,0,id+' no worker');
+    app.element('csShowGoal').dispatch('pointerup',{pointerId:23});
+  }
+});
+
+test('late solver UI installation never mistakes a scrambled snapshot for a solved goal',async()=>{
+  let downloads=0;
+  const app=createPage('cube2',{skipScripts:['constrained-solver.js'],globals:{fetch:url=>{downloads++;return fetchFile(url);}}});
+  app.context.PUZZLE_API.runMoves(['R']);await app.settle();app.document.currentScript={src:'https://atlas.test/games/constrained-solver.js'};app.loadScript('constrained-solver.js');app.document.currentScript=null;
+  app.element('csShowGoal').dispatch('pointerdown',{pointerId:5});
+  for(let i=0;i<100&&!app.context.ConstrainedSolverUI.state().goalPreview;i++)await app.advance(0);
+  assert.equal(downloads,1,'untrusted late snapshot uses verified model fallback');assert.equal(app.context.ConstrainedSolverUI.state().goalPreview,true);
+  app.element('csShowGoal').dispatch('pointerup',{pointerId:5});assert.equal(app.context.ConstrainedSolverUI.state().goalPreview,false);
+});
+
+test('idle solver UI does not continually rewrite goal button reflected attributes',async()=>{
+  const app=host('jewel'),button=app.element('csShowGoal');let writes=0;
+  for(const key of ['hidden','disabled']){let value=button[key];Object.defineProperty(button,key,{configurable:true,get:()=>value,set:next=>{writes++;value=next;}});}
+  for(let i=0;i<60;i++)await app.advance(16);
+  assert.equal(writes,0,'no idle mutations that wake document-wide observers');
+  app.context.PUZZLE_API.runMoves([app.model.moves[0].engineMove]);await app.advance(0);assert.equal(button.disabled,true);await app.settle();assert.equal(button.disabled,false);assert.equal(writes,2,'only actual availability changes mutate the button');
+});
+
+test('a goal press released before the first painted frame never reappears later',()=>{
+  let frames=[];
+  const app=createPage('jewel',{globals:{requestAnimationFrame:fn=>{frames.push(fn);return frames.length;},cancelAnimationFrame:()=>{},fetch:()=>{throw Error('Goal must not fetch');}}});
+  assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,0,'native first frame has not run');
+  app.element('csShowGoal').dispatch('pointerdown',{pointerId:29});assert.equal(app.context.ConstrainedSolverUI.state().goalPreview,true);
+  app.element('csShowGoal').dispatch('pointerup',{pointerId:29});
+  for(let i=0;i<3;i++){const pending=frames;frames=[];for(const fn of pending)fn(0);}
+  assert.equal(app.context.ConstrainedSolverUI.state().goalPreview,false);assert.equal(app.element('csNodeOverlay').hidden,true);
+  assert(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length>0);
+});
+
+test('opening directly in mirror mode cannot cache silver as the canonical goal palette',async()=>{
+  const app=createPage('mirror',{globals:{location:{search:'?mirror=1',origin:'https://atlas.test',href:'https://atlas.test/games/mirror.html?mirror=1'},fetch:()=>{throw Error('Goal must not fetch');}}});
+  assert.equal(app.snapshot().mirrorMode,true);app.context.PUZZLE_API.setMirrorMode(false);
+  const paint=[],ctx=app.element('csNodeOverlay').drawing;let arc;
+  ctx.arc=(x,y,r)=>arc={x,y,r};ctx.fill=()=>{if(arc)paint.push({...arc,color:ctx.fillStyle});};
+  app.element('csShowGoal').dispatch('pointerdown',{pointerId:31});await app.advance(0);
+  for(const n of app.context.PUZZLE_SOLVER_BRIDGE.nodes())assert(paint.some(p=>p.x===n.x&&p.y===n.y&&p.color===n.color),'solved goal uses actual colored palette at '+n.stickerId);
+  assert.equal(app.context.ConstrainedSolverUI.state().goalPreview,true);app.element('csShowGoal').dispatch('pointerup',{pointerId:31});
 });
 
 test('release before first goal load finishes cannot leave a delayed goal preview visible',async()=>{

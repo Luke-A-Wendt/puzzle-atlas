@@ -25,8 +25,8 @@ test('Axis Cube is the 60-degree diagonal 3×3 modification, with six standard c
 
 test('Axis ring colors form six separated groups and exact smooth orbit paths',()=>{
  const m=Engine.create('axis'),rings=Rings.create(m),solved=rings.views();
- assert.equal(solved.length,42);assert(rings.nodeRadius>=11);
- for(const a of solved){const nearest=solved.filter(b=>a.id!==b.id).sort((b,c)=>distance(a,b)-distance(a,c))[0];assert.equal(a.color,nearest.color);assert(distance(a,nearest)>27);}
+ assert.equal(solved.length,42);assert.equal(rings.nodeRadius,5);
+ for(const a of solved){const nearest=solved.filter(b=>a.id!==b.id).sort((b,c)=>distance(a,b)-distance(a,c))[0];assert.equal(a.color,nearest.color);assert(distance(a,nearest)>28);}
  let checks=0;
  for(let seed=0;seed<3;seed++){
   m.reset();if(seed)m.scramble('axis-rings-'+seed,25).forEach(move=>m.applyMove(move));

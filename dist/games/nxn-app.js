@@ -5,7 +5,7 @@ const E=CubeEngine,N=E.size,G=RingGeometry,$=id=>document.getElementById(id);
 const ringsCanvas=$('rings'),cubeCanvas=$('cube'),rc=ringsCanvas.getContext('2d'),cc=cubeCanvas.getContext('2d');
 const palette={white:'#eeeef6',yellow:'#f4ce48',green:'#39bd8b',blue:'#4c90ef',red:'#ee596e',orange:'#f29a4b'};
 let stickers=E.makeSolved(),history=[],journal=[],selected='R',userTurns=0,seed=null,seedCounter=0;
-let ringFocused=false;
+let ringFocused=true;
 let mode='idle',queue=[],animation=null,paused=false,pauseAt=0,sequenceTotal=0,sequenceDone=0,stopRequested=false,dirty=true;
 let view={yaw:-.62,pitch:.48,zoom:1},ringDrag=null,cubePointers=new Map(),pinchDistance=0;
 let ringViewport={scale:1,ox:0,oy:0},sizes={rings:{w:500,h:500},cube:{w:500,h:400}},lastTimestamp=0;
@@ -22,8 +22,8 @@ function locked(){return !!animation||mode!=='idle';}
 function uniformFaces(){const groups=new Map();stickers.forEach(s=>{const k=s.n.join(',');if(!groups.has(k))groups.set(k,new Set());groups.get(k).add(s.color);});return [...groups.values()].filter(v=>v.size===1).length;}
 let scrambleSpeedActive=false,sequenceDefaultsActive=false;
 function restorePlaybackDefaults(options={}){
- sequenceDefaultsActive=false;scrambleSpeedActive=false;if(options.preserveSettings)return;const changed=$('speed').value!=='3';$('speed').value='3';$('speedText').textContent='Normal';window.PuzzlePlaybackControls.syncSpeed();if(changed)window.PuzzleFeedback?.pulse?.($('speed'));
- window.PuzzleAxisDisplay?.resetDefaults?.({pulse:true});window.PuzzleSelection3D?.clearHover?.();
+ // End sequence bookkeeping only. User display and speed choices last until page reload.
+ sequenceDefaultsActive=false;scrambleSpeedActive=false;window.PuzzleSelection3D?.clearHover?.();
 }
 function updateUI(){
  if(sequenceDefaultsActive&&!locked()&&!window.ConstrainedSolverUI?.journalBusy?.()&&!window.PuzzleJournal?.isReplaying?.())restorePlaybackDefaults();
@@ -33,7 +33,7 @@ function updateUI(){
  $('status').textContent=busy?(mode==='solve'?'✦ Solving':mode==='scramble'?'⤨ Scrambling':mode==='algorithm'?'↻ Solving':'↻ Turning'):(solved?'● Solved':'● In play');
  $('moveCount').textContent=userTurns;$('solvedFaces').textContent=uniformFaces()+' / 6';
  const shown=window.PuzzleAxisDisplay?.selection(selected,animation);$('selectedName').textContent=shown?displayFace(shown):'Select axis';
- $('ringFocus').textContent=ringFocused?'Show all rings':'Focus rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
+ $('ringFocus').textContent=ringFocused?'Show all rings':'Focus on rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
  document.querySelectorAll('.ring-key').forEach(b=>{b.classList.toggle('active',b.dataset.face===visualAxis());b.setAttribute('aria-pressed',String(b.dataset.face===visualAxis()));b.disabled=busy;});
  $('ccw').disabled=busy||!!window.ConstrainedSolverUI?.blocksManualMoves?.()||!window.PuzzleAxisDisplay?.selection(selected,animation);$('cw').disabled=busy||!!window.ConstrainedSolverUI?.blocksManualMoves?.()||!window.PuzzleAxisDisplay?.selection(selected,animation);$('randomize').disabled=busy;
  $('solve').disabled=busy||solved;$('undo').disabled=busy||!history.length;
@@ -87,9 +87,9 @@ function finishMove(){
  }else $('message').textContent=E.isSolved(stickers)?'Solved. All six faces are uniform.':(a.source==='undo'?'Undid the last recorded turn.':'Played '+E.moveLabel(a.move)+'.');
  updateUI();
 }
-function startSequence(moves,type){sequenceDefaultsActive=type!=='journal-undo'&&type!=='journal-redo';if(type==='scramble'){scrambleSpeedActive=true;window.PuzzleAxisDisplay?.setLabelMode?.('none',{resetSpeed:true});$('speed').value='5';$('speedText').textContent='Fast';window.PuzzlePlaybackControls.syncSpeed();window.PuzzleFeedback?.pulse?.($('speed'));}stopRequested=false;mode=type;queue=moves.slice();sequenceTotal=queue.length;sequenceDone=0;paused=false;const first=queue.shift();if(first)beginMove(first,type);else{mode='idle';updateUI();}}
+function startSequence(moves,type){sequenceDefaultsActive=type!=='journal-undo'&&type!=='journal-redo';stopRequested=false;mode=type;queue=moves.slice();sequenceTotal=queue.length;sequenceDone=0;paused=false;const first=queue.shift();if(first)beginMove(first,type);else{mode='idle';updateUI();}}
 function randomize(){
- if(locked())return;ringFocused=false;seed=makeSeed();
+ if(locked())return;seed=makeSeed();
  const moves=E.scramble(seed,SCRAMBLE_LENGTH);addLabel('Scramble · '+SCRAMBLE_LENGTH+' legal turns');$('seedLabel').textContent='Fresh seed · continues current state';$('seed').textContent=seed;window.PuzzleJournal?.setSeed?.(seed);
  $('logTitle').textContent='Move journal';$('message').textContent='Scrambling the current position…';startSequence(moves,'scramble');
 }
@@ -133,8 +133,8 @@ window.PUZZLE_SOLVER_BRIDGE=Object.freeze({
 function drawRings(t){
  solverRingNodes=[];
  if(!(sizes.rings.w>40&&sizes.rings.h>40))return;
- const{w,h}=sizes.rings;rc.clearRect(0,0,w,h);const ring=G.getRing(selected),zoom=ringDrag?ringDrag.viewport.zoom:(ringFocused?180/ring.r:1),scale=ringDrag?ringDrag.viewport.scale:Math.min((w-34)/500,(h-36)/500)*zoom;
- ringViewport=ringDrag?ringDrag.viewport:{scale,zoom,ox:w/2-(ringFocused?ring.cx:250)*scale,oy:h/2-(ringFocused?ring.cy:250)*scale-5};
+ const{w,h}=sizes.rings;rc.clearRect(0,0,w,h);const ring=G.getRing(selected),zoom=1,baseScale=Math.min((w-34)/500,(h-36)/500);
+ ringViewport=ringDrag?ringDrag.viewport:(window.RingMapNavigation?.viewport({scale:baseScale,zoom,ox:w/2-250*baseScale,oy:h/2-250*baseScale-5},w,h)||{scale:baseScale,zoom,ox:w/2-250*baseScale,oy:h/2-250*baseScale-5});const scale=ringViewport.scale;
  rc.save();rc.translate(ringViewport.ox,ringViewport.oy);rc.scale(scale,scale);
  const shownAxis=visualAxis();G.drawTracks(rc,shownAxis,scale,{focus:ringFocused});
  const active=animation,conf=active?E.configs[active.move.face]:null;
@@ -211,7 +211,7 @@ $('ccw').addEventListener('click',()=>turn(-1));$('cw').addEventListener('click'
 $('undo').addEventListener('click',()=>window.PuzzleJournal?.navigate(-1,false));
 $('homeView').addEventListener('click',()=>{view={yaw:-.62,pitch:.48,zoom:1};dirty=true;});
 $('speed').addEventListener('input',()=>{
- $('speedText').textContent=['','Slow','Gentle','Normal','Quick','Fast'][+$('speed').value];
+ $('speedText').textContent=['','0.5×','0.75×','1×','1.5×','2×','4×','8×'][+$('speed').value];
  if(animation){const now=paused?pauseAt:performance.now(),progress=clamp((now-animation.start)/animation.duration,0,1),nextDuration=duration()*(animation.move.turns===2?1.35:1);
   animation.start=now-progress*nextDuration;animation.duration=nextDuration;}
  dirty=true;
@@ -220,6 +220,7 @@ $('copy').addEventListener('click',async()=>{
  const text=journal.map(j=>j.label?'\n'+j.label+':':E.moveLabel(j.move)).join(' ').trim();
  try{await navigator.clipboard.writeText(text);toast('Moves copied.');}catch(_){const field=document.createElement('textarea');field.value=text;field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();const copied=document.execCommand('copy');field.remove();toast(copied?'Moves copied.':'Copy is unavailable in this browser.');}
 });
+window.RingMapNavigation?.bind({canvas:ringsCanvas,busy:locked,requestRender:()=>{dirty=true;},cancel:()=>{ringDrag=null;dirty=true;},hit:event=>{const p=ringPoint(event),near=nearestRing(p);return ringLabelTargets.some(label=>Math.hypot(label.x-p.x,label.y-p.y)<=label.radius+3/ringViewport.scale)||!!near&&near.d*ringViewport.scale<=13;}});
 ringsCanvas.addEventListener('pointerdown',e=>{
  if(locked()||e.button>0)return;const p=ringPoint(e),labelHit=ringLabelTargets.find(label=>Math.hypot(label.x-p.x,label.y-p.y)<=label.radius+3/ringViewport.scale);const nearest=labelHit?{r:G.getRing(labelHit.face),d:0}:nearestRing(p);if(!nearest||nearest.d*ringViewport.scale>13){window.PuzzleAxisDisplay?.clear?.();ringDrag=null;dirty=true;return;}setSelected(nearest.r.name);
  ringDrag={pointer:e.pointerId,r:nearest.r,viewport:{...ringViewport},angle:G.angleAt(p,nearest.r),total:0,startX:e.clientX,startY:e.clientY};ringsCanvas.setPointerCapture(e.pointerId);ringsCanvas.focus({preventScroll:true});dirty=true;

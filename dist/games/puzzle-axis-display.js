@@ -3,20 +3,11 @@
   'use strict';
   let muted = true, hoveredAxis = null, visibleAxes = [], repaintPending = false;
   let axisLabelTargets = [];
-  let labels3D = 'some', outline3D = !root.document?.body?.classList?.contains?.('game-homer'), labelsOnRings = true;
+  // Preferences initialize exactly once per page. Modes and playback never reset them.
+  let labels3D = 'none', outline3D = true, labelsOnRings = false;
   const modes = ['none', 'some', 'all'];
   const modeName = mode => mode;
   const pulse = element => root.PuzzleFeedback?.pulse?.(element);
-  function applyLabelSpeed(mode) {
-    const speed = root.document?.getElementById?.('speed');
-    const value = ({none:'5', some:'3', all:'1'})[mode];
-    // Selecting a label preset is a one-shot playback default. A subsequent
-    // manual speed choice remains untouched until the next preset transition.
-    if (!speed || String(speed.value) === value) return;
-    speed.value = value;
-    if (root.Event) speed.dispatchEvent(new root.Event('input', {bubbles:true}));
-    root.PuzzlePlaybackControls?.syncSpeed?.();
-  }
   const palettes = Object.freeze({
     active: Object.freeze({fill:'#f3f3f5', stroke:'#101116', text:'#101116'}),
     inactive: Object.freeze({fill:'#101116', stroke:'#f3f3f5', text:'#f3f3f5'})
@@ -24,6 +15,7 @@
   const controls = {};
   let clearNodeInspection = () => {};
   let presentedAxis = null, turnSyncPending = false, turnObserver = null, chromeObserver = null;
+  let selectionControlState = '';
   function syncChrome() {
     const doc=root.document,stop=doc?.getElementById?.('pause'),activity=doc?.getElementById?.('journalActivity');
     // Engines keep ownership of Stop availability. Its idle placeholder keeps
@@ -34,6 +26,13 @@
     if(activity && activity.title!==activity.textContent)activity.title=activity.textContent;
     const actions=doc?.querySelector?.('.action-panel'),playing=String(!!activity?.textContent?.trim());
     if(actions && actions.getAttribute('data-journal-active')!==playing)actions.setAttribute('data-journal-active',playing);
+    const focus = doc?.getElementById?.('ringFocus');
+    if (focus) {
+      const focused = focus.getAttribute('aria-pressed') === 'true';
+      const description = (focused ? 'Show all rings. Current view: focused rings, with unselected paths dimmed.' : 'Focus on rings. Current view: all rings visible.') + ' Selected rings and zoom stay unchanged.';
+      if (focus.title !== description) focus.title = description;
+      if (focus.getAttribute('aria-label') !== description) focus.setAttribute('aria-label', description);
+    }
     const header=doc?.querySelector?.('.view-header-toolbar'),mirror=doc?.getElementById?.('mirrorMode');
     if(header)header.classList.toggle('has-mirror-toggle',!!mirror&&!mirror.hidden);
     if (controls.features) {
@@ -108,7 +107,10 @@
           // Retain the exact arrow glyph/span; only this panel's caption and
           // request mapping differ from the native ring-map controls.
           const arrow = duplicate.querySelector('.direction');
-          if (arrow) duplicate.replaceChildren(root.document.createTextNode('Rotate '), arrow);
+          if (arrow) {
+            if (physicalDirection < 0) duplicate.replaceChildren(arrow, root.document.createTextNode(' Rotate'));
+            else duplicate.replaceChildren(root.document.createTextNode('Rotate '), arrow);
+          }
         }
         duplicate.addEventListener('click', () => {
           syncTurnControls();
@@ -150,7 +152,8 @@
       }
     }
     describePhysicalTurn(controls.left, -1); describePhysicalTurn(controls.right, 1);
-    controls.ringCopy.setAttribute('aria-label', 'Rotation axes and physical turns — counterclockwise positive, clockwise negative, viewed inward from the selected pole');
+    const description = 'Rotation axes and physical turns — counterclockwise positive, clockwise negative, viewed inward from the selected pole';
+    if (controls.ringCopy.getAttribute('aria-label') !== description) controls.ringCopy.setAttribute('aria-label', description);
   }
   function syncTurnControls() {
     syncChrome();
@@ -178,10 +181,10 @@
     if (controls.labels) {
       // Like Show/Hide highlights, the caption names the next action, not the
       // current state. The stored mode remains available to feedback/readers.
-      controls.labels.textContent = ({none:'No labels',some:'Some labels',all:'All labels'})[next];
+      controls.labels.textContent = ({none:'Show no labels',some:'Show some labels',all:'Show all labels'})[next];
       controls.labels.setAttribute('data-mode', labels3D);
       controls.labels.setAttribute('aria-label', (next === 'none' ? 'Hide axis labels.' : 'Show ' + modeName(next) + ' axis labels.') + ' Current mode: ' + modeName(labels3D) + ' axis labels.');
-      controls.labels.title = ({none:'Hide axis labels and swap markers.',some:'Show labels on the puzzle, without leader lines or swap markers.',all:'Show all available axis labels, including leader lines and the 1/2 swap markers.'})[next] + ' Set ' + ({none:'2×',some:'1×',all:'½×'})[next] + ' playback. Current mode: ' + modeName(labels3D) + ' labels.';
+      controls.labels.title = ({none:'Hide axis labels and swap markers.',some:'Show labels on the puzzle, without leader lines or swap markers.',all:'Show all available axis labels, including leader lines and the 1/2 swap markers.'})[next] + ' Current mode: ' + modeName(labels3D) + ' labels.';
     }
     if (controls.highlights) {
       controls.highlights.textContent = outline3D ? 'Hide highlights' : 'Show highlights';
@@ -291,7 +294,7 @@
           if (guide) {
             const full = doc.createElement('span'), short = doc.createElement('span');
             full.className = 'view-guide-full'; full.textContent = 'Show guide ←'; full.setAttribute('aria-hidden','true');
-            short.className = 'view-guide-short'; short.textContent = 'Guide ←'; short.setAttribute('aria-hidden','true');
+            short.className = 'view-guide-short'; short.textContent = 'Show guide ←'; short.setAttribute('aria-hidden','true');
             guide.replaceChildren(full, short); guide.setAttribute('aria-label','Show guide'); guide.title = 'Show guide';
           }
           top.appendChild(panels);
@@ -321,7 +324,7 @@
     syncChrome();
     if ((top || focus) && !doc.querySelector('#puzzleDisplayControlStyles')) {
       const css = doc.createElement('style'); css.id = 'puzzleDisplayControlStyles';
-      css.textContent = '.cube-top{flex-wrap:wrap;gap:5px}.cube-top .puzzle-display-control{white-space:nowrap;color:#f3f3f5;border-color:#595b66;background:#191921ed;font-size:10px;padding:4px 7px;min-height:27px}.cube-top .puzzle-display-control:hover,.cube-top .puzzle-display-control:focus-visible{background:#33343f;border-color:#a5a7b2}.ring-panel-head #ringLabelToggle{color:#f3f3f5;min-width:0}.cs-active #ringLabelToggle{display:none!important}@media(max-width:680px){.cube-top .puzzle-display-control{min-height:32px}}';
+      css.textContent = '.cube-top{flex-wrap:wrap;gap:5px}.cube-top .puzzle-display-control{white-space:nowrap;color:#f3f3f5;border-color:#595b66;background:#191921ed;font-size:10px;padding:4px 7px;min-height:27px}.cube-top .puzzle-display-control:hover,.cube-top .puzzle-display-control:focus-visible{background:#33343f;border-color:#a5a7b2}.ring-panel-head #ringLabelToggle{color:#f3f3f5;min-width:0}@media(max-width:680px){.cube-top .puzzle-display-control{min-height:32px}}';
       (doc.head || doc.body).appendChild(css);
     }
     syncControls(); installNodeInspector();
@@ -334,7 +337,7 @@
     tip.style.display='none';doc.body.appendChild(tip);
     let down=null;
     const allowed=()=>!root.PUZZLE_SOLVER_BRIDGE?.isBusy?.()&&!root.ConstrainedSolverUI?.visualState?.().active&&!doc.body.classList.contains('mirror-active')&&typeof root.PUZZLE_SOLVER_BRIDGE?.inspectNode==='function';
-    clearNodeInspection=()=>{tip.hidden=true;tip.style.display='none';};
+    clearNodeInspection=()=>{if(!tip.hidden)tip.hidden=true;if(tip.style.display!=='none')tip.style.display='none';};
     function show(event) {
       if(!allowed()){clearNodeInspection();return;}
       const b=canvas.getBoundingClientRect(),x=event.clientX-b.left,y=event.clientY-b.top;
@@ -384,12 +387,12 @@
     },
     publish3DLabelTargets(targets) { axisLabelTargets = targets || []; },
     axisLabelTargets() { return labels3D === 'none' ? [] : axisLabelTargets; },
-    setLabelMode(mode, options = {}) {
+    setLabelMode(mode) {
       if (mode === 'more') mode = 'all';
       if (!modes.includes(mode)) return;
       const changed = mode !== labels3D;
-      if (!changed && !options.resetSpeed) return;
-      labels3D = mode; applyLabelSpeed(mode);
+      if (!changed) return;
+      labels3D = mode;
       if (changed) { syncControls(); pulse(controls.labels); repaint(); }
     },
     highlights3D() { return outline3D; },
@@ -398,29 +401,34 @@
       outline3D = on; syncControls(); pulse(controls.highlights); repaint();
     },
     ringLabelsVisible() {
-      // This is a turn-ring display preference, not a solver overlay setting.
-      return !!root.ConstrainedSolverUI?.visualState?.().active || labelsOnRings;
+      // One shared preference in turn-ring and constrained-solver modes.
+      return labelsOnRings;
     },
     toggleRingLabels() { labelsOnRings = !labelsOnRings; syncControls(); pulse(controls.ringLabels); repaint(); },
-    resetDefaults(options = {}) {
-      // Avoid refreshControls here: completion handlers may run inside updateUI.
-      clearNodeInspection();
-      labels3D = 'some'; applyLabelSpeed(labels3D); outline3D = !root.document?.body?.classList?.contains?.('game-homer'); labelsOnRings = true;
-      root.PUZZLE_SOLVER_BRIDGE?.setTileLabels?.(false);
-      muted = true; hoveredAxis = null; mutedClass(null); root.PuzzleSelection3D?.clearHover?.();
-      syncControls(); repaint();
-      // State-aware feedback only accents controls whose value really changed.
-      root.PuzzleFeedback?.refresh?.();
+    resetDefaults() {
+      // Compatibility entry point for older lifecycle callers: clear transient
+      // selection only. Fresh page initialization owns all preference defaults.
+      display.clear();
     },
     palette(active) { return active ? palettes.active : palettes.inactive; },
     selection(fallback, animation) {
       // A caller querying selection without animation is not a playback event.
       if (arguments.length > 1) trackPlayingTurn(animation);
       const moving = id(animation?.move?.face);
-      if(moving || root.PUZZLE_SOLVER_BRIDGE?.isBusy?.() || root.ConstrainedSolverUI?.visualState?.().active)clearNodeInspection();
+      const busy = !!root.PUZZLE_SOLVER_BRIDGE?.isBusy?.();
+      const solving = !!root.ConstrainedSolverUI?.visualState?.().active;
+      if(moving || busy || solving)clearNodeInspection();
       mutedClass(moving);
-      const selected = moving || (muted || root.ConstrainedSolverUI?.visualState?.().active ? null : id(fallback));
-      presentedAxis = selected; queueTurnSync(); return selected;
+      const selected = moving || (muted || solving ? null : id(fallback));
+      presentedAxis = selected;
+      // Renderers ask for this state several times on every animation frame.
+      // Sync DOM controls only at a selection, availability or primitive-move
+      // boundary. The native-control observer separately handles their edits.
+      // turnPulse distinguishes consecutive identical turns without reflashing
+      // or traversing the selector DOM for each interpolation frame.
+      const next = [selected, busy, solving, !!root.ConstrainedSolverUI?.blocksManualMoves?.(), playingAxis, playingDirection, turnPulse].join('|');
+      if (next !== selectionControlState) { selectionControlState = next; queueTurnSync(); }
+      return selected;
     },
     choose(axis) {
       if (id(axis) == null) return;
@@ -442,6 +450,23 @@
     },
     hovered() { return hoveredAxis; }
   };
+  function freshPageDefaults() {
+    // Returning through the browser's back/forward cache is a new visit, but
+    // must not reset the physical puzzle or its journal. This is deliberately
+    // separate from every playback, solver, mirror and reset lifecycle hook.
+    labels3D = 'none'; outline3D = true; labelsOnRings = false;
+    const focus = root.document?.getElementById?.('ringFocus');
+    if (focus?.getAttribute('aria-pressed') === 'false') focus.click();
+    const speed = root.document?.getElementById?.('speed');
+    if (speed && String(speed.value) !== '3') {
+      speed.value = '3';
+      if (root.Event) speed.dispatchEvent(new root.Event('input', {bubbles:true}));
+    }
+    root.PuzzlePlaybackControls?.syncSpeed?.();
+    root.RingMapNavigation?.reset?.();
+    syncControls(); repaint();
+  }
+  root.addEventListener?.('pageshow', event => { if (event.persisted) freshPageDefaults(); });
   root.PuzzleAxisDisplay = Object.freeze(display);
   installControls();
   root.document?.addEventListener?.('DOMContentLoaded', installControls, {once:true});

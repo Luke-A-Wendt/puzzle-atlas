@@ -11,8 +11,8 @@ for(const puzzle of puzzles)test(puzzle+' label modes, label picking and indepen
  if(poly){const original=G.render;G.render=function(...args){const result=original.apply(this,args);ringLabels=result.axisLabels;return result;};}
  else{const original=G.drawAxisLabels;G.drawAxisLabels=function(...args){ringLabels=original.apply(this,args);return ringLabels;};}
  const render=()=>{redraw(app);axisLabels=[];c.PUZZLE_SOLVER_BRIDGE.requestRender();app.frame(0);return axisLabels;};
- assert.equal(D.labelMode(),'some');const some=render().map(x=>x.face);assert(some.length>0,'default shows direct orientation labels');
- D.setLabelMode('all');const all=render();assert(all.length>some.length,'all mode adds rear/leader labels');
+ assert.equal(D.labelMode(),'none');D.setLabelMode('some');D.toggleRingLabels();const some=render().map(x=>x.face);assert(some.length>0,'default shows direct orientation labels');
+ D.choose(app.snapshot().selected);D.setLabelMode('all');const all=render();assert(all.length>some.length,'all mode adds rear/leader labels');
  const catalog=Array.from(D.ringAxes()).sort();assert.deepEqual(all.map(x=>x.face).sort(),catalog);
  const active=all.find(label=>label.face===app.snapshot().selected);if(active)assert.equal(active.fill,D.palette(true).text,'active labels use black text');
  assert(all.filter(label=>label.face!==app.snapshot().selected).every(label=>label.fill===D.palette(false).text),'inactive labels use white text');

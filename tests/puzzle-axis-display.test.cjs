@@ -37,14 +37,14 @@ test('3D-to-ring label synchronization redraws once after the drawing frame and 
 
 test('label and outline preferences are independent and the palette uses only light and dark ink', () => {
   const h=host(), d=h.display;
-  assert.equal(d.labelMode(),'some');assert.equal(d.highlights3D(),true);assert.equal(d.ringLabelsVisible(),true);
-  d.choose('R');d.setLabelMode('none');d.setHighlights3D(false);d.toggleRingLabels();
-  assert.equal(d.labelMode(),'none');assert.equal(d.highlights3D(),false);assert.equal(d.ringLabelsVisible(),false);
+  assert.equal(d.labelMode(),'none');assert.equal(d.highlights3D(),true);assert.equal(d.ringLabelsVisible(),false);
+  d.choose('R');d.setLabelMode('some');d.setHighlights3D(false);d.toggleRingLabels();
+  assert.equal(d.labelMode(),'some');assert.equal(d.highlights3D(),false);assert.equal(d.ringLabelsVisible(),true);
   assert.equal(d.selection('R'),'R','hiding 3D labels and highlights never clears a selected ring');
-  d.setLabelMode('bad');assert.equal(d.labelMode(),'none');
+  d.setLabelMode('bad');assert.equal(d.labelMode(),'some');
   let solving=true;h.context.ConstrainedSolverUI={visualState:()=>({active:solving})};
-  assert.equal(d.ringLabelsVisible(),true,'ring label visibility preference applies only to turn-ring mode');
-  solving=false;assert.equal(d.ringLabelsVisible(),false,'returning to turn rings restores its display preference');
+  assert.equal(d.ringLabelsVisible(),true,'solver shares the ring label visibility preference');
+  solving=false;assert.equal(d.ringLabelsVisible(),true,'returning to turn rings keeps the same preference');
   const light=d.palette(true),dark=d.palette(false);
   assert.equal(light.fill,dark.text);assert.equal(light.stroke,dark.fill);assert.equal(light.text,dark.fill);assert.equal(dark.stroke,light.fill);
   assert(Object.isFrozen(light));assert.equal(h.renders(),4,'one deliberate selection and three actual preference changes request redraws');

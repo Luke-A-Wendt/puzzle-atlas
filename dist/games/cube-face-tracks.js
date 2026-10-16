@@ -42,11 +42,13 @@ function install(G){
   for(const [radius,slots]of groups){
    slots.sort((s,t)=>Math.atan2(s.p[b],s.p[a])-Math.atan2(t.p[b],t.p[a]));
    const nodes=slots.map(G.position),period=nodes.length;
-   // A periodic cubic rounds each perimeter without relocating any node.
+   // Keep the pronounced bulge on 2×2×2/Homer; larger cube maps use
+   // their original smoother, shallower curves. All interpolate fixed nodes.
+   const tangentScale=G.slots.length===24?1.25:.5;
    function at(t){
     t=mod(t,period);const i=Math.floor(t),u=t-i,u2=u*u,u3=u2*u;
     const p0=nodes[mod(i-1,period)],p1=nodes[i],p2=nodes[(i+1)%period],p3=nodes[(i+2)%period];
-    const value=k=>.5*(2*p1[k]+(-p0[k]+p2[k])*u+(2*p0[k]-5*p1[k]+4*p2[k]-p3[k])*u2+(-p0[k]+3*p1[k]-3*p2[k]+p3[k])*u3);
+    const value=k=>(2*u3-3*u2+1)*p1[k]+(u3-2*u2+u)*tangentScale*(p2[k]-p0[k])+(-2*u3+3*u2)*p2[k]+(u3-u2)*tangentScale*(p3[k]-p1[k]);
     return{x:value('x'),y:value('y')};
    }
    const track={name:ring.name,axis,layer:ring.layer,companion:true,radius,slots,nodes,period,at,points:[]};
@@ -90,6 +92,10 @@ function install(G){
  const resting=G.slots.map(G.position);
  G.nodeSpacing=resting.reduce((best,p,i)=>Math.min(best,...resting.slice(i+1).map(q=>Math.hypot(p.x-q.x,p.y-q.y))),Infinity);
  G.nodeRadius=scale=>Math.min(10/scale,G.nodeSpacing*.37);
+ // Ring arrows denote the positive physical turn from the named outward
+ // pole. The projected screen winding can differ between opposite poles.
+ G.positiveQuarterTurns=name=>-(root.MirrorEngine||root.CubeEngine).configs[name].turn;
+ function arrow(ctx,at,t,direction,scale){const a=at(t-.012*direction),b=at(t+.012*direction),angle=Math.atan2(b.y-a.y,b.x-a.x),length=5/scale;ctx.beginPath();ctx.moveTo(b.x-length*Math.cos(angle-.5),b.y-length*Math.sin(angle-.5));ctx.lineTo(b.x,b.y);ctx.lineTo(b.x-length*Math.cos(angle+.5),b.y-length*Math.sin(angle+.5));ctx.stroke();}
  G.drawFaceRings=function(ctx,selected,options={}){
   const scale=options.scale||options.zoom||1;
   ctx.save();ctx.shadowBlur=0;
@@ -97,7 +103,7 @@ function install(G){
    if((track.name===selected)!==active)continue;
    ctx.globalAlpha=active?1:options.focus===false?.62:.24;
    ctx.beginPath();track.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
-   ctx.strokeStyle=active?'#baacfb':'#797087';ctx.lineWidth=(active?1.6:.65)/scale;ctx.stroke();
+   ctx.strokeStyle=active?'#baacfb':'#797087';ctx.lineWidth=(active?2:.65)/scale;ctx.stroke();if(active)for(const f of [.18,.58])arrow(ctx,track.at,track.period*f,G.positiveQuarterTurns(selected),scale);
   }
   ctx.restore();
  };
@@ -108,7 +114,7 @@ function install(G){
    ctx.globalAlpha=options.focus===false?.72:.28;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#797087';ctx.lineWidth=.7/scale;ctx.stroke();
   }
   G.drawFaceRings(ctx,selected,{scale,focus:options.focus});
-  if(selected){const r=G.getRing(selected);ctx.globalAlpha=1;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#baacfb';ctx.lineWidth=2/scale;ctx.stroke();}
+  if(selected){const r=G.getRing(selected);ctx.globalAlpha=1;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#baacfb';ctx.lineWidth=2/scale;ctx.stroke();for(const f of [.18,.58])arrow(ctx,t=>({x:r.cx+r.r*Math.cos(t),y:r.cy+r.r*Math.sin(t)}),TAU*f,-G.positiveQuarterTurns(selected),scale);}
   ctx.restore();
  };
  G.drawNode=function(ctx,p,color,active,scale){

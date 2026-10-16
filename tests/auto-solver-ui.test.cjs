@@ -183,7 +183,7 @@ test('all catalog puzzle pages route Auto Solve to full-state constrained planni
 test('top Stop cancels Auto Solve planning while the engine is idle',async()=>{
   const app=host();await app.scramble();await app.start();const worker=app.workers[0],payload=app.stagedReply();
   assert.equal(app.snapshot().mode,'idle');assert.equal(app.element('pause').hidden,false);assert.equal(app.element('pause').textContent,'Stop');
-  app.click('pause');assert.equal(app.ui().state().active,false);assert.equal(app.element('pause').hidden,true);assert.equal(String(app.element('speed').value),'3');
+  app.click('pause');assert.equal(app.ui().state().active,false);assert.equal(app.element('pause').hidden,true);assert.equal(String(app.element('speed').value),'5');
   worker.reply(payload,true);await app.advance(3000);assert.equal(app.runCalls.length,0);
 });
 
@@ -201,7 +201,7 @@ test('clicking Constrained Solver during Auto Solve finishes the current stage t
   const app=host();await app.scramble();await app.start();const payload=app.stagedReply();
   app.workers[0].reply(payload);await app.advance(20);app.click('constrainedSolverToggle');
   assert.equal(app.ui().state().auto?.active,true);await app.settle();
-  const state=app.ui().state();assert.equal(app.runCalls.length,1,'must finish only the current stage');assert.equal(state.active,true);assert.equal(state.phase,'selecting');assert.equal(state.auto,null);assert.deepEqual(clean(state.pair),[]);assert.equal(app.ui().autoStopActive(),false);assert.equal(String(app.element('speed').value),'1');assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'all');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),true);
+  const state=app.ui().state();assert.equal(app.runCalls.length,1,'must finish only the current stage');assert.equal(state.active,true);assert.equal(state.phase,'selecting');assert.equal(state.auto,null);assert.deepEqual(clean(state.pair),[]);assert.equal(app.ui().autoStopActive(),false);assert.equal(String(app.element('speed').value),'5');assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'none');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),true);
   assert.equal(app.element('constrainedSolverToggle').getAttribute('aria-pressed'),'true');assert.equal(app.element('csSuggestHolds').hidden,false);
   const map=app.core().mapSnapshot(app.model,app.snapshot());for(const id of state.held)assert.equal(map.stickerToNode[id],app.home[id]);
 });

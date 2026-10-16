@@ -215,13 +215,13 @@ footer .offline{display:none}
 .app{gap:5px}
 .workspace{gap:6px}
 .canvas-caption,.ring-hint,.notation-panel>p,.cube-footnote,.legacy-face-metric{display:none!important}
-.action-panel{display:grid;grid-template-columns:max-content max-content max-content 65px 64px max-content minmax(0,1fr) max-content;align-items:center;gap:5px;padding:4px 7px}
+.action-panel{display:grid;grid-template-columns:max-content max-content 64px max-content 65px max-content minmax(0,1fr) max-content;align-items:center;gap:5px;padding:4px 7px}
 .action-group{display:contents}
 .action-group>#randomize{grid-column:1;grid-row:1}
 .action-group>#solve{grid-column:2;grid-row:1}
-.action-group>.journal-transport{grid-column:3;grid-row:1}
-.action-group>.playback-speed-control{grid-column:4;grid-row:1}
-.action-group>#pause{grid-column:5;grid-row:1;width:100%;min-width:0;justify-content:center}
+.action-group>.journal-transport{grid-column:4;grid-row:1}
+.action-group>.playback-speed-control{grid-column:5;grid-row:1}
+.action-group>#pause{grid-column:3;grid-row:1;width:100%;min-width:0;justify-content:center}
 .action-group>#reset{grid-column:6;grid-row:1}
 .action-group>#journalActivity{grid-column:7;grid-row:1}
 .action-meta{grid-column:8;grid-row:1;justify-content:flex-end;min-width:0}
@@ -242,7 +242,8 @@ footer .offline{display:none}
 .view-axis-caption>strong{font-size:10px;line-height:1.15;overflow-wrap:anywhere}
 .view-axis-turns[data-selected="false"] .view-axis-caption>span,.turn-selected[data-selected="false"]>span{display:none}
 .cube-top .view-axis-turn{width:28px;min-width:28px;height:28px;min-height:28px;font-size:22px}
-.view-display-tools>#viewLabelMode,.view-display-tools>#viewHighlightToggle,.view-display-tools>#pieceLabels,.view-display-tools>#mirrorMode{min-width:0;max-width:120px}
+/* Action captions size from their text, including wider desktop system fonts. */
+.view-display-tools>#viewLabelMode,.view-display-tools>#viewHighlightToggle,.view-display-tools>#pieceLabels,.view-display-tools>#mirrorMode{min-width:max-content;max-width:none}
 .ring-controls{padding:0 9px 5px}
 .selector{gap:4px}
 .axis-row{padding:2px 3px;border-radius:6px}
@@ -264,7 +265,7 @@ footer .offline{display:none}
 .log-panel .journal>summary{padding-right:88px;min-height:28px}
 .log-panel .log-tools .small{min-height:25px}
 @media(max-width:1000px){
- .action-panel{gap:4px;grid-template-columns:max-content max-content max-content 60px 56px max-content minmax(0,1fr) max-content;padding-inline:5px}
+ .action-panel{gap:4px;grid-template-columns:max-content max-content 56px max-content 60px max-content minmax(0,1fr) max-content;padding-inline:5px}
  .action-group>button{padding-inline:6px;font-size:10px}
  .action-meta .status{min-width:59px;font-size:8px}
  .action-panel .icon{display:none}
@@ -272,12 +273,12 @@ footer .offline{display:none}
 @media(max-width:850px) and (orientation:portrait),(max-width:680px){
  .app{padding:3px;gap:5px}.workspace{gap:5px}
  .action-panel{grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:34px 34px;gap:4px;padding:4px 5px}
- .action-group>#randomize{grid-column:1/4;grid-row:1}
- .action-group>#solve{grid-column:4/7;grid-row:1}
- .action-group>.journal-transport{grid-column:7/13;grid-row:1;width:100%}
- .action-group>.playback-speed-control{grid-column:1/4;grid-row:2}
- .action-group>#pause{grid-column:4/7;grid-row:2}
- .action-group>#reset{grid-column:7/10;grid-row:2}
+ .action-group>#randomize{grid-column:1/5;grid-row:1}
+ .action-group>#solve{grid-column:5/9;grid-row:1}
+ .action-group>.journal-transport{grid-column:1/6;grid-row:2;width:100%}
+ .action-group>.playback-speed-control{grid-column:6/8;grid-row:2}
+ .action-group>#pause{grid-column:9/13;grid-row:1}
+ .action-group>#reset{grid-column:8/10;grid-row:2}
  .action-group>#journalActivity,.action-meta{grid-column:10/13;grid-row:2}
  .action-group>#journalActivity{z-index:1}
  .action-panel[data-journal-active="true"] .action-meta{visibility:hidden}
@@ -323,6 +324,7 @@ footer .offline{display:none}
 .panel>.view-ring-controls{margin:0;padding-top:4px}
 .view-ring-controls .turn-selected[data-selected="false"]>span{display:none}
 .view-ring-controls .turn-bar .direction{margin-right:0;margin-left:6px}
+.view-ring-controls #viewRingCCW .direction{margin-right:6px;margin-left:0}
 .turn-bar button:disabled{opacity:.33;filter:grayscale(1);background:#1b1c24;border-color:#53545e;color:#a7a8b0;cursor:not-allowed;box-shadow:none}
 /* Both members of the active action flash together for each real primitive.
    Alternating identical keyframes restart repeated moves without reflow. The
@@ -350,9 +352,10 @@ footer .offline{display:none}
 }
 @media(max-width:350px){.panel>.cube-top .view-display-tools>.small{padding-inline:4px;font-size:9px}}
 
-/* One compact header row reserves real space above the canvas. Each label
-   stays on one line; overflow is only a fallback for optional extra tools. */
-.panel>.cube-top.view-header-toolbar{position:static;display:flex;flex:0 0 auto;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:3px;height:auto;min-height:38px;padding:3px 6px;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+/* Header controls reserve real space above the canvas. Captions never wrap
+   or lose padding. Mirror controls share one row whenever their actual text
+   fits; narrower viewports wrap intact groups only when needed. */
+.panel>.cube-top.view-header-toolbar{position:static;display:flex;flex:0 0 auto;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:3px;height:auto;min-height:38px;padding:3px 6px;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:visible;overflow-y:visible;scrollbar-width:thin}
 .view-header-toolbar>h2{flex:0 0 auto;min-width:0;margin:0 auto 0 0;font-size:11px;line-height:1.2;white-space:nowrap;overflow:visible;text-overflow:clip}
 .view-header-toolbar>.view-display-tools,.view-header-toolbar>.view-panel-controls,.view-header-toolbar>.view-feature-tools{display:flex;flex:0 0 auto;align-items:center;gap:3px;width:auto;min-width:0;max-width:none;margin:0;flex-wrap:nowrap}
 .view-header-toolbar>.view-feature-tools[hidden]{display:none!important}
@@ -361,12 +364,7 @@ footer .offline{display:none}
 @media(max-width:850px) and (orientation:portrait),(max-width:680px){
  .panel>.cube-top.view-header-toolbar{gap:3px;padding:3px 4px;min-height:38px}
  .view-header-toolbar>h2{font-size:10px;line-height:1.2;width:auto;min-width:0;white-space:nowrap}
- .view-title-full,.view-guide-full{display:none}.view-title-short,.view-guide-short{display:inline}
+ .view-title-full,.view-guide-short{display:none}.view-title-short,.view-guide-full{display:inline}
  .view-header-toolbar>.view-display-tools,.view-header-toolbar>.view-panel-controls,.view-header-toolbar>.view-feature-tools{gap:3px}
  .panel>.cube-top.view-header-toolbar .small,.panel>.cube-top.view-header-toolbar .puzzle-display-control{flex:0 0 auto;width:auto;min-width:0;max-width:none;min-height:32px;height:32px;padding:3px 7px;font-size:10px;letter-spacing:0;line-height:1.2;white-space:nowrap;overflow-wrap:normal}
-}
-/* A mirror control uses the heading's narrow-phone space, never the buttons'
-   padding. The heading remains available to assistive technology. */
-@media(max-width:380px){
- .view-header-toolbar.has-mirror-toggle>h2{position:absolute;width:1px;min-width:0;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}
 }

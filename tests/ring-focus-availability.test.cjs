@@ -12,7 +12,7 @@ test('all catalog ring maps expose a working display toggle in normal and constr
   assert(['true','false'].includes(pressed));
   app.click('ringFocus');app.frame(0);
   assert.equal(button.getAttribute('aria-pressed'),String(pressed!=='true'),id+' toggles display');
-  assert.equal(button.textContent,pressed==='true'?'Focus rings':'Show all rings',id+' shows the next action');
+  assert.equal(button.textContent,pressed==='true'?'Focus on rings':'Show all rings',id+' shows the next action');
   assert.equal(JSON.stringify(app.snapshot().stickers),before,id+' display toggle does not turn the puzzle');
   await app.context.ConstrainedSolverUI.setActive(true);await app.flush();
   assert.equal(app.context.ConstrainedSolverUI.state().active,true,id+' opens constrained mode');

@@ -50,7 +50,7 @@ for(const n of [9,10]){
    app.select(f);app.click('cw');app.complete();app.click('ccw');app.complete();assert.equal(sig(app.snapshot().stickers),homeSig);
   }
   app.click('randomize');assert.equal(app.elements.get('speed').value,'5');app.frame(2000);const committed=sig(app.snapshot().stickers);app.frame(20);app.click('pause');
-  assert.equal(app.snapshot().mode,'idle');assert.equal(app.snapshot().animating,false);assert.equal(sig(app.snapshot().stickers),committed);assert.equal(app.elements.get('speed').value,'3');
+  assert.equal(app.snapshot().mode,'idle');assert.equal(app.snapshot().animating,false);assert.equal(sig(app.snapshot().stickers),committed);assert.equal(app.elements.get('speed').value,'5');
   assert(api.move(n===9?'M':'Riiii'));app.complete();assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,6*n*n);app.click('reset');assert(E.isSolved(app.snapshot().stickers));
  });
 }

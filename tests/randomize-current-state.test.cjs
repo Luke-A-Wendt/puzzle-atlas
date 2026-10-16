@@ -22,10 +22,10 @@ for(const {id}of models)test(id+': Randomize composes with the current state and
   expected=Object.fromEntries(Object.entries(expected).map(([s,n])=>[s,turn.perm[n]]));
  }
  assert.deepEqual(plain(core.mapSnapshot(model,after.stickers).stickerToNode),expected,'random word applies to the preceding arrangement');
- assert.equal(String(app.element('speed').value),'3');
+ assert.equal(String(app.element('speed').value),'5');
  app.click('randomize');assert.deepEqual(app.snapshot().stickers,after.stickers,'repeated Randomize also continues');
  await app.advance(2000);assert.equal(app.snapshot().history.length,after.history.length+1);
- app.click('pause');assert.equal(app.snapshot().mode,'idle');assert.equal(String(app.element('speed').value),'3');
+ app.click('pause');assert.equal(app.snapshot().mode,'idle');assert.equal(String(app.element('speed').value),'5');
  app.click('undo');await app.settle();assert.deepEqual(app.snapshot().stickers,after.stickers,'Undo crosses the new scramble boundary');
  api.reset();assert.deepEqual(app.snapshot().stickers,initial.stickers);assert.equal(app.snapshot().history.length,0);
 });

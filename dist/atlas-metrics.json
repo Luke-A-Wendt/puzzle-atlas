@@ -1,0 +1,341 @@
+{
+  "methodology": {
+    "basis": "Measured from production game scripts in the solved, colored view, with a 600 × 600 CSS-pixel ring canvas, device pixel ratio 1, and no selected axis.",
+    "nodes": "One visible ring-map node per physical tile, including stationary reference tiles. This is not the number of rigid moving pieces.",
+    "colors": "Distinct tile colors in the colored view. Colors are not necessarily geometric faces: a color can occur on multiple faces, and neutral tile colors count.",
+    "rings": "Distinct visible closed paths in the solved ring map, including transport, companion, and reference loops. Overlapping duplicate paths count once. Rings are not rotation axes.",
+    "junctions": "Occupied node locations lying on at least two distinct visible paths. Incidental crossings without a tile are not counted. Stationary reference nodes may not be junctions.",
+    "axisControls": "Number of selectable turn controls, including independently selectable slices or tips. Opposite turning poles can share a geometric axis line.",
+    "shapeShifter": "The outer shape can change after a completed legal turn, rather than merely while a turn is animating.",
+    "dynamicMap": "Occupied map positions and required orbit paths can change after moves; the tile count stays constant. Ring and junction counts listed here are for the solved view. The Mirror Cube keeps a fixed cube map.",
+    "measurement": "Independent Canvas recording via tests/game-harness.cjs, tests/connected-map-recorder.cjs, and tests/ring-intersection-audit.cjs. Distinct-path and incidence tolerances are those of the renderer audit (0.1 and 0.35 CSS pixels, respectively).",
+    "command": "node scripts/measure-atlas-metrics.cjs",
+    "verificationCommand": "node scripts/measure-atlas-metrics.cjs --check"
+  },
+  "puzzles": {
+    "axis": {
+      "nodes": 42,
+      "colors": 6,
+      "rings": 54,
+      "junctions": 42,
+      "axisControls": 6,
+      "shapeShifter": true,
+      "dynamicMap": true
+    },
+    "cornerocta": {
+      "nodes": 72,
+      "colors": 8,
+      "rings": 34,
+      "junctions": 72,
+      "axisControls": 12,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "crystal": {
+      "nodes": 120,
+      "colors": 12,
+      "rings": 48,
+      "junctions": 120,
+      "axisControls": 12,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "cube10": {
+      "nodes": 600,
+      "colors": 6,
+      "rings": 60,
+      "junctions": 600,
+      "axisControls": 30,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "cube2": {
+      "nodes": 24,
+      "colors": 6,
+      "rings": 12,
+      "junctions": 24,
+      "axisControls": 6,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "cube3": {
+      "nodes": 54,
+      "colors": 6,
+      "rings": 15,
+      "junctions": 54,
+      "axisControls": 9,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "cube4": {
+      "nodes": 96,
+      "colors": 6,
+      "rings": 24,
+      "junctions": 96,
+      "axisControls": 12,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "cube5": {
+      "nodes": 150,
+      "colors": 6,
+      "rings": 27,
+      "junctions": 150,
+      "axisControls": 15,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "cube6": {
+      "nodes": 216,
+      "colors": 6,
+      "rings": 36,
+      "junctions": 216,
+      "axisControls": 18,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "cube7": {
+      "nodes": 294,
+      "colors": 6,
+      "rings": 39,
+      "junctions": 294,
+      "axisControls": 21,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "cube8": {
+      "nodes": 384,
+      "colors": 6,
+      "rings": 48,
+      "junctions": 384,
+      "axisControls": 24,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "cube9": {
+      "nodes": 486,
+      "colors": 6,
+      "rings": 51,
+      "junctions": 486,
+      "axisControls": 27,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "diamond": {
+      "nodes": 32,
+      "colors": 8,
+      "rings": 32,
+      "junctions": 32,
+      "axisControls": 8,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "diamondcube": {
+      "nodes": 86,
+      "colors": 14,
+      "rings": 30,
+      "junctions": 80,
+      "axisControls": 6,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "diamondstyle": {
+      "nodes": 26,
+      "colors": 3,
+      "rings": 12,
+      "junctions": 20,
+      "axisControls": 6,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "dino": {
+      "nodes": 24,
+      "colors": 6,
+      "rings": 8,
+      "junctions": 24,
+      "axisControls": 8,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "flatdiamond": {
+      "nodes": 68,
+      "colors": 7,
+      "rings": 78,
+      "junctions": 62,
+      "axisControls": 6,
+      "shapeShifter": true,
+      "dynamicMap": true
+    },
+    "fto": {
+      "nodes": 72,
+      "colors": 8,
+      "rings": 64,
+      "junctions": 72,
+      "axisControls": 12,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "ghost": {
+      "nodes": 61,
+      "colors": 6,
+      "rings": 61,
+      "junctions": 61,
+      "axisControls": 6,
+      "shapeShifter": true,
+      "dynamicMap": true
+    },
+    "helicopter": {
+      "nodes": 48,
+      "colors": 6,
+      "rings": 36,
+      "junctions": 48,
+      "axisControls": 12,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "jewel": {
+      "nodes": 54,
+      "colors": 9,
+      "rings": 20,
+      "junctions": 48,
+      "axisControls": 6,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "jing": {
+      "nodes": 28,
+      "colors": 4,
+      "rings": 12,
+      "junctions": 28,
+      "axisControls": 4,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "kilominx": {
+      "nodes": 60,
+      "colors": 12,
+      "rings": 24,
+      "junctions": 60,
+      "axisControls": 12,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "mastermorphix": {
+      "nodes": 40,
+      "colors": 4,
+      "rings": 34,
+      "junctions": 40,
+      "axisControls": 6,
+      "shapeShifter": true,
+      "dynamicMap": true
+    },
+    "masterpyraminx": {
+      "nodes": 64,
+      "colors": 4,
+      "rings": 32,
+      "junctions": 64,
+      "axisControls": 12,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "masterskewb": {
+      "nodes": 78,
+      "colors": 6,
+      "rings": 56,
+      "junctions": 78,
+      "axisControls": 8,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "megaminx": {
+      "nodes": 132,
+      "colors": 12,
+      "rings": 36,
+      "junctions": 120,
+      "axisControls": 12,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "mirror": {
+      "nodes": 54,
+      "colors": 6,
+      "rings": 15,
+      "junctions": 54,
+      "axisControls": 9,
+      "shapeShifter": true,
+      "dynamicMap": false
+    },
+    "pyraminx": {
+      "nodes": 36,
+      "colors": 4,
+      "rings": 16,
+      "junctions": 36,
+      "axisControls": 8,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "pyramorphix": {
+      "nodes": 16,
+      "colors": 4,
+      "rings": 18,
+      "junctions": 16,
+      "axisControls": 6,
+      "shapeShifter": true,
+      "dynamicMap": true
+    },
+    "rainbow": {
+      "nodes": 56,
+      "colors": 14,
+      "rings": 24,
+      "junctions": 48,
+      "axisControls": 8,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "rhombic": {
+      "nodes": 60,
+      "colors": 6,
+      "rings": 36,
+      "junctions": 60,
+      "axisControls": 6,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "skewb": {
+      "nodes": 30,
+      "colors": 6,
+      "rings": 32,
+      "junctions": 30,
+      "axisControls": 8,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "tetraminx": {
+      "nodes": 24,
+      "colors": 4,
+      "rings": 8,
+      "junctions": 24,
+      "axisControls": 4,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "trajber": {
+      "nodes": 56,
+      "colors": 8,
+      "rings": 26,
+      "junctions": 56,
+      "axisControls": 6,
+      "shapeShifter": false,
+      "dynamicMap": false
+    },
+    "ultimate": {
+      "nodes": 48,
+      "colors": 6,
+      "rings": 64,
+      "junctions": 48,
+      "axisControls": 8,
+      "shapeShifter": false,
+      "dynamicMap": false
+    }
+  }
+}

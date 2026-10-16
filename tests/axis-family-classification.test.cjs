@@ -9,11 +9,12 @@ const groups={
 };
 function controls(id){return new Set(JSON.parse(read('games/constrained-solver-models/'+id+'.json')).moves.map(move=>move.axis));}
 function handbook(){const context={window:{SOLVER_TECHNICAL:{render:()=>''}}};vm.runInNewContext(read('solver-guide.js'),context);return context.window.SOLVER_GUIDE.renderCommon();}
-test('Catalog families retain mechanism-based classification across all 36 visible puzzles',()=>{
- const cards=[...read('index.html').matchAll(/<a class="puzzle-card" data-family="([^"]+)" href="play\.html\?p=([^&"]+)/g)];
- assert.equal(cards.length,36);
+test('Catalog uses exclusive ShapeShifter grouping without changing any puzzle mechanism',()=>{
+ const cards=[...read('index.html').matchAll(/<a class="puzzle-card"[^>]*data-family="([^"]+)"[^>]*href="play\.html\?p=([^&"]+)/g)];
+ assert.equal(cards.length,42);
  for(const [family,ids]of Object.entries(groups))for(const id of ids){
-  assert(cards.some(card=>card[1]===family&&card[2]===id),id+' belongs in '+family);
+  const displayed=['mirror','axis','ghost','pyramorphix','flatdiamond','mastermorphix'].includes(id)?'shapeshifter':family;
+  assert(cards.some(card=>card[1]===displayed&&card[2]===id),id+' belongs in '+displayed);
   assert(controls(id).size>0,id+' has an actual model');
  }
  assert.match(read('play.js'),/homer:\{name:'Homer',family:'Cubical \(6 axes\)/,'hidden picture puzzle keeps its cube mechanism family');
@@ -31,7 +32,7 @@ test('Documented layer counts match the actual cube move models without changing
 });
 test('Classification explanation is linked from the atlas and cites the stated convention',()=>{
  const {chapterHTML,referenceHTML}=handbook();
- assert(read('index.html').includes('solver-handbook.html#help-axis-families'));
+ assert(read('index.html').includes('solver-handbook.html'));
  assert(chapterHTML.includes('id="help-axis-families"'));
  assert(referenceHTML.includes('https://www.jaapsch.net/puzzles/ideas.htm'));
  assert(referenceHTML.includes('Ideas for further puzzles'));

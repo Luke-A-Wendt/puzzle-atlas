@@ -42,7 +42,7 @@ const puzzles={
 const params=new URLSearchParams(location.search);
 const key=Object.hasOwn(puzzles,params.get('p'))?params.get('p'):'cube3';
 const advanced=params.get('mirror')==='1'&&['axis','mirror','flatdiamond','pyramorphix','mastermorphix','ghost'].includes(key);
-const puzzle=puzzles[key], guide={...window.CUBE_GUIDES,...window.POLY_GUIDES,...window.SKEWB_GUIDES,...window.TETRAMINX_GUIDES,...window.LARGE_CUBE_GUIDES,...window.FTO_GUIDES,...window.SHAPE_GUIDES,...window.DINO_GUIDES,...window.HOMER_GUIDES,...window.SKEWB_EXPANSION_GUIDES,...window.EDGE_CRYSTAL_GUIDES,...window.DIAMOND_GUIDES,...window.ADDITION_GUIDES}[key];
+const puzzle=puzzles[key];
 const $=id=>document.getElementById(id), frame=$('puzzle-frame'), layout=$('play-layout');
 const safeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 document.title=puzzle.name+' — Puzzle Atlas';
@@ -58,7 +58,24 @@ window.addEventListener('message',event=>{
  if(event.data?.type==='toggle-guide')setTab(layout.classList.contains('guide-hidden'));
  if(event.data?.type==='ring-panel-state')syncGuideButton();
 });
-if(guide){
+let guideLoad=null,guideReady=false;
+let difficultyMirror=null,difficultyObserver=null;
+function currentMirrorMode(){
+ try{const body=frame.contentDocument?.body;if(body)return body.classList.contains('mirror-active');}catch(_){}
+ return advanced;
+}
+function renderDifficulty(){
+ const module=window.PuzzleDifficultyGuide,section=$('puzzle-difficulty'),body=$('puzzle-difficulty-body');
+ if(!module||!section||!body)return;
+ difficultyMirror=currentMirrorMode();const html=module.render(key,difficultyMirror);
+ section.hidden=!html;body.innerHTML=html;
+}
+function observeDifficultyMode(){
+ difficultyObserver?.disconnect();difficultyObserver=null;renderDifficulty();
+ try{const body=frame.contentDocument?.body;if(body&&window.MutationObserver){difficultyObserver=new window.MutationObserver(()=>{if(currentMirrorMode()!==difficultyMirror)renderDifficulty();});difficultyObserver.observe(body,{attributes:true,attributeFilter:['class']});}}catch(_){}
+}
+$('guide-jump').disabled=true;$('expand-steps').disabled=true;
+function renderGuide(guide){
  const solverGuide=window.SOLVER_GUIDE?.render({key,name:puzzle.name,guide});
  if(solverGuide){
   $('solver-guide').innerHTML=solverGuide.chapterHTML;$('solver-puzzle-method').innerHTML=solverGuide.puzzleHTML;
@@ -68,13 +85,26 @@ if(guide){
  $('guide-steps').innerHTML=guide.steps.map((step,i)=>'<details class="guide-step" id="step-'+i+'"'+(i===0?' open':'')+'><summary><span class="step-number">'+String(i+1).padStart(2,'0')+'</span><span>'+safeHTML(step.title.replace(/^\d+\s*·\s*/,''))+'</span></summary><div class="step-body">'+step.body+'</div></details>').join('');
  $('guide-jump').innerHTML=guide.steps.map((step,i)=>'<option value="'+i+'">'+(i+1)+'. '+safeHTML(step.title.replace(/^\d+\s*·\s*/,''))+'</option>').join('');
  $('guide-sources').innerHTML=solverGuide?.referenceHTML||guide.sources.map(source=>'<li><a href="'+safeHTML(source.url)+'" target="_blank" rel="noopener noreferrer">'+safeHTML(source.label)+'</a></li>').join('');
-} else {$('guide-intro').textContent='The solution guide could not load. Reload this page to try again.';}
+ observeDifficultyMode();
+ if(window.PuzzleDifficultyGuide&&key!=='homer')window.PuzzleDifficultyGuide.loadEstimate(release).then(renderDifficulty).catch(()=>{});
+ guideReady=true;$('guide').setAttribute('aria-busy','false');$('guide-jump').disabled=false;$('expand-steps').disabled=false;
+}
+frame.addEventListener('load',()=>{if(guideReady)observeDifficultyMode();});
+function loadGuide(){
+ if(guideReady)return Promise.resolve();if(guideLoad)return guideLoad;
+ $('guide').setAttribute('aria-busy','true');$('guide-intro').textContent='Loading solution guide…';
+ guideLoad=window.PuzzleGuideLoader.load(key,release).then(renderGuide).catch(()=>{
+  $('guide').setAttribute('aria-busy','false');
+  $('guide-intro').innerHTML='<p>The solution guide could not load. You can keep playing while you retry.</p><button type="button" class="text-button" id="guide-retry">Try again</button>';
+  $('guide-retry').addEventListener('click',loadGuide);
+ }).finally(()=>{guideLoad=null;});return guideLoad;
+}
 $('guide-scroll').addEventListener('click',event=>{const link=event.target.closest?.('.guide-cite');if(!link)return;const target=document.querySelector(link.getAttribute('href'));if(!target)return;event.preventDefault();const references=target.closest('details');if(references)references.open=true;target.scrollIntoView({behavior:'smooth',block:'nearest'});});
 $('guide-scroll').addEventListener('click',event=>{const link=event.target.closest?.('.solver-tech-jump');if(!link)return;const target=document.getElementById(link.getAttribute('href').slice(1));if(!target)return;event.preventDefault();for(let node=target;node&&node!==$('guide-scroll');node=node.parentElement)if(node.tagName==='DETAILS')node.open=true;target.scrollIntoView({behavior:'smooth',block:'start'});const summary=target.querySelector('summary');if(summary)summary.focus({preventScroll:true});});
 $('guide-jump').addEventListener('change',e=>{const step=$('step-'+e.target.value);step.open=true;step.scrollIntoView({behavior:'smooth',block:'start'});});
 $('expand-steps').addEventListener('click',()=>{const steps=[...document.querySelectorAll('.guide-step')];const expand=steps.some(step=>!step.open);steps.forEach(step=>step.open=expand);$('expand-steps').textContent=expand?'Collapse all':'Expand all';});
 $('guide-toggle').addEventListener('click',()=>setTab(layout.classList.contains('guide-hidden')));
-function setTab(showGuide){layout.classList.toggle('guide-hidden',!showGuide);layout.classList.toggle('mobile-guide',showGuide);$('guide-toggle').setAttribute('aria-expanded',String(showGuide));syncGuideButton();}
+function setTab(showGuide){if(showGuide)loadGuide();layout.classList.toggle('guide-hidden',!showGuide);layout.classList.toggle('mobile-guide',showGuide);$('guide-toggle').setAttribute('aria-expanded',String(showGuide));syncGuideButton();}
 document.querySelector('.skip-link').addEventListener('click',event=>{event.preventDefault();setTab(true);$('guide-scroll').focus();});
 window.addEventListener('message',event=>{if(event.source!==frame.contentWindow||event.origin!==location.origin)return;if(event.data?.type==='puzzle-height'&&Number.isFinite(event.data.height))$('game-area').style.setProperty('--game-height',Math.min(2200,Math.max(750,event.data.height))+'px');});
 })();

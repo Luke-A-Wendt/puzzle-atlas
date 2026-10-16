@@ -183,31 +183,31 @@ test('normal mode cancels Auto Solve planning and keeps stale plans from enterin
   const app=host();app.context.PUZZLE_API.move('R');await app.settle();app.click('solve');
   for(let i=0;i<80&&!app.requests.some(x=>x.request.task==='full-solve');i++)await app.advance(0);
   const entry=app.requests.findLast(x=>x.request.task==='full-solve');assert(entry);app.click('ringModeDefault');
-  assert.equal(app.ui().state().active,false);assert.equal(app.element('ringModeDefault').getAttribute('aria-pressed'),'true');assert.equal(String(app.element('speed').value),'3');
+  assert.equal(app.ui().state().active,false);assert.equal(app.element('ringModeDefault').getAttribute('aria-pressed'),'true');assert.equal(String(app.element('speed').value),'5');
   entry.worker.reply({id:entry.request.id,type:'result',result:{status:'unknown',reason:'late_reply'}},true);await app.advance(0);
   assert.equal(app.ui().state().active,false);assert.equal(app.snapshot().history.length,1);
 });
 
-test('manual constrained playback uses More at half speed, permits overrides, and restores Some at normal speed',async()=>{
+test('manual constrained playback preserves independent label and speed choices',async()=>{
   const app=host();await app.ready();const D=app.context.PuzzleAxisDisplay;let one;
   for(let move=0;move<model.moves.length&&!one;move++){const p=model.moves[move].perm;for(let a=0;a<model.degree;a++){const b=p[a],held=p.findIndex((v,i)=>v===i);if(a!==b&&p[b]===a&&held>=0){one={move,a,b,held};break;}}}
   assert(one);app.ui().selectNode(app.id(one.held));app.selectPair(one.a,one.b);
   D.setLabelMode('all');app.element('speed').value='4';app.element('speed').dispatch('input');
-  app.click('csGo');assert.equal(D.labelMode(),'all');assert.equal(String(app.element('speed').value),'1','starting a run reapplies its default preset');
+  app.click('csGo');assert.equal(D.labelMode(),'all');assert.equal(String(app.element('speed').value),'4','starting a run preserves the chosen rate');
   const entry=app.requests.findLast(x=>x.request.task==='manual-swap');assert(entry);
   entry.worker.reply({id:entry.request.id,type:'result',result:{status:'solved',moveIndices:[0,model.moves[0].inverse,one.move],optimal:false},modelFingerprint:app.core().modelFingerprint(model)});await app.advance(0);
-  D.setLabelMode('none');assert.equal(String(app.element('speed').value),'5');
+  D.setLabelMode('none');assert.equal(String(app.element('speed').value),'4');
   app.element('speed').value='2';app.element('speed').dispatch('input');await app.advance(2000);
   assert.equal(app.ui().state().phase,'executing');assert.equal(String(app.element('speed').value),'2','later turns retain the override');
   D.setLabelMode('some');app.element('speed').value='4';app.element('speed').dispatch('input');
-  await app.settleSolver();assert.equal(D.labelMode(),'some');assert.equal(String(app.element('speed').value),'3');assert.equal(app.ui().state().phase,'selecting');
+  await app.settleSolver();assert.equal(D.labelMode(),'some');assert.equal(String(app.element('speed').value),'4');assert.equal(app.ui().state().phase,'selecting');
 });
 
-test('failed manual check and cancellation restore the default label and playback preset',async()=>{
+test('failed manual check and cancellation preserve the current label and playback choices',async()=>{
   const app=host();await app.ready();const D=app.context.PuzzleAxisDisplay;app.selectPair(f.a,f.b);app.click('csGo');
-  assert.equal(D.labelMode(),'all');assert.equal(String(app.element('speed').value),'1');
+  assert.equal(D.labelMode(),'none');assert.equal(String(app.element('speed').value),'5');
   const entry=app.requests.findLast(x=>x.request.task==='manual-swap');entry.worker.reply({id:entry.request.id,type:'result',result:{status:'unknown',reason:'time_limit'}});await app.advance(0);
-  assert.equal(D.labelMode(),'some');assert.equal(String(app.element('speed').value),'3');
-  app.selectPair(f.a,f.b);app.click('csGo');assert.equal(D.labelMode(),'all');app.ui().cancel();
-  assert.equal(D.labelMode(),'some');assert.equal(String(app.element('speed').value),'3');
+  assert.equal(D.labelMode(),'none');assert.equal(String(app.element('speed').value),'5');
+  app.selectPair(f.a,f.b);app.click('csGo');assert.equal(D.labelMode(),'none');app.ui().cancel();
+  assert.equal(D.labelMode(),'none');assert.equal(String(app.element('speed').value),'5');
 });

@@ -11,7 +11,7 @@ function settle(app){for(let step=0;step<500;step++){const s=app.snapshot();if(!
 class DeferredWorker { constructor(){this.listeners={};} postMessage(){} addEventListener(type,fn){(this.listeners[type]||=[]).push(fn);} removeEventListener(){} terminate(){} }
 function host(id){return createPage(id,{globals:{Worker:DeferredWorker,fetch:async url=>{const file=path.join(games,new URL(String(url),'https://atlas.test/games/').pathname.replace(/^\/games\//,''));return {ok:fs.existsSync(file),text:async()=>fs.readFileSync(file,'utf8')};}}});}
 
-for(const puzzle of puzzles)test(puzzle+': compact selected-axis controls, label speeds and journal preserve their shared contract',async()=>{
+for(const puzzle of puzzles)test(puzzle+': compact selected-axis controls, independent label settings, speed and journal preserve their shared contract',async()=>{
   const app=host(puzzle),api=app.context.PUZZLE_API,D=app.context.PuzzleAxisDisplay;
   await app.flush();D.resetDefaults();
   const canvas=app.element('cube').parentElement,bottom=app.element('viewRingControls'),group=bottom.querySelector('.turn-bar'),top=app.document.querySelector('.cube-top');
@@ -30,13 +30,12 @@ for(const puzzle of puzzles)test(puzzle+': compact selected-axis controls, label
   assert.equal(D.tileLabelsAvailable(),false,'axis-label presets are the only label visibility control');
   if(app.element('pieceLabels'))assert.equal(app.element('pieceLabels').disabled,true,'legacy tile-label controls cannot be activated');
   assert.equal(app.element('playTimerReadout'),null,'the retired timer is not installed');
-  assert.equal(D.labelMode(),'some');assert.equal(String(app.element('playbackSpeed').value),'3');
-  for(const [mode,value]of [['none','5'],['some','3'],['more','1']]){
-    D.setLabelMode(mode);assert.equal(String(app.element('speed').value),value);assert.equal(String(app.element('playbackSpeed').value),value);
-    app.element('playbackSpeed').value='2';app.element('playbackSpeed').dispatch('change');D.setLabelMode(mode);
-    assert.equal(String(app.element('playbackSpeed').value),'2','setting an unchanged label mode preserves a deliberate speed override');
+  assert.equal(D.labelMode(),'none');
+  app.element('playbackSpeed').value='2';app.element('playbackSpeed').dispatch('change');
+  for(const mode of ['none','some','more']){
+    D.setLabelMode(mode);assert.equal(String(app.element('speed').value),'2');assert.equal(String(app.element('playbackSpeed').value),'2','label changes preserve an independent speed choice');
   }
-  D.resetDefaults();assert.equal(D.labelMode(),'some');assert.equal(String(app.element('playbackSpeed').value),'3');
+  D.resetDefaults();assert.equal(D.labelMode(),'all');assert.equal(String(app.element('playbackSpeed').value),'2','transient selection reset preserves settings');
   const axis=app.document.querySelector('.notation-key').dataset.face;
   api.select(axis);D.syncTurnControls();assert(app.element('viewRingSelectedName').textContent.length>0);
   for(const id of ['viewRingCCW','viewRingCW'])assert.equal(app.element(id).disabled,false,id+' enabled for a legal selected axis');
@@ -51,7 +50,7 @@ for(const puzzle of puzzles)test(puzzle+': compact selected-axis controls, label
     assert.deepEqual(plain(app.snapshot().stickers||app.snapshot().pieces),expected);
     assert.equal(D.labelMode(),'none','journal playback leaves label preferences alone');assert.equal(String(app.element('playbackSpeed').value),'4','journal completion leaves the rate alone');
   }
-  D.resetDefaults();assert.equal(D.labelMode(),'some');assert.equal(String(app.element('playbackSpeed').value),'3');
+  D.resetDefaults();assert.equal(D.labelMode(),'none');assert.equal(String(app.element('playbackSpeed').value),'4');
 
   const ui=app.context.ConstrainedSolverUI;
   await ui.setActive(true);for(let n=0;n<30&&ui.state().phase==='loading';n++)await app.advance(0);

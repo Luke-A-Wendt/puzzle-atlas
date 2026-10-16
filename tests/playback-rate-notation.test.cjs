@@ -40,21 +40,21 @@ for (const puzzle of puzzles) test(puzzle + ': explicit notation pairs preserve 
 test('top speed selector owns visible rate and keyboard order; range is an internal compatibility control', () => {
   const app = createPage('cube2'), actions = app.document.querySelector('.action-group');
   app.context.PUZZLE_API.reset();
-  assert.deepEqual(actions.children.map(el => el.id || el.className), ['randomize','solve','journal-transport','playbackSpeedControl','pause','reset','journalActivity']);
+  assert.deepEqual(actions.children.map(el => el.id || el.className), ['randomize','solve','pause','journal-transport','playbackSpeedControl','reset','journalActivity']);
   const speed = app.element('speed'), select = app.element('playbackSpeed');
   assert.equal(speed.hidden, true); assert.equal(speed.tabIndex, -1);
   assert.equal(speed.closest('.view-speed-control').hidden, true);
   assert.equal(select.value, '3');
-  assert.deepEqual(select.children.map(option => option.textContent), ['0.5×','0.75×','1×','1.5×','2×']);
+  assert.deepEqual(select.children.map(option => option.textContent), ['0.5×','0.75×','1×','1.5×','2×','4×','8×']);
   select.value = '1'; select.dispatch('change'); assert.equal(speed.value, '1');
-  speed.value = '5'; speed.dispatch('input'); assert.equal(select.value, '5', 'automatic fast mode reflects 2×');
-  speed.value = '3'; speed.dispatch('input'); assert.equal(select.value, '3', 'exit defaults reflect 1×');
+  speed.value = '5'; speed.dispatch('input'); assert.equal(select.value, '5', 'explicit fast choice reflects 2×');
+  speed.value = '3'; speed.dispatch('input'); assert.equal(select.value, '3', 'explicit normal choice reflects 1×');
 });
 
 for (const puzzle of ['cube2','cube8','megaminx','skewb','helicopter','ghost']) test(puzzle + ': actual turn times scale by the displayed playback rate', () => {
   const app = createPage(puzzle), api = app.context.PUZZLE_API;
   const button = app.document.querySelector('.notation-key');
-  for (const [position, rate] of [[1,.5],[2,.75],[3,1],[4,1.5],[5,2]]) {
+  for (const [position, rate] of [[1,.5],[2,.75],[3,1],[4,1.5],[5,2],[6,4],[7,8]]) {
     api.reset(); const select = app.element('playbackSpeed'); select.value = String(position); select.dispatch('change');
     const expected = 450 / rate;
     assert.equal(app.context.PuzzlePlaybackControls.duration(position), expected);
@@ -73,12 +73,13 @@ test('changing playback rate mid-turn keeps continuous progress and changes the 
   app.frame(.5); assert.equal(app.snapshot().animating, false);
 });
 
-test('native randomize and exit speed changes are immediately reflected by the visible selector', () => {
+test('randomize and stop retain the explicit playback selection', () => {
   for (const puzzle of ['cube2','axis','ghost','megaminx','skewb','helicopter']) {
     const app = createPage(puzzle), api = app.context.PUZZLE_API;
-    api.reset(); assert.equal(app.element('playbackSpeed').value, '3');
-    api.randomize(); assert.equal(app.element('playbackSpeed').value, '5', puzzle + ' enters 2×');
+    const select=app.element('playbackSpeed');select.value='6';select.dispatch('change');
+    api.reset(); assert.equal(select.value, '6');
+    api.randomize(); assert.equal(select.value, '6', puzzle + ' retains 4×');
     assert.equal(api.stopScrambleNow(), true);
-    assert.equal(app.element('playbackSpeed').value, '3', puzzle + ' returns to 1×');
+    assert.equal(select.value, '6', puzzle + ' retains 4× after stopping');
   }
 });

@@ -7,7 +7,7 @@ const names=JSON.parse(fs.readFileSync(path.join(__dirname,'../dist/games/constr
 let referenceCount=0;
 for(const name of names){
  const htmlPath=path.join(__dirname,'../dist/games',name+'.html'),html=fs.readFileSync(htmlPath,'utf8');
- const scripts=[...html.matchAll(/<script\b[^>]*src="([^"]+)"/g)].map(m=>m[1].split(/[?#]/)[0]);
+ const scripts=require('./page-script-sources.cjs')(html);
  const styles=[...html.matchAll(/<link\b[^>]*href="([^"]+)"/g)].map(m=>m[1].split(/[?#]/)[0]);
  assert(styles.includes('constrained-solver.css'),name+' solver stylesheet');
  for(const script of ['ring-panel.js','constrained-solver-core.js','constrained-solver.js'])assert(scripts.includes(script),name+' missing '+script);

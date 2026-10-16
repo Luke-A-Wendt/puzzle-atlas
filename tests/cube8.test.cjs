@@ -55,7 +55,7 @@ test('8×8 native UI exposes deepest layers and live solver bridge, including St
  app.click('randomize');assert.equal(app.elements.get('speed').value,'5');assert.equal(app.elements.get('pause').textContent,'Stop');
  app.frame(2000);const committed=sig(app.snapshot().stickers);app.frame(20);app.click('pause');
  assert.equal(app.snapshot().mode,'idle');assert.equal(app.snapshot().animating,false);assert.equal(sig(app.snapshot().stickers),committed);
- assert.equal(app.elements.get('speed').value,'3');assert.equal(app.elements.get('pause').hidden,true);
+ assert.equal(app.elements.get('speed').value,'5');assert.equal(app.elements.get('pause').hidden,true);
  assert(api.move('Riii'));app.complete();assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,384);
  app.click('reset');assert(E.isSolved(app.snapshot().stickers));
 });

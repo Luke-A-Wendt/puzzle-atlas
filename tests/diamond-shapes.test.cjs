@@ -29,7 +29,7 @@ for(const type of ['diamondstyle','diamondcube']){
   const app=createHarness({htmlPath:path.join(__dirname,'../dist/games',type+'.html'),bundled:true,speed:3}),api=app.context.PUZZLE_API;
   assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,type==='diamondstyle'?26:86);assert(app.elements.get('mirrorMode').hidden);
   assert(api.randomize());assert.equal(app.elements.get('speed').value,'5');assert.equal(app.elements.get('pause').textContent,'Stop');
-  app.frame(2000);const committed=app.snapshot().history.length;assert(committed>0);app.frame(20);app.click('pause');assert.equal(app.snapshot().mode,'idle');assert.equal(app.snapshot().history.length,committed);assert.equal(app.elements.get('speed').value,'3');
+  app.frame(2000);const committed=app.snapshot().history.length;assert(committed>0);app.frame(20);app.click('pause');assert.equal(app.snapshot().mode,'idle');assert.equal(app.snapshot().history.length,committed);assert.equal(app.elements.get('speed').value,'5');
   assert(api.move('R'));app.complete();assert.equal(app.snapshot().history.length,committed+1);api.reset();assert(app.snapshot().solved);assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,type==='diamondstyle'?26:86);
  });
 }

@@ -1,0 +1,218 @@
+[
+  {
+    "id": "diamond",
+    "name": "Skewb Diamond",
+    "mechanismFamily": "octahedral",
+    "preview": "diamond"
+  },
+  {
+    "id": "pyramorphix",
+    "name": "Pyramorphix",
+    "mechanismFamily": "cubical",
+    "preview": "pyramorphix"
+  },
+  {
+    "id": "dino",
+    "name": "Dino Cube",
+    "mechanismFamily": "octahedral",
+    "preview": "dino"
+  },
+  {
+    "id": "rainbow",
+    "name": "Rainbow Cube",
+    "mechanismFamily": "octahedral",
+    "preview": "rainbow"
+  },
+  {
+    "id": "tetraminx",
+    "name": "Tetraminx",
+    "mechanismFamily": "tetrahedral",
+    "preview": "tetraminx"
+  },
+  {
+    "id": "cube2",
+    "name": "Cube 2×2×2",
+    "mechanismFamily": "cubical",
+    "preview": "cube2"
+  },
+  {
+    "id": "jing",
+    "name": "Jing Pyraminx",
+    "mechanismFamily": "tetrahedral",
+    "preview": "jing"
+  },
+  {
+    "id": "pyraminx",
+    "name": "Pyraminx",
+    "mechanismFamily": "tetrahedral",
+    "preview": "pyraminx"
+  },
+  {
+    "id": "skewb",
+    "name": "Skewb",
+    "mechanismFamily": "octahedral",
+    "preview": "skewb"
+  },
+  {
+    "id": "ultimate",
+    "name": "Skewb Puzzleball",
+    "mechanismFamily": "octahedral",
+    "preview": "ultimate"
+  },
+  {
+    "id": "diamondstyle",
+    "name": "Diamond Puzzler",
+    "mechanismFamily": "cubical",
+    "preview": "diamondstyle"
+  },
+  {
+    "id": "kilominx",
+    "name": "Kilominx",
+    "mechanismFamily": "dodecahedral",
+    "preview": "kilominx"
+  },
+  {
+    "id": "mirror",
+    "name": "Mirror Cube",
+    "mechanismFamily": "cubical",
+    "preview": "mirror-color"
+  },
+  {
+    "id": "cube3",
+    "name": "Cube 3×3×3",
+    "mechanismFamily": "cubical",
+    "preview": "cube3"
+  },
+  {
+    "id": "jewel",
+    "name": "Christoph’s Jewel",
+    "mechanismFamily": "cubical",
+    "preview": "jewel"
+  },
+  {
+    "id": "cornerocta",
+    "name": "Corner-turning Octahedron",
+    "mechanismFamily": "cubical",
+    "preview": "cornerocta"
+  },
+  {
+    "id": "flatdiamond",
+    "name": "Flat Diamond Cube",
+    "mechanismFamily": "cubical",
+    "preview": "flatdiamond"
+  },
+  {
+    "id": "helicopter",
+    "name": "Helicopter Cube",
+    "mechanismFamily": "dodecahedral",
+    "preview": "helicopter"
+  },
+  {
+    "id": "masterpyraminx",
+    "name": "Master Pyraminx",
+    "mechanismFamily": "tetrahedral",
+    "preview": "masterpyraminx"
+  },
+  {
+    "id": "diamondcube",
+    "name": "Diamond Cuboctahedron",
+    "mechanismFamily": "cubical",
+    "preview": "diamondcube"
+  },
+  {
+    "id": "trajber",
+    "name": "Trajber’s Octahedron",
+    "mechanismFamily": "cubical",
+    "preview": "trajber"
+  },
+  {
+    "id": "mastermorphix",
+    "name": "MasterMorphix",
+    "mechanismFamily": "cubical",
+    "preview": "mastermorphix"
+  },
+  {
+    "id": "rhombic",
+    "name": "Rhombic Dodecahedron Cube",
+    "mechanismFamily": "cubical",
+    "preview": "rhombic"
+  },
+  {
+    "id": "fto",
+    "name": "Face-turning Octahedron",
+    "mechanismFamily": "octahedral",
+    "preview": "fto"
+  },
+  {
+    "id": "axis",
+    "name": "Axis Cube",
+    "mechanismFamily": "cubical",
+    "preview": "axis"
+  },
+  {
+    "id": "crystal",
+    "name": "Pyraminx Crystal",
+    "mechanismFamily": "dodecahedral",
+    "preview": "crystal"
+  },
+  {
+    "id": "ghost",
+    "name": "Ghost Cube",
+    "mechanismFamily": "cubical",
+    "preview": "ghost"
+  },
+  {
+    "id": "cube4",
+    "name": "Cube 4×4×4",
+    "mechanismFamily": "cubical",
+    "preview": "cube4"
+  },
+  {
+    "id": "megaminx",
+    "name": "Megaminx",
+    "mechanismFamily": "dodecahedral",
+    "preview": "megaminx"
+  },
+  {
+    "id": "masterskewb",
+    "name": "Master Skewb",
+    "mechanismFamily": "octahedral",
+    "preview": "masterskewb"
+  },
+  {
+    "id": "cube5",
+    "name": "Cube 5×5×5",
+    "mechanismFamily": "cubical",
+    "preview": "cube5"
+  },
+  {
+    "id": "cube6",
+    "name": "Cube 6×6×6",
+    "mechanismFamily": "cubical",
+    "preview": "cube6"
+  },
+  {
+    "id": "cube7",
+    "name": "Cube 7×7×7",
+    "mechanismFamily": "cubical",
+    "preview": "cube7"
+  },
+  {
+    "id": "cube8",
+    "name": "Cube 8×8×8",
+    "mechanismFamily": "cubical",
+    "preview": "cube8"
+  },
+  {
+    "id": "cube9",
+    "name": "Cube 9×9×9",
+    "mechanismFamily": "cubical",
+    "preview": "cube9"
+  },
+  {
+    "id": "cube10",
+    "name": "Cube 10×10×10",
+    "mechanismFamily": "cubical",
+    "preview": "cube10"
+  }
+]

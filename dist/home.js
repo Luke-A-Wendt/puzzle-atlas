@@ -2,7 +2,16 @@
 const buttons=[...document.querySelectorAll('[data-filter]')];
 const cards=[...document.querySelectorAll('[data-family]')];
 const allowed=new Set(buttons.map(b=>b.dataset.filter));
-function filterFamily(family){if(!allowed.has(family))family='all';buttons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===family)));let count=0;cards.forEach(card=>{card.hidden=family!=='all'&&card.dataset.family!==family;if(!card.hidden)count++;});document.getElementById('filter-status').textContent=`Showing ${count} puzzle choices.`;}
+function filterFamily(family){
+ if(!allowed.has(family))family='all';
+ buttons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.filter===family)));
+ const puzzles=new Set();let versions=0;
+ cards.forEach(card=>{
+  card.hidden=family!=='all'&&card.dataset.family!==family;
+  if(!card.hidden){puzzles.add(card.dataset.puzzle);versions++;}
+ });
+ document.getElementById('filter-status').textContent=`Showing ${puzzles.size} puzzles${versions>puzzles.size?' in '+versions+' versions':''}, ordered by human difficulty.`;
+}
 buttons.forEach(button=>button.addEventListener('click',()=>filterFamily(button.dataset.filter)));
 
 // These are pre-rendered local images: no game engines run on the atlas. Start

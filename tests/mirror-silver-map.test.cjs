@@ -7,7 +7,7 @@ for(const type of ['mirror','flatdiamond','pyramorphix','mastermorphix','ghost']
  const capture=recorder(),app=createHarness({htmlPath:path.join(__dirname,'../dist/games',type+'.html'),bundled:true,canvasContexts:{rings:capture.context}}),root=app.context,api=root.PUZZLE_API,cube=app.elements.get('cube');
  const initial=stable(app.snapshot()),original=root.PUZZLE_SOLVER_BRIDGE.nodes().map(n=>({id:n.stickerId,x:n.x,y:n.y,r:n.r}));
  root.PuzzleAxisDisplay.setLabelMode('none');root.PuzzleAxisDisplay.setHighlights3D(false);root.PuzzleAxisDisplay.setTileLabels(true);
- assert.equal(api.setMirrorMode(true),true);app.frame(0);assert.equal(root.PuzzleAxisDisplay.labelMode(),'some');assert.equal(root.PuzzleAxisDisplay.highlights3D(),true);assert.equal(root.PuzzleAxisDisplay.tileLabelsVisible(),false);assert.equal(stable(app.snapshot()),initial);assert.equal(app.elements.get('ringPanel').hidden,false);
+ assert.equal(api.setMirrorMode(true),true);app.frame(0);assert.equal(root.PuzzleAxisDisplay.labelMode(),'none');assert.equal(root.PuzzleAxisDisplay.highlights3D(),false);assert.equal(root.PuzzleAxisDisplay.tileLabelsVisible(),false);assert.equal(stable(app.snapshot()),initial);assert.equal(app.elements.get('ringPanel').hidden,false);
  let nodes=root.PUZZLE_SOLVER_BRIDGE.nodes();assert.equal(nodes.length,original.length);assert(nodes.every(n=>n.color==='#c9cdd3'));
  assert.deepEqual(nodes.map(n=>({id:n.stickerId,x:n.x,y:n.y,r:n.r})),original,'same ring geometry in either mode');
  const marks=stickerMarks(capture,new Set(['#c9cdd3']));assert.equal(marks.length,nodes.length);assert(marks.every(m=>m.kind==='circle'),'all physical markers are silver circles');

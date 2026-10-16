@@ -18,22 +18,24 @@
   controls.setAttribute('aria-label', 'Constrained Solver');
   const actionRow = make('div', '', 'cs-action-row');
   const toolbar = make('div', '', 'cs-toolbar');
-  const tools = make('div', '', 'cs-tools'); tools.setAttribute('role', 'group'); tools.setAttribute('aria-label', 'Node selection tool');
-  const hold = button('csHold', 'Select held'), swap = button('csSwap', 'Swap pair'); tools.append(hold);swap.hidden=true;swap.tabIndex=-1;tools.append(swap);
+  const tools = make('div', '', 'cs-tools'); tools.setAttribute('role', 'group'); tools.setAttribute('aria-label', 'Hold controls');
+  const hold = button('csHold', ''), swap = button('csSwap', 'Swap pair'); tools.append(hold);swap.hidden=true;swap.tabIndex=-1;tools.append(swap);
   hold.title='Click or lasso to flip each node between held and not held; choose 1 or 2 to leave this mode';
-  const clear = button('csClear', 'Clear all', 'small outline'), cancel = button('csCancel', 'Cancel search', 'small outline');
+  const clear = button('csClear', 'Clear', 'small outline'), cancel = button('csCancel', 'Cancel search', 'small outline');
+  clear.title='Clear every hold and both swap selections';
   const retry = button('csRetry', 'Continue · +7s', 'small outline'); cancel.hidden = true; retry.hidden = true;
   const go = button('csGo', 'Go', 'small outline cs-go');
-  const holdLabel=make('span','','cs-hold-label','Hold colors');
-  toolbar.append(holdLabel,tools,clear);
+  toolbar.append(tools);
   const selection = make('div', '', 'cs-selection');
-  const heldCount = make('span', 'csHeldCount', 'cs-held-count', '0 held');
+  const heldCount = make('span', 'csHeldCount', 'cs-held-count', '0');
+  const holdCaption=make('span','','cs-hold-caption','Hold');hold.append(heldCount,holdCaption);
   const aChip = button('csPairA', '1 · choose a node', 'cs-pair-chip'), bChip = button('csPairB', '2 · choose a node', 'cs-pair-chip');
-  const slotParts=[aChip,bChip].map((chip,i)=>{chip.textContent='';const label=make('span','','cs-slot-label',i?'2':'1'),value=make('span','','cs-slot-value','Choose a node'),action=make('span','','cs-slot-action','Choose');chip.append(label,value,action);return {value,action};});
-  const pairArrow = make('span', '', 'cs-swap-arrow', '↔'); toolbar.insertBefore(heldCount,clear);selection.append(aChip, pairArrow, bChip, go);
-  const suggestHolds=button('csSuggestHolds','Suggest holds','small outline');suggestHolds.title='Replace the holds with nodes whose current color already matches the solved goal; clear the selected pair';
+  const slotParts=[aChip,bChip].map((chip,i)=>{chip.textContent='';const label=make('span','','cs-slot-label',i?'2':'1'),value=make('span','','cs-slot-value','Swap'),action=make('span','','cs-slot-action','Choose');chip.append(value,label,action);return {value,action};});
+  const pairArrow = make('span', '', 'cs-swap-arrow', '↔');selection.append(aChip, pairArrow, bChip, go);
+  const suggestHolds=button('csSuggestHolds','Suggest','small outline');suggestHolds.title='Replace the holds with nodes whose current color already matches the solved goal; clear the selected pair';
+  const guide=make('a','csGuide','small outline cs-guide','Guide');guide.href=new URL('../solver-handbook.html#using-constrained-solver',scriptBase).href;guide.target='_blank';guide.rel='noopener';guide.title='Open Using the Constrained Solver in the solving handbook (new tab)';guide.setAttribute('aria-label','Constrained Solver guide (opens in a new tab)');
   const showGoal=button('csShowGoal','Show goal','small outline cs-show-goal');showGoal.title='Press and hold to see the solved colors at these node locations; release to return to the current colors';showGoal.setAttribute('aria-pressed','false');
-  const searchActions=make('div','','cs-search-actions');searchActions.append(cancel,retry);toolbar.append(suggestHolds);head.insertBefore(showGoal,document.getElementById('ringPanelHide'));
+  const searchActions=make('div','','cs-search-actions');searchActions.append(cancel,retry);tools.append(clear,suggestHolds);head.insertBefore(showGoal,document.getElementById('ringPanelHide'));
   const searchProgress=make('div','csSearchProgress','cs-search-progress');searchProgress.hidden=true;
   const searchProgressLabel=make('span','csSearchProgressLabel');
   const searchActivity=make('progress','csSearchActivity');searchActivity.setAttribute('aria-label','Searching for a verified swap; completion percentage is unknown');
@@ -59,7 +61,7 @@
   const feedback=make('div','','cs-feedback'),progressSlot=make('div','','cs-progress-slot'),detailSlot=make('div','','cs-detail-slot');
   progressSlot.append(searchProgress,autoProgress);detailSlot.append(eligibilityNote,status);
   feedback.append(progressSlot,searchActions,detailSlot);
-  actionRow.append(toolbar,selection);controls.append(actionRow, feedback, bottom); panel.appendChild(controls);
+  actionRow.append(toolbar,selection,guide);controls.append(actionRow, feedback, bottom); panel.appendChild(controls);
   const overlay = make('canvas', 'csNodeOverlay', 'cs-node-overlay'); overlay.hidden = true; overlay.tabIndex = 0;
   overlay.setAttribute('aria-label', 'Select ring-map nodes. Arrow keys choose a node; Enter selects it.');
   overlay.setAttribute('aria-describedby', 'csStatus'); wrap.appendChild(overlay);
@@ -70,7 +72,7 @@
   let message = '', worker = null, workerTimer = null, epoch = 0, execution = null, observed = null, hover = null, focusId = null, lastDraw = '', pointerStart = null;
   let autoJob = null, autoRequested = false, solverSpeed = false, lasso = null, lastAutoStep = 0, lastManualStep = 0;
   let autoTransportActive = false, manualMoveBlockActive = false;
-  let goalPreview=false, goalColors=null, goalPointer=null, goalKey=null, goalRequested=false, goalLoad=null;
+  let goalPreview=false, goalColors=null, goalPointer=null, goalKey=null, goalRequested=false, goalLoad=null, goalNeedsPalette=false, goalPalette=null;
   let exitToManual=false;
   let eligibility=null, eligibilityWorker=null, eligibilityTimer=null, eligibilityEpoch=0;
   let anchors=[], referencesDirty=true, pairTarget=0, returnToDefault=false, lastEligibilityProof=null;
@@ -88,6 +90,41 @@
   const nodes = () => (bridge.nodes() || []).filter(n => Number.isFinite(n.x) && Number.isFinite(n.y)).map(n => ({...n, stickerId: String(n.stickerId)}));
   const nodeName = id => { const s = api.snapshot().stickers?.find(x => String(x.id) === String(id)); return (s?.face ? s.face + ' · ' : '') + String(id); };
   const setMessage = (text,kind='notice') => { message=text;status.textContent=text;status.title=text;status.hidden=!text||kind==='help';status.setAttribute('data-state',kind); };
+  // The UI is installed synchronously after a fresh engine is created. Keep
+  // only its immutable solved color field, not the move tables or solver data.
+  // Use the same 1e-7 geometric addresses as the solver adapter; array order
+  // and sticker identity are not spatial locations. A late installation into
+  // an already played state falls back to the verified model instead.
+  const goalPoint=value=>{if(!Array.isArray(value)||value.length!==3||value.some(x=>!Number.isFinite(x)))throw Error('Invalid tile pose');return value.map(x=>Math.round(x*1e7)||0).join(',');};
+  const goalAddress=sticker=>sticker.normal||sticker.n?'pose:'+(sticker.pos?goalPoint(sticker.pos):'')+'/'+goalPoint(sticker.center||sticker.p)+'/'+goalPoint(sticker.normal||sticker.n):sticker.slot!==undefined?'slot:'+String(sticker.slot):null;
+  const localGoal=(()=>{
+    try{
+      const snapshot=api.snapshot(),stickers=snapshot.stickers||snapshot.stickerState;
+      if(!idle(snapshot)||snapshot.solved===false||snapshot.history?.length||snapshot.journal?.some(entry=>entry.move)||snapshot.userTurns>0||!stickers?.length)return null;
+      const homes=new Map(),colors=new Map();
+      for(const sticker of stickers){const address=goalAddress(sticker);if(address===null||homes.has(address))return null;homes.set(address,String(sticker.id));colors.set(String(sticker.id),String(sticker.color));}
+      return {homes,colors};
+    }catch(_){return null;}
+  })();
+  function captureGoalPalette(){
+    if(!localGoal||goalPalette||mirrorActive())return;
+    const display=new Map(nodes().map(n=>[n.stickerId,n.color]));
+    if(display.size===localGoal.colors.size&&new Set(display.values()).size>=new Set(localGoal.colors.values()).size&&[...localGoal.colors.keys()].every(id=>typeof display.get(id)==='string'))goalPalette=display;
+  }
+  function localGoalTargets(){
+    captureGoalPalette();
+    const snapshot=api.snapshot(),stickers=snapshot.stickers||snapshot.stickerState,targets=new Map();
+    goalNeedsPalette=!goalPalette;
+    for(const sticker of stickers){const home=localGoal.homes.get(goalAddress(sticker));targets.set(String(sticker.id),home===undefined?null:goalPalette?.get(home)||localGoal.colors.get(home));}
+    return targets;
+  }
+  function syncGoalAvailability(){
+    const hidden=mirrorActive(),disabled=hidden||isBusy()||!!autoRequested||(bridge.isBusy?bridge.isBusy():!idle(api.snapshot()));
+    // Reassigning reflected DOM attributes on every animation frame still
+    // fires MutationObservers, even when the value has not changed.
+    if(showGoal.hidden!==hidden)showGoal.hidden=hidden;
+    if(showGoal.disabled!==disabled)showGoal.disabled=disabled;
+  }
   // The canonical goal is a spatial color field, not a sticker-identity goal.
   // Some shape-changing models include poses that are empty in the solved
   // geometry. Those addresses have no goal color and must not invent one.
@@ -106,14 +143,14 @@
   }
   function setGoalPreview(value) {
     value=!!value;goalRequested=value;window.PuzzleJournal?.sync?.();
-    if(!value){goalColors=null;goalPointer=null;goalKey=null;}
+    if(!value){goalColors=null;goalPointer=null;goalKey=null;goalNeedsPalette=false;}
     if(value){
       if(mirrorActive()||autoRequested||isBusy()||!idle(api.snapshot())){goalRequested=false;return false;}
-      if(!model){
+      if(!localGoal&&!model){
         if(!goalLoad)goalLoad=core.loadModel(api.puzzle).then(loaded=>{model=loaded;goalLoad=null;if(goalRequested)setGoalPreview(true);}).catch(error=>{goalLoad=null;goalRequested=false;showGoal.title='Goal could not load: '+error.message+'. Press again to retry.';});
         return true;
       }
-      try{goalColors=goalState().targets;}catch(_){goalRequested=false;return false;}
+      try{goalColors=localGoal?localGoalTargets():goalState().targets;}catch(_){goalRequested=false;return false;}
       pointerStart=null;lasso=null;hover=null;window.PuzzleSelection3D?.clearHover?.();
     }
     goalPreview=value;showGoal.setAttribute('aria-pressed',String(value));
@@ -169,22 +206,12 @@
     referencesDirty=false;lastDraw='';
   }
   function setSolverSpeed(on) {
+    // Solver bookkeeping must never change user display or playback choices.
     solverSpeed = on;
-    if (on) {
-      // The label preset supplies the initial playback rate. Sync and each
-      // later stage deliberately leave a user's label/speed override alone.
-      window.PuzzleAxisDisplay?.setLabelMode?.(autoRequested ? 'none' : 'all', {resetSpeed:true});
-      return;
-    }
-    // Clear the native sequence flag before restoring the ordinary preset;
-    // otherwise the next manual move could reset a new speed selection again.
-    const keepManualSettings=active&&!autoRequested;
-    if (typeof api.restorePlaybackDefaults === 'function') api.restorePlaybackDefaults({preserveSettings:keepManualSettings});
-    else if(!keepManualSettings)window.PuzzleAxisDisplay?.resetDefaults?.({pulse:true});
+    if (!on) api.restorePlaybackDefaults?.({preserveSettings:true});
   }
-  function enterManualDefaults(){
-    window.PuzzleAxisDisplay?.setLabelMode?.('all',{resetSpeed:true});
-    window.PuzzleAxisDisplay?.setHighlights3D?.(true);
+  function enterManualDefaults() {
+    // Selection mode is independent of persistent page-level preferences.
   }
   function updateGoalProgress(){
     // Show the verified secured-node checkpoint in Auto Solve's upper bar.
@@ -291,11 +318,11 @@
     const invalid=selectedPairStatus()===2,ready=hasPair()&&!invalid&&readyStatus(eligibility?.map[pair[0]],eligibility?.map[pair[1]]);
     [aChip,bChip].forEach((chip,i)=>{
       const selected=pair[i]!=null, editing=tool==='swap' && pairTarget===i && !isBusy() && !autoRequested;
-      slotParts[i].value.textContent=selected?nodeName(pair[i]):autoRequested?(i?'Goal':'Current'):'Choose';
+      slotParts[i].value.textContent='Swap';
       slotParts[i].action.textContent=autoRequested?(i?'Target':'Current'):isBusy()?'Selected':editing?'Pick on map':selected?'Change':'Choose';
       chip.classList.toggle('chosen',selected);chip.classList.toggle('editing',editing);chip.classList.toggle('invalid',invalid);
       chip.setAttribute('aria-pressed',String(editing));chip.setAttribute('aria-label',(selected?'Change ':'Choose ')+(i?'2':'1')+(selected?': '+nodeName(pair[i]):''));
-      chip.title=selected&&held.has(pair[i])&&!autoRequested?'Held location: temporarily released for this swap, then held again with its new color':selected?'Choose another '+(i?'2':'1'):'Choose '+(i?'2':'1')+' on the ring map';
+      chip.title=selected?nodeName(pair[i])+' · '+(held.has(pair[i])&&!autoRequested?'Held location: temporarily released for this swap, then held again with its new color':'Choose another '+(i?'2':'1')):'Choose '+(i?'2':'1')+' on the ring map';
       chip.disabled=isBusy()||!!autoRequested;
     });
     go.hidden=!!autoRequested;go.disabled=isBusy()||(!hasPair())||invalid||(manualUnavailable()&&!ready);
@@ -376,17 +403,17 @@
     normalMode.textContent='Turn rings';normalMode.setAttribute('aria-label',normalMode.disabled?'Returning to Turn rings after the current turn':'Turn rings');modeSwitch.setAttribute('aria-busy',String(normalMode.disabled));
     hold.setAttribute('aria-pressed', String(tool === 'hold')); swap.setAttribute('aria-pressed', String(tool === 'swap'));
     hold.disabled = swap.disabled = clear.disabled = isBusy();
-    suggestHolds.hidden=!active||!!autoRequested;suggestHolds.disabled=isBusy();showGoal.hidden=mirrorActive();showGoal.disabled=mirrorActive()||isBusy()||!!autoRequested||(bridge.isBusy?bridge.isBusy():!idle(api.snapshot()));
+    suggestHolds.hidden=!active||!!autoRequested;suggestHolds.disabled=isBusy();syncGoalAvailability();
     if(goalPreview&&(mirrorActive()||isBusy()||autoRequested||!idle(api.snapshot())))setGoalPreview(false);
-    toolbar.hidden=!!autoRequested;heldCount.hidden=!!autoRequested;
-    heldCount.textContent = held.size + ' held';
+    actionRow.hidden=!!autoRequested;toolbar.hidden=!!autoRequested;heldCount.hidden=!!autoRequested;
+    heldCount.textContent = String(held.size);hold.setAttribute('aria-label','Hold: '+held.size+' selected; click or lasso nodes to toggle');
     cancel.hidden = phase !== 'solving' && !(autoRequested && phase==='loading');
     retry.hidden=!active||phase!=='selecting'||result?.status!=='unknown'||(!autoRequested&&!canContinueSearch());
     const next=manualSearch?.search?.nextBudgetMs||10000,previous=manualSearch?.search?.budgetMs||3000;
     retry.textContent=autoRequested?'Retry full solve · 30s':'Continue previous pair · +'+seconds(next-previous)+'s';
     retry.title=autoRequested?'Retry full puzzle planning with a longer budget':'Restore the previous 1 and 2, then resume their saved search with a '+seconds(next)+'-second total compute budget';
     searchActions.hidden=cancel.hidden&&retry.hidden;updateSearchProgress();
-    tools.hidden = !!autoJob || (autoRequested && phase === 'solving'); holdLabel.hidden=!!autoRequested; clear.hidden = !!autoJob; pairArrow.textContent = autoRequested ? '→' : '↔';
+    tools.hidden = !!autoJob || (autoRequested && phase === 'solving'); clear.hidden = !!autoJob; pairArrow.textContent = autoRequested ? '→' : '↔';
     autoProgress.hidden = !active || (!autoRequested && phase!=='executing'); progressBar.hidden = progressLabel.hidden = !autoRequested;
     updateGoalProgress();
     updateStepProgress();
@@ -860,7 +887,7 @@
     const viewport=bridge.viewport?.();
     const blockedHover=tool==='swap' && hover!==null && candidateStatus(hover)===2;
     overlay.style.cursor=goalPreview?'default':isBusy()?'progress':blockedHover?'not-allowed':tool==='swap'?'pointer':'crosshair';
-    overlay.title=goalPreview?'Solved goal colors · release Show goal to resume. Hollow gray nodes are positions absent from the solved shape.':blockedHover?'Proved unavailable with the current holds and other endpoint':tool==='swap'?(hover!==null?(candidateReady(hover)?'Verified sequence ready. ':'No sequence ready; select this ? node to check it. '):'')+'Choose '+(pairTarget?'2':'1')+' · click its card below to change the target':'Click or lasso to flip each node between held and not held';
+    overlay.title=goalPreview?'Solved goal colors · release Show goal to resume.':blockedHover?'Proved unavailable with the current holds and other endpoint':tool==='swap'?(hover!==null?(candidateReady(hover)?'Verified sequence ready. ':'No sequence ready; select this ? node to check it. '):'')+'Choose '+(pairTarget?'2':'1')+' · click its card below to change the target':'Click or lasso to flip each node between held and not held';
     const key = JSON.stringify([b.width,b.height,viewport,anchors,phase,tool,goalPreview,[...held],pair,pairTarget,hover,focusId,lasso,eligibility?.status,document.activeElement === overlay,list.map(n=>[n.stickerId,n.x,n.y,n.r,n.highlightLineWidth,n.highlightOuterRadius,n.highlighted])]); if (key === lastDraw) return; lastDraw = key;
     const pixelWidth=Math.max(1,Math.round(b.width*dpr)),pixelHeight=Math.max(1,Math.round(b.height*dpr));
     // Retain backing stores between moves: assigning even the same canvas
@@ -868,7 +895,7 @@
     if(overlay.width!==pixelWidth)overlay.width=pixelWidth;if(overlay.height!==pixelHeight)overlay.height=pixelHeight;
     ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,b.width,b.height);
     if(backdrop.width!==pixelWidth)backdrop.width=pixelWidth;if(backdrop.height!==pixelHeight)backdrop.height=pixelHeight;backCtx.setTransform(dpr,0,0,dpr,0,0);backCtx.clearRect(0,0,b.width,b.height);
-    if(viewport?.scale>0)for(const a of anchors){
+    if(!goalPreview&&viewport?.scale>0)for(const a of anchors){
       const x=viewport.x+a.x*viewport.scale,y=viewport.y+a.y*viewport.scale,r=Math.max(4,a.r*viewport.scale)+7;
       backCtx.beginPath();backCtx.arc(x,y,r,0,Math.PI*2);backCtx.fillStyle='rgba(145,145,157,.18)';backCtx.fill();
       if(a.label){backCtx.font='700 12px system-ui';backCtx.textAlign='center';backCtx.textBaseline='middle';backCtx.fillStyle='#73737e';backCtx.fillText(a.label,x+Math.min(r+6,18),y-r-3);}
@@ -879,7 +906,7 @@
       if(goalPreview){
         // Opaque circles exactly cover the native node fills. Holds and pair
         // outlines remain legible; no readiness dimming obscures the goal.
-        const color=goalColors?.get(n.stickerId);
+        const color=n.goalColor||goalColors?.get(n.stickerId);
         ctx.beginPath();ctx.arc(n.x,n.y,Math.max(3,n.r||5)+.4,0,Math.PI*2);ctx.fillStyle=color||'#24252e';ctx.fill();
         if(!color){ctx.strokeStyle='#8b8c97';ctx.lineWidth=1.25;ctx.stroke();}
       }
@@ -895,6 +922,7 @@
     if(!goalPreview)for(const n of list){if(!pair.includes(n.stickerId))continue;const r=Math.max(3,n.r||5)+.4;ctx.save();ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.clip();ctx.clearRect(n.x-r,n.y-r,r*2,r*2);ctx.restore();}
     const endpointLabels=[];
     for (const n of list) {
+      if(goalPreview&&n.goalColor)continue;
       const fixed = held.has(n.stickerId), index = pair.indexOf(n.stickerId), hot = hover === n.stickerId, focused = document.activeElement === overlay && focusId === n.stickerId;
       if (!fixed && index < 0 && !hot && !focused) continue;
       const nodeRadius = Math.max(3,n.r || 5), nativeWidth = Number.isFinite(n.highlightLineWidth) && n.highlightLineWidth > 0 ? n.highlightLineWidth : 2.2;
@@ -923,10 +951,11 @@
     if(lasso?.length>1 && pointerStart?.dragged){ctx.beginPath();lasso.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle='rgba(255,255,255,.07)';ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);}
   }
   function frame() {
+    captureGoalPalette();
     if(mirrorActive()&&(goalPreview||goalRequested))setGoalPreview(false);
+    if(goalPreview&&goalNeedsPalette&&localGoal)goalColors=localGoalTargets();
     if(goalPreview&&!active){if(!idle(api.snapshot()))setGoalPreview(false);else draw();}
-    showGoal.hidden=mirrorActive();
-    showGoal.disabled=mirrorActive()||isBusy()||!!autoRequested||(bridge.isBusy?bridge.isBusy():!idle(api.snapshot()));
+    syncGoalAvailability();
     if (active) {
       try {
         const snap = api.snapshot();

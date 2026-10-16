@@ -153,7 +153,7 @@ test('all catalog game pages expose an optional solver and enter selection mode 
   const manifest=JSON.parse(fs.readFileSync(path.join(games,'constrained-solver-models/manifest.json'),'utf8'));
   const ids=Array.isArray(manifest)?manifest.map(x=>x.id):manifest.models?.map(x=>x.id)||manifest.puzzles?.map(x=>x.id);
   assert.equal(ids.length,37);assert(ids.includes('axis'));assert(ids.includes('cube9'));assert(ids.includes('cube10'));
-  for(const id of ids){const app=host(id),before=JSON.stringify(app.snapshot().stickers);assert(app.element('constrainedSolverToggle'),id);await app.ready();assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'all',id+' manual setup labels');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),true,id+' manual setup highlights');assert.equal(app.ui().blocksManualMoves(),true,id+' manual moves blocked');assert.equal(JSON.stringify(app.snapshot().stickers),before,id+' activation preserves state');assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,app.model.stickerCount,id+' all physical nodes selectable');app.ui().setActive(false);assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'some',id+' default labels restored');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),id!=='homer',id+' default outlines restored');assert.equal(app.ui().blocksManualMoves(),false,id+' manual moves unlocked');assert.equal(app.element('csReadme'),null,id);}
+  for(const id of ids){const app=host(id),before=JSON.stringify(app.snapshot().stickers);assert(app.element('constrainedSolverToggle'),id);await app.ready();assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'none',id+' manual setup preserves labels');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),true,id+' manual setup highlights');assert.equal(app.ui().blocksManualMoves(),true,id+' manual moves blocked');assert.equal(JSON.stringify(app.snapshot().stickers),before,id+' activation preserves state');assert.equal(app.context.PUZZLE_SOLVER_BRIDGE.nodes().length,app.model.stickerCount,id+' all physical nodes selectable');app.ui().setActive(false);assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'none',id+' label preference retained');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),true,id+' outline preference retained');assert.equal(app.ui().blocksManualMoves(),false,id+' manual moves unlocked');assert.equal(app.element('csReadme'),null,id);}
 });
 
 test('toggle holds and Go preserve stationary references during playback and only holds afterward',async()=>{
@@ -165,18 +165,18 @@ test('toggle holds and Go preserve stationary references during playback and onl
   await app.advance(0);const anchors=clean(app.ui().state().anchors);assert.equal(anchors.length,3);assert.deepEqual(anchors.filter(a=>a.label).map(a=>a.label),['1','2']);
   const layer=app.element('csAnchorBackdrop'),marks=[];layer.drawing.clearRect=()=>marks.length=0;layer.drawing.arc=(x,y,r)=>marks.push({x,y,r});
   const g=app.model.moves.findIndex(m=>m.perm[c.held[0]]!==c.held[0]),inv=app.model.moves.findIndex(m=>m.perm.every((x,j)=>app.model.moves[g].perm[x]===j));assert(g>=0&&inv>=0);
-  app.context.PuzzleAxisDisplay.choose('U');app.click('csGo');assert.equal(String(app.element('speed').value),'1','manual constrained playback switches to Slow');const worker=app.workers.at(-1),indices=[g,inv,c.move];
+  app.context.PuzzleAxisDisplay.choose('U');app.click('csGo');assert.equal(String(app.element('speed').value),'5','manual playback preserves the user rate');const worker=app.workers.at(-1),indices=[g,inv,c.move];
   worker.reply({id:worker.request.id,type:'result',result:{status:'solved',moveIndices:indices,optimal:false},modelFingerprint:app.core().modelFingerprint(app.model)});
-  await app.advance(45);assert.equal(app.ui().state().phase,'executing');assert.equal(String(app.element('speed').value),'1');assert.deepEqual(clean(app.ui().state().anchors),anchors);
+  await app.advance(45);assert.equal(app.ui().state().phase,'executing');assert.equal(String(app.element('speed').value),'5');assert.deepEqual(clean(app.ui().state().anchors),anchors);
   app.element('rings').bounds={left:0,top:0,width:650,height:460};app.win.dispatch('resize');await app.advance(0);
   const v=app.context.PUZZLE_SOLVER_BRIDGE.viewport();for(const a of anchors)assert(marks.some(m=>Math.hypot(m.x-v.x-a.x*v.scale,m.y-v.y-a.y*v.scale)<1e-6),'reference follows the viewport, not a moving piece');
   await app.settle();assert.deepEqual(Array.from(app.ui().state().held),[fixed]);assert.deepEqual(Array.from(app.ui().state().pair),[]);assert.deepEqual(clean(app.ui().state().anchors).map(({r,...a})=>a),anchors.filter(a=>a.id===fixed).map(({r,...a})=>a));assert.equal(app.ui().state().pairTarget,0);assert.equal(app.element('csGo').disabled,true);
   const end=app.core().mapSnapshot(app.model,app.snapshot());assert.equal(end.stickerToNode[pairIds[0]],c.pair[1]);assert.equal(end.stickerToNode[pairIds[1]],c.pair[0]);
-  assert.equal(String(app.element('speed').value),'1','manual mode retains its All labels playback rate after completion');assert.equal(app.context.PuzzleAxisDisplay.selection('U'),null,'completed manual playback clears the previously highlighted axis');assert.equal(layer.hidden,false);assert.equal(app.element('csStepProgressBar').value,3);assert.equal(app.element('csStepProgressBar').max,3);
+  assert.equal(String(app.element('speed').value),'5','manual completion retains the chosen rate');assert.equal(app.context.PuzzleAxisDisplay.selection('U'),null,'completed manual playback clears the previously highlighted axis');assert.equal(layer.hidden,false);assert.equal(app.element('csStepProgressBar').value,3);assert.equal(app.element('csStepProgressBar').max,3);
   app.click('csClear');await app.advance(0);assert.equal(app.ui().state().anchors.length,0);
 });
 
-test('solver mode changes clear display selection without changing puzzle moves and reset speed on cancelled checking',async()=>{
+test('solver mode changes clear display selection without changing puzzle moves and preserve speed on cancelled checking',async()=>{
   const app=host(),display=app.context.PuzzleAxisDisplay,c=oneMoveCase(app.model);
   assert(display,'all games load the common display state');
   display.choose('R');display.hover('F');assert.equal(display.selection('R'),'R');
@@ -185,8 +185,8 @@ test('solver mode changes clear display selection without changing puzzle moves 
   assert.equal(JSON.stringify(app.snapshot().stickers),before,'changing display mode does not turn stickers');
   assert.equal(app.element('csPairA').querySelector('.cs-slot-label').textContent,'1');
   assert.equal(app.element('csPairB').querySelector('.cs-slot-label').textContent,'2');
-  await app.choose(c);assert.equal(String(app.element('speed').value),'1');
-  app.ui().cancel();assert.equal(String(app.element('speed').value),'1');
+  await app.choose(c);assert.equal(String(app.element('speed').value),'5');
+  app.ui().cancel();assert.equal(String(app.element('speed').value),'5');
   assert.deepEqual(Array.from(app.ui().state().pair),[]);
   display.choose('F');assert.equal(display.selection('F'),null,'idle constrained mode does not highlight a rotation axis');app.click('ringModeDefault');
   assert.equal(display.selection('F'),null,'leaving the solver also clears a subsequently highlighted axis');

@@ -83,7 +83,7 @@ test('Ghost VM engine is independent and page has a colored default with optiona
  assert.equal(ctx.GhostEngine.create('ghost').slots.length,61);
  const html=fs.readFileSync(path.join(__dirname,'../dist/games/ghost.html'),'utf8');
  assert.match(html,/data-puzzle="ghost"/);assert.match(html,/id="mirrorMode"[^>]+aria-pressed="false"/);
- const scripts=[...html.matchAll(/<script\b[^>]*src="([^"]+)"/g)].map(m=>m[1].split(/[?#]/)[0]);
+ const scripts=require('./page-script-sources.cjs')(html);
  for(const script of ['ghost-engine.js','ghost-renderer.js','ghost-rings.js','shape-app.js','constrained-solver.js'])assert(scripts.includes(script),script);
  assert.match(html,/align automatically/);
 });

@@ -147,7 +147,7 @@ body.puzzle-axis-muted .ring-key.active{color:var(--ink);border-color:transparen
  .ring-panel-head h2{flex:0 0 64px;min-width:0;font-size:11px;white-space:nowrap;overflow:visible}
  .ring-panel-head .cs-mode-switch{order:0;flex:1 1 calc(100% - 76px);min-width:0;gap:2px;padding:2px}
  .ring-panel-head .cs-mode-switch button{flex:1 1 0;min-width:0;min-height:28px;padding:3px 4px;font-size:10px;line-height:1.15;white-space:normal}
- .ring-panel-head>button,.ring-panel-head>#ringFocus{order:1;flex:1 1 0;min-width:0;min-height:32px;height:32px;padding:2px 3px;font-size:10px;line-height:1.1;white-space:normal;overflow-wrap:normal}
+ .ring-panel-head>button,.ring-panel-head>#ringFocus{order:1;flex:1 0 auto;min-width:0;min-height:32px;height:32px;padding:2px 3px;font-size:10px;line-height:1.1;white-space:nowrap;overflow-wrap:normal}
 }
 /* Same layout in older phone browsers without container queries. */
 @media(max-width:850px) and (orientation:portrait),(max-width:680px){
@@ -155,7 +155,7 @@ body.puzzle-axis-muted .ring-key.active{color:var(--ink);border-color:transparen
  .ring-panel-head h2{flex:0 0 64px;min-width:0;font-size:11px;white-space:nowrap;overflow:visible}
  .ring-panel-head .cs-mode-switch{order:0;flex:1 1 calc(100% - 76px);min-width:0;gap:2px;padding:2px}
  .ring-panel-head .cs-mode-switch button{flex:1 1 0;min-width:0;min-height:30px;padding:3px 4px;font-size:10px;line-height:1.15;white-space:normal}
- .ring-panel-head>button,.ring-panel-head>#ringFocus{order:1;flex:1 1 0;min-width:0;min-height:34px;height:34px;padding:2px 3px;font-size:10px;line-height:1.15;white-space:normal;overflow-wrap:normal}
+ .ring-panel-head>button,.ring-panel-head>#ringFocus{order:1;flex:1 0 auto;min-width:0;min-height:34px;height:34px;padding:2px 3px;font-size:10px;line-height:1.15;white-space:nowrap;overflow-wrap:normal}
  .cs-controls{padding:5px 8px;gap:4px}
  .cs-tools button,.cs-toolbar>.small,.cs-search-actions>button{min-height:32px;font-size:10px}
  .cs-pair-chip{min-height:36px}.cs-go{min-height:36px}
@@ -167,14 +167,27 @@ body.puzzle-axis-muted .ring-key.active{color:var(--ink);border-color:transparen
  .action-panel.cs-notice-visible .action-meta{visibility:hidden}
 }
 
-/* One compact action row when space permits; two intact groups on a phone.
-   Fixed, short pair fields keep the controls steady as endpoints are changed. */
-.cs-action-row{display:flex;align-items:center;flex-wrap:wrap;gap:5px 8px;min-width:0}
+/* Guide stays at the right of the first row. Wider maps fit the hold and
+   swap groups on that row; narrow maps put swaps on a second intact row. */
+.cs-action-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 8px;min-width:0}
+.cs-action-row[hidden]{display:none!important}
+.cs-action-row>.cs-toolbar{grid-column:1;grid-row:1}
+.cs-action-row>.cs-selection{grid-column:1 / -1;grid-row:2;justify-self:start}
+.cs-action-row>.cs-guide{grid-column:2;grid-row:1;justify-self:end}
 .cs-action-row>.cs-toolbar,.cs-action-row>.cs-selection{flex:0 0 auto;gap:5px;min-width:0;flex-wrap:nowrap;margin:0}
-.cs-action-row .cs-tools{flex:0 0 auto;min-width:0;width:auto}
-.cs-action-row .cs-tools button,.cs-action-row .cs-toolbar>.small{min-height:32px;height:32px;padding:3px 7px;white-space:nowrap;font-size:10px;line-height:1.2}
-.cs-action-row .cs-held-count{min-width:40px;font-size:10px}
-.cs-action-row .cs-pair-chip{flex:0 0 auto;min-width:0;min-height:32px;height:32px;padding:4px 6px;grid-template-columns:20px 52px;column-gap:5px}
-.cs-action-row .cs-pair-chip .cs-slot-value{width:52px;min-width:0;font-size:10px;line-height:1.2}
+.cs-action-row .cs-tools{flex:0 0 auto;min-width:0;width:auto;gap:2px;padding:2px;border:1px solid #45404e;border-radius:8px;background:#14151c}
+.cs-action-row .cs-tools button,.cs-action-row>.cs-guide{min-height:32px;height:32px;padding:3px 7px;white-space:nowrap;font-size:10px;line-height:1.2}
+.cs-action-row .cs-tools button{min-height:26px;height:26px;border-color:transparent;border-radius:5px;background:transparent;flex:0 0 auto}
+.cs-action-row .cs-tools button[aria-pressed="true"]{background:#33303f;border-color:#78718c;color:var(--ink)}
+.cs-action-row #csHold{display:flex;align-items:center;gap:5px;padding-left:3px}
+.cs-action-row .cs-held-count{display:grid;place-items:center;min-width:36px;height:20px;padding:0 3px;border:1px solid #45404e;border-radius:4px;background:#08090d;color:#f4f1fc;font-size:10px;line-height:1;font-variant-numeric:tabular-nums;box-sizing:border-box}
+.cs-action-row .cs-guide{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;background:#23232d;color:var(--violet);font-weight:600;text-decoration:none;flex:0 0 auto}
+.cs-action-row .cs-guide:hover{background:#33303f;border-color:#78718c}
+.cs-action-row .cs-guide:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.cs-action-row .cs-pair-chip{flex:0 0 auto;min-width:90px;min-height:32px;height:32px;padding:4px 9px;grid-template-columns:minmax(42px,max-content) 20px;column-gap:5px}
+.cs-action-row .cs-pair-chip .cs-slot-value{grid-column:1;width:max-content;min-width:42px;overflow:visible;text-overflow:clip;font-size:10px;line-height:1.2}
+.cs-action-row .cs-pair-chip .cs-slot-label{grid-column:2;grid-row:1}
 .cs-action-row .cs-go{flex:0 0 36px;width:36px;min-width:36px;min-height:32px;height:32px;padding:3px 6px;white-space:nowrap}
 .cs-action-row .cs-swap-arrow{font-size:13px}
+
+@container ring-map-panel (min-width:560px){.cs-action-row{grid-template-columns:auto auto minmax(0,1fr)}.cs-action-row>.cs-selection{grid-column:2;grid-row:1}.cs-action-row>.cs-guide{grid-column:3;grid-row:1}}

@@ -1,11 +1,11 @@
 /* Shared playback speed and explicit forward/inverse notation controls.
- * The legacy 1..5 input remains the engine's event contract, but only the
+ * The indexed input remains the engine's event contract, but only the
  * named playback-rate selector is exposed. One normal turn takes 450 ms.
  */
 (function (root) {
   'use strict';
   if (root.PuzzlePlaybackControls) return;
-  const rates = Object.freeze([0, .5, .75, 1, 1.5, 2]);
+  const rates = Object.freeze([0, .5, .75, 1, 1.5, 2, 4, 8]);
   const doc = root.document;
   const get = id => { try { return doc?.getElementById?.(id) || null; } catch (_) { return null; } };
   let speedSelect = null;
@@ -21,6 +21,7 @@
     if (!doc?.querySelector || speedSelect) return;
     const actions = doc.querySelector('.action-group'), speed = get('speed');
     if (!actions || !speed) return;
+    speed.max = String(rates.length - 1);
     const control = doc.createElement('label');
     control.id = 'playbackSpeedControl'; control.className = 'playback-speed-control';
     control.setAttribute('for', 'playbackSpeed');
@@ -44,7 +45,7 @@
     control.append(caption, speedSelect);
     // Real DOM order matches both the requested reading and keyboard order.
     const transport = actions.querySelector('.journal-transport');
-    for (const element of [get('randomize'), get('solve'), transport, control, get('pause'), get('reset'), get('journalActivity')]) {
+    for (const element of [get('randomize'), get('solve'), get('pause'), transport, control, get('reset'), get('journalActivity')]) {
       if (element) actions.appendChild(element);
     }
     syncSpeed();

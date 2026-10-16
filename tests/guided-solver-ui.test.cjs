@@ -22,8 +22,8 @@ test('completed manual swap clears native default-reset flags before later ordin
  const a=map.occupiedNodes.find(n=>move.perm[n]!==n),b=move.perm[a];assert.equal(move.perm[b],a);
  app.ui.setTool('swap');app.ui.selectNode(String(map.nodeToSticker[a]));app.ui.selectNode(String(map.nodeToSticker[b]));app.ui.go();
  const worker=app.workers.findLast(w=>w.request?.task==='manual-swap');assert(worker);worker.onmessage({data:{id:worker.request.id,type:'result',result:{status:'solved',moveIndices:[moveIndex]},modelFingerprint:app.core.modelFingerprint(app.model)}});
- await app.settleSolver();assert.equal(app.ui.state().phase,'selecting');assert.equal(display.labelMode(),'some');
+ await app.settleSolver();assert.equal(app.ui.state().phase,'selecting');assert.equal(display.labelMode(),'none');
  display.setLabelMode('all');display.setHighlights3D(false);display.setTileLabels(true);
- assert.equal(api.move('U'),true);await app.settleSolver();
+ app.ui.setActive(false);assert.equal(api.move('U'),true);await app.settleSolver();
  assert.equal(display.labelMode(),'all','an ordinary turn must not repeat a completed sequence reset');assert.equal(display.highlights3D(),false);assert.equal(display.tileLabelsAvailable(),false,'cube guides use fixed axis positions, not tile identifiers');assert.equal(display.tileLabelsVisible(),false);
 });

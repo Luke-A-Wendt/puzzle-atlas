@@ -11,7 +11,7 @@ for(const puzzle of puzzles)test(puzzle+': one tile cycles its legal axes, backg
  const app=createPage(puzzle),c=app.context,canvas=app.element('cube'),rings=app.element('rings'),S=c.PuzzleSelection3D,D=c.PuzzleAxisDisplay,B=c.PUZZLE_SOLVER_BRIDGE;
  assert.equal(D.selection(app.snapshot().selected),null,'initial mode has no selected ring');
  assert.equal(B.nodes().filter(n=>n.highlighted).length,0,'initial ring nodes have no active-ring outline');
- assert.equal(D.highlights3D(),puzzle!=='homer','Homer alone defaults to hidden 3D highlights');
+ assert.equal(D.highlights3D(),true,'every puzzle defaults to visible 3D highlights');
  D.setLabelMode('none');redraw(app);
  let p;
  for(let y=25;y<375&&!p;y+=10)for(let x=25;x<475;x+=10){const id=S.pick(canvas,x,y);if(id!=null&&B.axesForNode(id).length){p={x,y,id};break;}}

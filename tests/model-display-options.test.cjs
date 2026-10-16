@@ -10,7 +10,7 @@ for(const[engine,type]of models)test(type+': independent 3D/ring display control
  const canvas=app.elements.get('cube'),ctx=canvas.getContext('2d'),ringctx=app.elements.get('rings').getContext('2d'),first=model.configs[0].id;
  const draw=()=>renderer.render(ctx,model,{width:500,height:400,selected:first,view:app.snapshot().view});
  const ring=()=>G.render(ringctx,{width:500,height:500,selected:first});
- assert.equal(display.labelMode(),'some','compact labels are the initial mode');
+ assert.equal(display.labelMode(),'none','labels are initially hidden');display.setLabelMode('some');display.toggleRingLabels();
  const compact=draw();assert(compact.targets.length>0);assert(compact.targets.every(t=>t.front&&!t.leader),'every compact badge is directly on its visible pole');
  const catalog=[...display.ringAxes()].sort();
  display.setLabelMode('all');const all=draw();assert(all.targets.length>=compact.targets.length,'all labels retain every compact direction and reveal any rear directions');
@@ -25,7 +25,7 @@ for(const[engine,type]of models)test(type+': independent 3D/ring display control
  assert.deepEqual(ring().dots.filter(d=>d.highlighted).map(d=>d.sticker),highlighted,'3D highlighting never hides the active ring nodes');
  display.toggleRingLabels();assert.equal(ring().axisLabels.length,0);
  assert.deepEqual(ring().dots.filter(d=>d.highlighted).map(d=>d.sticker),highlighted,'hiding ring labels never hides active ring nodes');
- root.ConstrainedSolverUI={visualState:()=>({active:true,held:[],pair:[]})};assert(ring().axisLabels.length>0,'ring-turn label setting does not change constrained mode');
+ root.ConstrainedSolverUI={visualState:()=>({active:true,held:[],pair:[]})};assert.equal(ring().axisLabels.length,0,'ring visibility is shared by constrained mode');
  root.ConstrainedSolverUI={visualState:()=>({active:false,held:[],pair:[]})};display.toggleRingLabels();display.setLabelMode('some');display.setHighlights3D(true);
  // Use the actual application event handlers, at exactly the dimensions/view
  // used by its render loop. Clicking a direct 3D badge selects that map axis.

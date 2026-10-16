@@ -111,6 +111,13 @@ function createPage(puzzle='cube2',options={}){
   for(const [i,m]of [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].entries()){
     const src=/src="([^"]+)"/.exec(m[1]),localName=src?.[1].split(/[?#]/)[0];if(src&&options.skipScripts?.includes(localName))continue;
     document.currentScript=src?{src:new URL(src[1],document.baseURI).href}:null;
+    // Fault-injection tests can omit one component. Normal tests execute the
+    // actual production bundle, with its actual same-directory script base.
+    const components=/data-sources="([^"]+)"/.exec(m[1])?.[1].split(' ');
+    if(components?.some(name=>options.skipScripts?.includes(name))){
+      for(const name of components)if(!options.skipScripts?.includes(name))vm.runInContext(fs.readFileSync(path.resolve(games,name),'utf8'),context,{filename:name});
+      continue;
+    }
     const code=src?fs.readFileSync(path.resolve(games,localName),'utf8'):m[2];vm.runInContext(code,context,{filename:src?src[1]:'page-inline-'+i});
   }
   document.currentScript=null;
@@ -120,7 +127,7 @@ function createPage(puzzle='cube2',options={}){
     advance:async(ms=200)=>{app.frame(ms);await app.flush();},
     settle:async(max=2000)=>{for(let i=0;i<max;i++){await app.advance(2000);const snap=app.snapshot();if(!snap.animating&&snap.mode==='idle'&&(!context.ConstrainedSolverUI||!['executing','loading'].includes(context.ConstrainedSolverUI.state().phase)))return;}throw Error('Game did not settle');},
     loadScript:name=>vm.runInContext(fs.readFileSync(path.resolve(games,name.split(/[?#]/)[0]),'utf8'),context,{filename:name}),now:()=>now,win};
-  app.element('speed').value='5';app.frame(0);return app;
+  app.element('speed').value=String(options.speed ?? 5);app.frame(0);return app;
 }
 
 module.exports={createPage,Element};

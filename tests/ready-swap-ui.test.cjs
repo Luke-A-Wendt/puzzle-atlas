@@ -75,7 +75,7 @@ test('Go executes the retained word without a second search that could time out'
   assert.equal(app.requests.length,count,'a ready pair does not submit another constrained search');
   await app.settleSolver();const after=app.mapping();
   assert.equal(app.snapshot().history.length,1);assert.equal(after.stickerToNode[before.nodeToSticker[f.a]],f.b);assert.equal(after.stickerToNode[before.nodeToSticker[f.b]],f.a);
-  assert.deepEqual(clean(app.ui().state().pair),[]);assert.equal(app.element('speedText').textContent,'Slow','manual mode retains All labels and the associated default rate');
+  assert.deepEqual(clean(app.ui().state().pair),[]);assert.equal(String(app.element('speed').value),'5','manual mode retains the independent user rate');
 });
 
 test('unknown choices remain selectable but explicitly require checking, and a timeout never makes them ready',async()=>{

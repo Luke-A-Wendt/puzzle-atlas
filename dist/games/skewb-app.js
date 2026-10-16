@@ -20,8 +20,8 @@ function toast(text){$('toast').textContent=text;$('toast').classList.add('show'
 function freshSeed(){seedCounter++;const bytes=new Uint32Array(3);if(globalThis.crypto&&crypto.getRandomValues)crypto.getRandomValues(bytes);else{bytes[0]=Date.now()>>>0;bytes[1]=(Math.random()*4294967296)>>>0;bytes[2]=seedCounter;}return Array.from(bytes,n=>n.toString(16).padStart(8,'0')).join('-').toUpperCase()+'-'+seedCounter;}
 let scrambleSpeedActive=false,sequenceDefaultsActive=false;
 function restorePlaybackDefaults(options={}){
- sequenceDefaultsActive=false;scrambleSpeedActive=false;if(options.preserveSettings)return;const changed=$('speed').value!=='3';$('speed').value='3';$('speedText').textContent='Normal';window.PuzzlePlaybackControls.syncSpeed();if(changed)window.PuzzleFeedback?.pulse?.($('speed'));
- window.PuzzleAxisDisplay?.resetDefaults?.({pulse:true});window.PuzzleSelection3D?.clearHover?.();
+ // End sequence bookkeeping only. User display and speed choices last until page reload.
+ sequenceDefaultsActive=false;scrambleSpeedActive=false;window.PuzzleSelection3D?.clearHover?.();
 }
 function updateUI(){
  if(sequenceDefaultsActive&&!locked()&&!window.ConstrainedSolverUI?.journalBusy?.()&&!window.PuzzleJournal?.isReplaying?.())restorePlaybackDefaults();
@@ -29,7 +29,7 @@ function updateUI(){
  $('status').className='status'+(busy?' busy':solved?'':' mixed');$('status').textContent=busy?(mode==='solve'?'✦ Solving':mode==='scramble'?'⤨ Scrambling':mode==='algorithm'?'↻ Solving':'↻ Turning'):(solved?'● Solved':'● In play');
  $('selectedName').textContent=window.PuzzleAxisDisplay?.selection(selected,animation)||'Select axis';$('moveCount').textContent=userTurns;$('solvedFaces').textContent=model.uniformFaces()+' / '+model.faces.length;
  $('pieceLabels').setAttribute('aria-pressed',String(pieceLabels));$('pieceLabels').textContent=pieceLabels?'Hide tile labels':'Show tile labels';
- $('ringFocus').textContent=ringFocused?'Show all rings':'Focus rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
+ $('ringFocus').textContent=ringFocused?'Show all rings':'Focus on rings';$('ringFocus').setAttribute('aria-pressed',String(ringFocused));
  document.querySelectorAll('.ring-key').forEach(b=>{b.classList.toggle('active',b.dataset.face===(window.PuzzleAxisDisplay?.selection(selected,animation)||null));b.setAttribute('aria-pressed',String(b.dataset.face===(window.PuzzleAxisDisplay?.selection(selected,animation)||null)));b.disabled=busy;});
  document.querySelectorAll('.notation-key').forEach(b=>b.disabled=busy||!!window.ConstrainedSolverUI?.blocksManualMoves?.());
  for(const id of ['ccw','cw','randomize'])$(id).disabled=busy||(id!=='randomize'&&(!!window.ConstrainedSolverUI?.blocksManualMoves?.()||!window.PuzzleAxisDisplay?.selection(selected,animation)));
@@ -70,7 +70,7 @@ function finishMove(){
  }else $('message').textContent=model.isSolved()?'Solved. Every piece is back in place.':a.source==='undo'?'Undid the last recorded turn.':'Played '+label(a.move)+'.';
  updateUI();
 }
-function startSequence(moves,kind){sequenceDefaultsActive=kind!=='journal-undo'&&kind!=='journal-redo';if(kind==='scramble'){scrambleSpeedActive=true;window.PuzzleAxisDisplay?.setLabelMode?.('none',{resetSpeed:true});$('speed').value='5';$('speedText').textContent='Fast';window.PuzzlePlaybackControls.syncSpeed();window.PuzzleFeedback?.pulse?.($('speed'));}stopRequested=false;mode=kind;queue=moves.map(normalize);sequenceTotal=queue.length;sequenceDone=0;paused=false;if(queue.length)beginMove(queue.shift(),kind);else{mode='idle';updateUI();}}
+function startSequence(moves,kind){sequenceDefaultsActive=kind!=='journal-undo'&&kind!=='journal-redo';stopRequested=false;mode=kind;queue=moves.map(normalize);sequenceTotal=queue.length;sequenceDone=0;paused=false;if(queue.length)beginMove(queue.shift(),kind);else{mode='idle';updateUI();}}
 function randomize(){if(locked())return false;seed=freshSeed();addLabel('Scramble · 24 legal turns');$('seedLabel').textContent='Fresh seed · continues current state';$('seed').textContent=seed;window.PuzzleJournal?.setSeed?.(seed);$('logTitle').textContent='Move journal';$('message').textContent='Scrambling the current position…';startSequence(model.scramble(seed,24),'scramble');return true;}
 function solve(){if(locked()||model.isSolved())return false;const solver=window.ConstrainedSolverUI;if(!solver||typeof solver.autoSolve!=='function'){toast('Constrained Solver is unavailable. Reload this puzzle to try again.');return false;}return solver.autoSolve();}
 function reset(){restorePlaybackDefaults();window.PuzzleJournal?.reset?.();animation=null;queue=[];mode='idle';paused=false;sequenceTotal=0;sequenceDone=0;stopRequested=false;ringDrag=null;model.reset();history=[];userTurns=0;seed=null;clearJournal();$('log').innerHTML='<span class="empty">Your moves will appear here. Try a ring or press Randomize.</span>';$('seedLabel').textContent='Start solved, or try a new scramble.';$('seed').textContent='NO SEED YET';$('logTitle').textContent='Move journal';$('message').textContent='Reset to solved.';updateUI();return true;}
@@ -125,7 +125,7 @@ $('pieceLabels').addEventListener('click',()=>{pieceLabels=false;updateUI();});
 $('ringFocus').addEventListener('click',()=>{ringFocused=!ringFocused;updateUI();});$('faceView').addEventListener('click',()=>{const n=model.configById[selected].normal;view.yaw=-Math.atan2(n[0],n[2]);view.pitch=Math.atan2(n[1],Math.hypot(n[0],n[2]));dirty=true;});
 $('homeView').addEventListener('click',()=>{view={...homeView};dirty=true;});$('ccw').addEventListener('click',()=>manual({face:selected,dir:-(G.getRing(selected).cwDir||1)}));$('cw').addEventListener('click',()=>manual({face:selected,dir:G.getRing(selected).cwDir||1}));$('randomize').addEventListener('click',randomize);$('solve').addEventListener('click',solve);$('reset').addEventListener('click',reset);$('pause').addEventListener('click',stopPlayback);$('undo').addEventListener('click',()=>window.PuzzleJournal?.navigate(-1,false));
 $('speed').addEventListener('input',()=>{
- $('speedText').textContent=['','Slow','Gentle','Normal','Quick','Fast'][+$('speed').value];
+ $('speedText').textContent=['','0.5×','0.75×','1×','1.5×','2×','4×','8×'][+$('speed').value];
  if(animation){const now=paused?pauseAt:performance.now(),progress=clamp((now-animation.start)/animation.duration,0,1),nextDuration=duration();
   animation.start=now-progress*nextDuration;animation.duration=nextDuration;}
  dirty=true;
@@ -133,6 +133,7 @@ $('speed').addEventListener('input',()=>{
 $('copy').addEventListener('click',async()=>{const text=journal.map(j=>j.label?'\n'+j.label+':':label(j.move)).join(' ').trim();try{await navigator.clipboard.writeText(text);toast('Moves copied.');}catch(_){const field=document.createElement('textarea');field.value=text;field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();const copied=document.execCommand('copy');field.remove();toast(copied?'Moves copied.':'Copy is unavailable in this browser.');}});
 function nearestRingAt(p){const x=ringViewport.cx+p.x*ringViewport.scale,y=ringViewport.cy+p.y*ringViewport.scale,label=ringAxisTargets.find(t=>Math.hypot(x-t.x,y-t.y)<=t.r+3);return label?{ring:G.getRing(label.id),distance:0}:G.nearestRing(p,window.PuzzleAxisDisplay?window.PuzzleAxisDisplay.selection(selected,animation):selected);}
 function ringPoint(e){const b=rings.getBoundingClientRect();return{x:(e.clientX-b.left-ringViewport.cx)/ringViewport.scale,y:(e.clientY-b.top-ringViewport.cy)/ringViewport.scale};}
+window.RingMapNavigation?.bind({canvas:rings,busy:locked,requestRender:()=>{dirty=true;},cancel:()=>{ringDrag=null;dirty=true;},hit:event=>{const near=nearestRingAt(ringPoint(event));return !!near&&near.distance*ringViewport.scale<=15;}});
 rings.addEventListener('pointerdown',e=>{if(locked()||e.button>0)return;const p=ringPoint(e),nearest=nearestRingAt(p);if(!nearest||nearest.distance*ringViewport.scale>15){window.PuzzleAxisDisplay?.clear?.();ringDrag=null;dirty=true;return;}const r=nearest.ring;setSelected(r.face);ringDrag={pointer:e.pointerId,ring:r,angle:G.dragAngle(p,r),total:0};rings.setPointerCapture(e.pointerId);rings.focus({preventScroll:true});dirty=true;});
 rings.addEventListener('pointermove',e=>{if(!ringDrag){if(!locked()&&!window.ConstrainedSolverUI?.visualState?.().active){const near=nearestRingAt(ringPoint(e));window.PuzzleAxisDisplay?.hover?.(near&&near.distance*ringViewport.scale<12?near.ring.face:null);}return;}if(ringDrag.pointer!==e.pointerId)return;const p=ringPoint(e),angle=G.dragAngle(p,ringDrag.ring);if(!Number.isFinite(angle))return;ringDrag.total+=((angle-ringDrag.angle+Math.PI+TAU)%TAU)-Math.PI;ringDrag.angle=angle;dirty=true;});
 rings.addEventListener('pointerleave',()=>window.PuzzleAxisDisplay?.hover?.(null));

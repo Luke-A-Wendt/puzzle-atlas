@@ -1,0 +1,1178 @@
+{
+  "schemaVersion": 1,
+  "methodology": {
+    "metric": "verified Auto Solve move count",
+    "samplesPerPuzzle": 3,
+    "seeds": [
+      "ATLAS-2026-EASY-17",
+      "ATLAS-2026-MEDIUM-83",
+      "ATLAS-2026-HARD-269"
+    ],
+    "scramble": "Each real game Randomize generator, with its normal length, starting solved; the move journal is discarded before solving.",
+    "counting": "One returned legal solver move is one step. A half-turn counts as one move when it is a single legal move in the puzzle vocabulary.",
+    "interpretation": "An estimate of effort for this website’s solver, not a proven shortest solution or a universal measure of human difficulty. Mirror mode is presented separately as Very Hard.",
+    "optimal": false,
+    "thresholds": {
+      "easyMax": 100,
+      "mediumMax": 300
+    },
+    "workerSha256": "6f97231ffc15d82da833fc39fb00a75ae781696560bbaaaa5872567b801099e7",
+    "solverBudgetMs": 15000,
+    "colorOptimizerBudgetMs": 250,
+    "reproducibility": "Scramble inputs are deterministic. The existing solver uses time-bounded optimization, so recomputing on a different device may produce slightly different valid move counts."
+  },
+  "puzzles": {
+    "axis": {
+      "difficulty": "Medium",
+      "averageMoves": 201.3,
+      "minMoves": 181,
+      "maxMoves": 240,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 183,
+          "stages": 19,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 181,
+          "stages": 19,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 240,
+          "stages": 22,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "cornerocta": {
+      "difficulty": "Medium",
+      "averageMoves": 102.3,
+      "minMoves": 92,
+      "maxMoves": 119,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 36,
+          "solveMoves": 119,
+          "stages": 18,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 35,
+          "solveMoves": 92,
+          "stages": 14,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 34,
+          "solveMoves": 96,
+          "stages": 17,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "crystal": {
+      "difficulty": "Medium",
+      "averageMoves": 236.7,
+      "minMoves": 217,
+      "maxMoves": 256,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 40,
+          "solveMoves": 256,
+          "stages": 45,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 40,
+          "solveMoves": 237,
+          "stages": 39,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 40,
+          "solveMoves": 217,
+          "stages": 42,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "cube10": {
+      "difficulty": "Hard",
+      "averageMoves": 6260.3,
+      "minMoves": 6061,
+      "maxMoves": 6532,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 120,
+          "solveMoves": 6188,
+          "stages": 403,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 120,
+          "solveMoves": 6532,
+          "stages": 398,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 120,
+          "solveMoves": 6061,
+          "stages": 406,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "cube2": {
+      "difficulty": "Easy",
+      "averageMoves": 27.3,
+      "minMoves": 17,
+      "maxMoves": 35,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 20,
+          "solveMoves": 30,
+          "stages": 5,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 20,
+          "solveMoves": 35,
+          "stages": 7,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 20,
+          "solveMoves": 17,
+          "stages": 4,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "cube3": {
+      "difficulty": "Easy",
+      "averageMoves": 90.7,
+      "minMoves": 84,
+      "maxMoves": 102,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 24,
+          "solveMoves": 86,
+          "stages": 14,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 24,
+          "solveMoves": 84,
+          "stages": 16,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 24,
+          "solveMoves": 102,
+          "stages": 16,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "cube4": {
+      "difficulty": "Hard",
+      "averageMoves": 315.3,
+      "minMoves": 273,
+      "maxMoves": 338,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 50,
+          "solveMoves": 273,
+          "stages": 37,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 50,
+          "solveMoves": 335,
+          "stages": 43,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 50,
+          "solveMoves": 338,
+          "stages": 42,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "cube5": {
+      "difficulty": "Hard",
+      "averageMoves": 572,
+      "minMoves": 543,
+      "maxMoves": 618,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 60,
+          "solveMoves": 618,
+          "stages": 70,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 60,
+          "solveMoves": 543,
+          "stages": 61,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 60,
+          "solveMoves": 555,
+          "stages": 65,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "cube6": {
+      "difficulty": "Hard",
+      "averageMoves": 1198.3,
+      "minMoves": 1179,
+      "maxMoves": 1225,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 72,
+          "solveMoves": 1191,
+          "stages": 105,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 72,
+          "solveMoves": 1225,
+          "stages": 105,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 72,
+          "solveMoves": 1179,
+          "stages": 107,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "cube7": {
+      "difficulty": "Hard",
+      "averageMoves": 1743,
+      "minMoves": 1697,
+      "maxMoves": 1809,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 84,
+          "solveMoves": 1697,
+          "stages": 148,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 84,
+          "solveMoves": 1809,
+          "stages": 150,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 84,
+          "solveMoves": 1723,
+          "stages": 151,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "cube8": {
+      "difficulty": "Hard",
+      "averageMoves": 2696,
+      "minMoves": 2589,
+      "maxMoves": 2865,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 96,
+          "solveMoves": 2634,
+          "stages": 211,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 96,
+          "solveMoves": 2589,
+          "stages": 213,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 96,
+          "solveMoves": 2865,
+          "stages": 208,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "cube9": {
+      "difficulty": "Hard",
+      "averageMoves": 3980.3,
+      "minMoves": 3759,
+      "maxMoves": 4413,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 108,
+          "solveMoves": 4413,
+          "stages": 331,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 108,
+          "solveMoves": 3759,
+          "stages": 271,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 108,
+          "solveMoves": 3769,
+          "stages": 269,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "diamond": {
+      "difficulty": "Easy",
+      "averageMoves": 23.3,
+      "minMoves": 14,
+      "maxMoves": 30,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 24,
+          "solveMoves": 30,
+          "stages": 4,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 24,
+          "solveMoves": 14,
+          "stages": 4,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 24,
+          "solveMoves": 26,
+          "stages": 4,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "diamondcube": {
+      "difficulty": "Medium",
+      "averageMoves": 136.3,
+      "minMoves": 108,
+      "maxMoves": 156,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 108,
+          "stages": 14,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 145,
+          "stages": 15,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 156,
+          "stages": 15,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "diamondstyle": {
+      "difficulty": "Easy",
+      "averageMoves": 71.3,
+      "minMoves": 55,
+      "maxMoves": 86,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 55,
+          "stages": 9,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 86,
+          "stages": 10,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 73,
+          "stages": 11,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "dino": {
+      "difficulty": "Easy",
+      "averageMoves": 24.7,
+      "minMoves": 16,
+      "maxMoves": 34,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 16,
+          "stages": 6,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 24,
+          "stages": 6,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 34,
+          "stages": 10,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "flatdiamond": {
+      "difficulty": "Medium",
+      "averageMoves": 120,
+      "minMoves": 102,
+      "maxMoves": 135,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 123,
+          "stages": 17,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 135,
+          "stages": 17,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 102,
+          "stages": 16,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "fto": {
+      "difficulty": "Medium",
+      "averageMoves": 195.7,
+      "minMoves": 184,
+      "maxMoves": 203,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 24,
+          "solveMoves": 184,
+          "stages": 26,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 24,
+          "solveMoves": 203,
+          "stages": 23,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 24,
+          "solveMoves": 200,
+          "stages": 24,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "ghost": {
+      "difficulty": "Medium",
+      "averageMoves": 252.7,
+      "minMoves": 245,
+      "maxMoves": 264,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 249,
+          "stages": 21,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 245,
+          "stages": 23,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 264,
+          "stages": 23,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "helicopter": {
+      "difficulty": "Medium",
+      "averageMoves": 122.3,
+      "minMoves": 107,
+      "maxMoves": 137,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 35,
+          "solveMoves": 137,
+          "stages": 18,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 35,
+          "solveMoves": 107,
+          "stages": 16,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 35,
+          "solveMoves": 123,
+          "stages": 16,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "jewel": {
+      "difficulty": "Medium",
+      "averageMoves": 102.3,
+      "minMoves": 84,
+      "maxMoves": 117,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 106,
+          "stages": 13,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 84,
+          "stages": 13,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 117,
+          "stages": 17,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "jing": {
+      "difficulty": "Easy",
+      "averageMoves": 29,
+      "minMoves": 26,
+      "maxMoves": 33,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 24,
+          "solveMoves": 28,
+          "stages": 6,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 24,
+          "solveMoves": 26,
+          "stages": 7,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 24,
+          "solveMoves": 33,
+          "stages": 6,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "kilominx": {
+      "difficulty": "Easy",
+      "averageMoves": 72,
+      "minMoves": 61,
+      "maxMoves": 81,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 40,
+          "solveMoves": 74,
+          "stages": 16,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 40,
+          "solveMoves": 61,
+          "stages": 13,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 40,
+          "solveMoves": 81,
+          "stages": 19,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "mastermorphix": {
+      "difficulty": "Medium",
+      "averageMoves": 167.7,
+      "minMoves": 145,
+      "maxMoves": 185,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 185,
+          "stages": 19,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 173,
+          "stages": 17,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 145,
+          "stages": 17,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "masterpyraminx": {
+      "difficulty": "Medium",
+      "averageMoves": 132.3,
+      "minMoves": 128,
+      "maxMoves": 137,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 44,
+          "solveMoves": 137,
+          "stages": 15,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 44,
+          "solveMoves": 128,
+          "stages": 18,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 44,
+          "solveMoves": 132,
+          "stages": 19,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "masterskewb": {
+      "difficulty": "Hard",
+      "averageMoves": 332.3,
+      "minMoves": 297,
+      "maxMoves": 362,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 24,
+          "solveMoves": 338,
+          "stages": 28,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 24,
+          "solveMoves": 297,
+          "stages": 23,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 24,
+          "solveMoves": 362,
+          "stages": 31,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "megaminx": {
+      "difficulty": "Hard",
+      "averageMoves": 317.3,
+      "minMoves": 296,
+      "maxMoves": 329,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 40,
+          "solveMoves": 327,
+          "stages": 41,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 40,
+          "solveMoves": 296,
+          "stages": 39,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 40,
+          "solveMoves": 329,
+          "stages": 39,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "mirror": {
+      "difficulty": "Easy",
+      "averageMoves": 89.7,
+      "minMoves": 86,
+      "maxMoves": 94,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 24,
+          "solveMoves": 94,
+          "stages": 17,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 24,
+          "solveMoves": 86,
+          "stages": 18,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 24,
+          "solveMoves": 89,
+          "stages": 17,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "pyraminx": {
+      "difficulty": "Easy",
+      "averageMoves": 31.3,
+      "minMoves": 30,
+      "maxMoves": 33,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 24,
+          "solveMoves": 31,
+          "stages": 5,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 24,
+          "solveMoves": 33,
+          "stages": 9,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 24,
+          "solveMoves": 30,
+          "stages": 6,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "pyramorphix": {
+      "difficulty": "Easy",
+      "averageMoves": 24,
+      "minMoves": 10,
+      "maxMoves": 31,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 20,
+          "solveMoves": 31,
+          "stages": 7,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 20,
+          "solveMoves": 10,
+          "stages": 4,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 20,
+          "solveMoves": 31,
+          "stages": 7,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "rainbow": {
+      "difficulty": "Easy",
+      "averageMoves": 24.7,
+      "minMoves": 16,
+      "maxMoves": 34,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 16,
+          "stages": 6,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 24,
+          "stages": 6,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 34,
+          "stages": 10,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "rhombic": {
+      "difficulty": "Medium",
+      "averageMoves": 175.7,
+      "minMoves": 160,
+      "maxMoves": 200,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 167,
+          "stages": 16,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 160,
+          "stages": 12,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 200,
+          "stages": 15,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "skewb": {
+      "difficulty": "Easy",
+      "averageMoves": 37.3,
+      "minMoves": 23,
+      "maxMoves": 45,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 24,
+          "solveMoves": 44,
+          "stages": 6,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 24,
+          "solveMoves": 45,
+          "stages": 9,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 24,
+          "solveMoves": 23,
+          "stages": 5,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "tetraminx": {
+      "difficulty": "Easy",
+      "averageMoves": 26.7,
+      "minMoves": 25,
+      "maxMoves": 28,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 20,
+          "solveMoves": 27,
+          "stages": 4,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 20,
+          "solveMoves": 25,
+          "stages": 5,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 20,
+          "solveMoves": 28,
+          "stages": 4,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "trajber": {
+      "difficulty": "Medium",
+      "averageMoves": 159.7,
+      "minMoves": 137,
+      "maxMoves": 185,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 30,
+          "solveMoves": 137,
+          "stages": 14,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 30,
+          "solveMoves": 157,
+          "stages": 16,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 30,
+          "solveMoves": 185,
+          "stages": 17,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    },
+    "ultimate": {
+      "difficulty": "Easy",
+      "averageMoves": 64.3,
+      "minMoves": 61,
+      "maxMoves": 69,
+      "samples": [
+        {
+          "seed": "ATLAS-2026-EASY-17",
+          "scrambleMoves": 24,
+          "solveMoves": 61,
+          "stages": 7,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-MEDIUM-83",
+          "scrambleMoves": 24,
+          "solveMoves": 63,
+          "stages": 9,
+          "verified": true,
+          "engineSolved": true
+        },
+        {
+          "seed": "ATLAS-2026-HARD-269",
+          "scrambleMoves": 24,
+          "solveMoves": 69,
+          "stages": 8,
+          "verified": true,
+          "engineSolved": true
+        }
+      ]
+    }
+  }
+}

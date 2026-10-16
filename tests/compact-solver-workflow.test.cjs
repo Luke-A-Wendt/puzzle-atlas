@@ -48,8 +48,8 @@ for(const puzzle of puzzles)test(puzzle+': 3D-only axis controls retain constrai
  for(const id of ['ccw','cw','viewRingCCW','viewRingCW']){assert.equal(app.element(id).disabled,true,'no axis means no turn');app.click(id);}
  assert.equal(app.snapshot().history.length,history);
  await ui.setActive(true);for(let n=0;n<80&&ui.state().phase==='loading';n++)await app.advance(0);
- assert.equal(ui.state().phase,'selecting');assert.equal(D.labelMode(),'all');assert.equal(app.element('viewLabelMode').textContent,'No labels');
- assert.equal(D.highlights3D(),true,'manual mode exposes selection borders even on Homer');assert.equal(String(app.element('playbackSpeed').value),'1');
+ assert.equal(ui.state().phase,'selecting');assert.equal(D.labelMode(),'none');assert.equal(app.element('viewLabelMode').textContent,'Show some labels');
+ assert.equal(D.highlights3D(),true,'manual mode exposes selection borders even on Homer');assert.equal(String(app.element('speed').value),'5');
  const moveButtons=app.document.querySelectorAll('.notation-key');assert(moveButtons.length>0);
  for(const button of moveButtons){assert.equal(button.disabled,true,button.textContent+' disabled during selection');button.click();}
  for(const id of ['ccw','cw','viewRingCCW','viewRingCW']){assert.equal(app.element(id).disabled,true);app.click(id);}
@@ -64,10 +64,10 @@ for(const puzzle of puzzles)test(puzzle+': 3D-only axis controls retain constrai
  for(const id of ['ccw','cw','viewRingCCW','viewRingCW'])assert.equal(app.element(id).disabled,true,'search continues blocking visible turns and their native handlers');
  assert.equal(app.snapshot().history.length,history,'planning cannot move the puzzle');
  app.click('pause');assert.equal(ui.state().phase,'selecting');assert.equal(ui.state().active,true);
- assert.equal(D.labelMode(),'all','canceling the check leaves setup labels visible');assert.equal(D.highlights3D(),true);
+ assert.equal(D.labelMode(),'none','canceling the check preserves hidden labels');assert.equal(D.highlights3D(),true);
  await ui.setActive(false);await app.advance(0);
- assert.equal(ui.state().active,false);assert.equal(D.labelMode(),'some');assert.equal(app.element('viewLabelMode').textContent,'All labels');assert.equal(String(app.element('playbackSpeed').value),'3');
- assert.equal(D.highlights3D(),puzzle!=='homer','ordinary highlight default restored');
+ assert.equal(ui.state().active,false);assert.equal(D.labelMode(),'none');assert.equal(app.element('viewLabelMode').textContent,'Show some labels');assert.equal(String(app.element('speed').value),'5');
+ assert.equal(D.highlights3D(),true,'highlight preference preserved');
  const selector=app.element('viewRingSelector'),first=selector.querySelectorAll('button').find(button=>!button.disabled);assert(first,'exiting restores 3D axis selection');
  first.click();await app.advance(0);
  const selected=app.snapshot().selected;

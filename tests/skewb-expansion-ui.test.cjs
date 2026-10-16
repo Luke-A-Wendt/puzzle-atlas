@@ -34,15 +34,15 @@ for(const type of ['skewb','jing','masterskewb']){
  }
  // Actual slider handler governs manual moves, scrambles, solves, and speed
  // changes during an active move. Stop discards only the unfinished turn and remaining queue.
- api.reset();els.speed.value='1';els.speed.events.input();api.move('L');tick(1300);assert(api.snapshot().animating);tick(100);assert(!api.snapshot().animating);
+ api.reset();els.speed.value='1';els.speed.events.input();api.move('L');tick(899);assert(api.snapshot().animating);tick(2);assert(!api.snapshot().animating);
  els.undo.events.click();settle();assert(api.snapshot().solved);
- els.speed.value='5';els.speed.events.input();api.move('L');tick(110);assert(!api.snapshot().animating);api.reset();
- els.speed.value='1';els.speed.events.input();api.randomize();assert.equal(els.speed.value,'5');tick(50);assert.equal(api.snapshot().history.length,0);els.pause.events.click();const stopped=JSON.stringify(api.snapshot().pieces);tick(3000);assert.equal(JSON.stringify(api.snapshot().pieces),stopped);assert.equal(api.snapshot().paused,false);assert.equal(api.snapshot().mode,'idle');assert.equal(els.speed.value,'3');
+ els.speed.value='5';els.speed.events.input();api.move('L');tick(226);assert(!api.snapshot().animating);api.reset();
+ els.speed.value='1';els.speed.events.input();api.randomize();assert.equal(els.speed.value,'1');tick(50);assert.equal(api.snapshot().history.length,0);els.pause.events.click();const stopped=JSON.stringify(api.snapshot().pieces);tick(3000);assert.equal(JSON.stringify(api.snapshot().pieces),stopped);assert.equal(api.snapshot().paused,false);assert.equal(api.snapshot().mode,'idle');assert.equal(els.speed.value,'1');
  api.randomize();tick(110);assert.equal(api.snapshot().history.length,1);settle();assert(!api.snapshot().solved);assert.equal(api.snapshot().history.length,24);const seed=api.snapshot().seed;
  assert(api.runMoves("L R' D B L2"));settle();assert.equal(api.snapshot().history.length,29);
  assertAutoSolveDelegates(context);
  // A constrained stage uses this same playback API and honors live speed changes.
- els.speed.value='1';els.speed.events.input();assert(api.runMoves("L R'",{label:'Auto Solve · animation fixture'}));tick(1000);assert.equal(api.snapshot().history.length,29);assert(api.snapshot().animating);els.speed.value='5';els.speed.events.input();settle();assert.equal(api.snapshot().history.length,31);assert.equal(api.snapshot().journal.filter(j=>j.source==='algorithm').length,7);assert(api.snapshot().journal.some(j=>j.label==='Auto Solve · animation fixture'));
+ els.speed.value='1';els.speed.events.input();assert(api.runMoves("L R'",{label:'Auto Solve · animation fixture'}));tick(800);assert.equal(api.snapshot().history.length,29);assert(api.snapshot().animating);els.speed.value='5';els.speed.events.input();settle();assert.equal(api.snapshot().history.length,31);assert.equal(api.snapshot().journal.filter(j=>j.source==='algorithm').length,7);assert(api.snapshot().journal.some(j=>j.label==='Auto Solve · animation fixture'));
  api.randomize();settle();assert.notEqual(api.snapshot().seed,seed);api.reset();assert.equal(api.snapshot().journal.length,0);
  assert.throws(()=>api.runMoves('INVALID'));if(type==='jing')assert.throws(()=>api.runMoves('l'));
  els.pieceLabels.events.click();tick();writeRender(type+'-labels.png',els.cube);els.pieceLabels.events.click();

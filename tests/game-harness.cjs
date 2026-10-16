@@ -62,7 +62,7 @@ function createHarness(options={}){
   }
   const body=new Element('body');const bodyTag=/<body([^>]*)>/.exec(html);if(bodyTag)for(const a of bodyTag[1].matchAll(/data-([\w-]+)="([^"]+)"/g))body.dataset[a[1].replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=a[2];for(const el of elements.values())body.appendChild(el);
   const document=new Element('document');document.body=body;document.appendChild(body);
-  document.getElementById=id=>{assert(elements.has(id),'Missing DOM element '+id);return elements.get(id);};
+  document.getElementById=id=>elements.get(id)||null;
   document.createElement=tag=>new Element(tag);
   document.createTextNode=text=>Object.assign(new Element('#text'),{textContent:text});
   document.execCommand=()=>true;

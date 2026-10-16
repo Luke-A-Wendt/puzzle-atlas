@@ -58,12 +58,12 @@ function exhausted(budgetMs,nextBudgetMs,extra={}){
 
 test('Continue reuses the worker and accumulated search, and the one-minute endpoint cannot restart the same request',async()=>{
   const app=host(),first=await app.pending();
-  assert.equal(first.request.options.maxMs,3000);assert.equal(app.element('csSearchProgress').hidden,false);assert.equal(String(app.element('speed').value),'1');
+  assert.equal(first.request.options.maxMs,3000);assert.equal(app.element('csSearchProgress').hidden,false);assert.equal(String(app.element('speed').value),'5');
   let entry=first;
   for(const [budget,next,added]of [[3000,10000,7],[10000,30000,20],[30000,60000,30]]){
     await app.respond(entry,exhausted(budget,next));
     assert.equal(entry.worker.terminated,false,'the frontier remains in its original worker');
-    assert.equal(app.ui().state().phase,'selecting');assert.equal(app.ui().state().search.budgetMs,budget);assert.equal(String(app.element('speed').value),'3','a paused unsuccessful check restores normal speed');
+    assert.equal(app.ui().state().phase,'selecting');assert.equal(app.ui().state().search.budgetMs,budget);assert.equal(String(app.element('speed').value),'5','a paused unsuccessful check preserves speed');
     assert.deepEqual(clean(app.ui().visualState().pair),[],'failed checks release both visible endpoints');
     assert.equal(app.ui().state().pairTarget,0);assert.equal(app.ui().state().tool,'swap');
     assert.equal(app.ui().state().anchors.some(a=>a.label),false,'failed pair anchors disappear');
@@ -106,7 +106,7 @@ test('a resumed verified result executes normally, clears A/B, and discards the 
   const app=host();await app.ready();app.ui().selectNode(app.nodeId(f.held));app.choose();const before=app.mapping();app.click('csGo');const first=app.manual();
   await app.respond(first,exhausted(3000,10000));app.click('csRetry');const second=app.manual();
   await app.respond(second,{status:'solved',moveIndices:[f.move],optimal:false,search:{budgetMs:10000,elapsedMs:3600,states:380,transitions:2400,canContinue:false,resumed:true}});
-  assert.equal(second.worker.terminated,true);assert.equal(app.ui().state().phase,'executing');assert.equal(String(app.element('speed').value),'1','resumed manual playback remains slow');
+  assert.equal(second.worker.terminated,true);assert.equal(app.ui().state().phase,'executing');assert.equal(String(app.element('speed').value),'5','resumed manual playback keeps the selected rate');
   assert.deepEqual(clean(app.ui().visualState()),{active:true,held:[before.nodeToSticker[f.held]],pair:[before.nodeToSticker[f.a],before.nodeToSticker[f.b]]},'A/B physical sticker identities remain available throughout playback');
   await app.advance(1);assert.equal(app.ui().visualState().pair.length,2);await app.settleSolver();
   const after=app.mapping();assert.equal(after.stickerToNode[before.nodeToSticker[f.a]],f.b);assert.equal(after.stickerToNode[before.nodeToSticker[f.b]],f.a);
@@ -123,7 +123,7 @@ test('editing A, B, holds, Clear all, cancellation and leaving solver mode disca
     if(action==='clear')app.click('csClear');
     if(action==='cancel')app.ui().cancel();
     if(action==='mode')app.click('ringModeDefault');
-    if(action==='move'){app.context.PUZZLE_API.move('R');await app.settleSolver();}
+    if(action==='move'){app.click('ringModeDefault');assert.equal(app.context.PUZZLE_API.move('R'),true);await app.settleSolver();}
     await app.advance(0);assert.equal(first.worker.terminated,true,action+' discards the retained worker');assert.equal(app.ui().state().search,null,action+' discards progress for the old constraint set');
     const moves=app.snapshot().history.length;await app.respond(first,{status:'solved',moveIndices:[f.move]},{force:true});
     assert.equal(app.snapshot().history.length,moves,action+' rejects late results');assert.notEqual(app.ui().state().phase,'executing');

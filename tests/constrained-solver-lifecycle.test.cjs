@@ -83,11 +83,11 @@ function host(id='cube2',{withoutHistory=false,globals={}}={}){
 // Tests below deliberately use real puzzle scripts and the public solver UI;
 // canvas layout/rendering remains covered by the existing ring-map tests.
 
-test('hiding the map cancels planning, resets speed, and retains the ordinary 3D turn controls',async()=>{
+test('hiding the map cancels planning, preserves speed, and retains the ordinary 3D turn controls',async()=>{
   const app=host();await app.scramble();app.element('speed').value='2';app.element('speed').dispatch('input');await app.start();
-  assert.equal(String(app.element('speed').value),'5');const worker=app.fullWorker(),stale=app.stagedReply();
+  assert.equal(String(app.element('speed').value),'2');const worker=app.fullWorker(),stale=app.stagedReply();
   app.click('ringPanelHide');await app.advance(0);assert.equal(worker.terminated,true);assert.equal(app.ui().state().active,false);assert.equal(app.ui().state().phase,'off');
-  assert.equal(String(app.element('speed').value),'3');assert.equal(app.document.body.classList.contains('rings-collapsed'),true);
+  assert.equal(String(app.element('speed').value),'2');assert.equal(app.document.body.classList.contains('rings-collapsed'),true);
   worker.reply(stale,true);await app.advance(1000);assert.equal(app.runCalls.length,0,'hidden stale plan cannot execute');
   app.click('ringPanelToggle');assert.equal(app.ui().state().active,false);assert.equal(app.element('csNodeOverlay').hidden,true);assert.equal(app.document.body.classList.contains('rings-collapsed'),false);
   const before=app.snapshot().history.length;assert.equal(app.element('viewRingCW').disabled,true,'a fresh ring mode has no selected axis');app.context.PUZZLE_API.select('U');app.context.PuzzleAxisDisplay.syncTurnControls();app.click('viewRingCW');await app.settle();assert.equal(app.snapshot().history.length,before+1,'ordinary 3D turn controls work after reopen');
@@ -98,11 +98,11 @@ test('hiding during playback finishes only the current atomic move and exits ins
   app.fullWorker().reply(payload);await app.advance(0);assert.equal(app.snapshot().animating,true);const before=app.snapshot().history.length;
   app.click('ringPanelHide');await app.settle();assert.equal(app.stopCalls.length,1);assert.equal(app.snapshot().history.length,before+1,'queued moves stop after current legal atomic move');
   assert.equal(app.ui().state().active,false);assert.equal(app.ui().state().phase,'off');assert.equal(app.snapshot().mode,'idle');assert.equal(app.snapshot().animating,false);
-  assert.equal(String(app.element('speed').value),'3');assert.equal(app.runCalls.length,1);assert.equal(app.document.body.classList.contains('cs-working'),false);
+  assert.equal(String(app.element('speed').value),'5');assert.equal(app.runCalls.length,1);assert.equal(app.document.body.classList.contains('cs-working'),false);
   app.click('ringPanelToggle');assert.equal(app.element('ringPanel').classList.contains('cs-active'),false);
 });
 
-test('repeated Auto Stop finishes only the active permutation then clears partial constraints and restores normal speed',async()=>{
+test('repeated Auto Stop finishes only the active permutation then clears partial constraints and preserves playback speed',async()=>{
   const app=host();await app.scramble();await app.start();const payload=app.stagedReply([['F',"F'","U'"],["R'"]]);
   app.fullWorker().reply(payload);await app.advance(0);assert.match(app.element('pause').textContent,/^Stop$/);
   assertPlaybackAction(app,'F',1);
@@ -113,7 +113,7 @@ test('repeated Auto Stop finishes only the active permutation then clears partia
   app.click('pause');assert.equal(app.stopCalls.length,0,'first Stop retains the stage queue');assert.equal(app.element('pause').disabled,false);assert.equal(app.element('pause').textContent,'Stop now');assert.equal(app.ui().state().auto.stopRequested,'sequence');
   app.click('pause');assert.equal(app.element('pause').disabled,true);assert.equal(app.ui().state().auto.stopRequested,'turn');
   await app.settle();assert.equal(app.runCalls.length,1);assert.equal(app.snapshot().history.length,3,'only current stage turn finishes; remaining stage turns are discarded');
-  assert.equal(app.ui().state().active,false);assert.equal(app.ui().state().phase,'off');assert.equal(String(app.element('speed').value),'3');
+  assert.equal(app.ui().state().active,false);assert.equal(app.ui().state().phase,'off');assert.equal(String(app.element('speed').value),'5');
   assert.equal(layer.hidden,true);assert.equal(app.ui().state().anchors.length,0,'ordinary mode has no leftover reference marks');
   const afterMap=app.core().mapSnapshot(app.model,app.snapshot()).stickerToNode,first=app.model.moves.find(m=>m.name==='F').perm;for(const [id,node]of Object.entries(beforeMap))assert.equal(afterMap[id],first[node],'stopped state equals precisely the active legal permutation');
   assert.equal(app.ui().state().held.length,0,'partial constraints are cleared');assert.equal(app.ui().state().pair.length,0);
@@ -152,14 +152,14 @@ test('a mixed lasso flips enclosed holds once, preserves outside holds, and canc
   await drag(true);assert.deepEqual(Array.from(app.ui().state().held).sort(),[...expected.slice(1),outside].sort(),'modifier keys do not switch to a hidden removal tool');
 });
 
-test('Select held flips pointer and keyboard selections and A/B switch out of hold mode',async()=>{
+test('Hold flips pointer and keyboard selections and swap buttons switch out of hold mode',async()=>{
   const app=host();await app.ready();const overlay=app.element('csNodeOverlay'),hold=app.element('csHold'),node=app.context.PUZZLE_SOLVER_BRIDGE.nodes()[0];
-  assert.equal(hold.textContent,'Select held');assert.equal(app.element('csRelease'),null);assert.equal(hold.getAttribute('aria-pressed'),'true');
+  assert.equal(hold.querySelector('.cs-hold-caption').textContent,'Hold');assert.equal(app.element('csHeldCount').textContent,'0');assert.equal(app.element('csRelease'),null);assert.equal(hold.getAttribute('aria-pressed'),'true');
   const point={clientX:node.x,clientY:node.y,pointerId:17};
   overlay.dispatch('pointerdown',point);overlay.dispatch('pointerup',point);
-  assert.deepEqual(Array.from(app.ui().state().held),[node.stickerId]);assert.match(overlay.getAttribute('aria-label'),/Enter to release/);
+  assert.deepEqual(Array.from(app.ui().state().held),[node.stickerId]);assert.equal(app.element('csHeldCount').textContent,'1');assert.match(overlay.getAttribute('aria-label'),/Enter to release/);
   overlay.dispatch('pointerdown',point);overlay.dispatch('pointerup',point);
-  assert.deepEqual(Array.from(app.ui().state().held),[]);assert.match(overlay.getAttribute('aria-label'),/Enter to hold/);
+  assert.deepEqual(Array.from(app.ui().state().held),[]);assert.equal(app.element('csHeldCount').textContent,'0');assert.match(overlay.getAttribute('aria-label'),/Enter to hold/);
   overlay.dispatch('keydown',{key:'Enter'});assert.deepEqual(Array.from(app.ui().state().held),[node.stickerId]);
   overlay.dispatch('keydown',{key:' '});assert.deepEqual(Array.from(app.ui().state().held),[]);
   app.click('csPairA');assert.equal(hold.getAttribute('aria-pressed'),'false');assert.equal(app.ui().state().tool,'swap');
@@ -177,7 +177,7 @@ test('both progress bars fill the same width while reporting cumulative nodes an
   await app.advance(2000);assert.equal(Number(moves.value),1);assert.equal(Number(nodes.value),initial,'an intermediate atomic move does not falsely secure nodes');
   const css=fs.readFileSync(path.join(games,'constrained-solver.css'),'utf8'),shared=/\.cs-auto-progress progress\{([^}]+)\}/.exec(css)?.[1];
   assert(shared);assert.match(shared,/width:100%/);assert.match(shared,/height:6px/);assert.doesNotMatch(css,/#cs(?:Auto|Step)ProgressBar\s*\{/,'both bars use the identical shared style');
-  app.click('pause');await app.settle();assert.equal(String(app.element('speed').value),'3');
+  app.click('pause');await app.settle();assert.equal(String(app.element('speed').value),'5');
 });
 
 test('selected swap endpoints use a solid white 4.8px outline with no teal selection styling',async()=>{
@@ -251,19 +251,19 @@ test('mirror mode keeps the constrained solver and holds usable while ending goa
   app.click('mirrorMode');await app.advance(0);assert.equal(app.element('csShowGoal').hidden,false);
 });
 
-test('Auto Solve label preset controls initial speed without overriding user choices between stages',async()=>{
+test('Auto Solve preserves independent label, highlight, ring and speed preferences throughout every stage',async()=>{
   const app=host();await app.scramble();const D=app.context.PuzzleAxisDisplay;
-  D.setLabelMode('all');app.element('speed').value='4';app.element('speed').dispatch('input');
-  await app.start();assert.equal(D.labelMode(),'none');assert.equal(String(app.element('speed').value),'5');
-  app.fullWorker().reply(app.stagedReply());await app.advance(0);
-  D.setLabelMode('all');assert.equal(String(app.element('speed').value),'1');
+  D.setLabelMode('all');D.setHighlights3D(false);D.toggleRingLabels();app.click('ringFocus');
   app.element('speed').value='4';app.element('speed').dispatch('input');
-  D.setLabelMode('all');assert.equal(String(app.element('speed').value),'4','same-mode refresh never overrides the selected playback rate');
-  await app.advance(2000);assert.equal(app.ui().state().phase,'auto-gap');assert.equal(D.labelMode(),'all');assert.equal(String(app.element('speed').value),'4');
-  await app.advance(501);assert.equal(app.ui().state().phase,'executing');assert.equal(String(app.element('speed').value),'4','the next incremental stage preserves user rate');
-  D.setLabelMode('some');assert.equal(String(app.element('speed').value),'3');
-  app.element('speed').value='2';app.element('speed').dispatch('input');
-  await app.settle();app.assertSolved();assert.equal(D.labelMode(),'some');assert.equal(String(app.element('speed').value),'3','completion restores 1x even if labels already say some');
+  await app.start();assert.equal(D.labelMode(),'all');assert.equal(D.highlights3D(),false);assert.equal(D.ringLabelsVisible(),true);assert.equal(app.element('ringFocus').textContent,'Focus on rings');assert.equal(String(app.element('speed').value),'4');
+  app.fullWorker().reply(app.stagedReply());await app.advance(0);
+  D.setLabelMode('none');assert.equal(String(app.element('speed').value),'4','label mode never sets playback speed');
+  app.element('speed').value='6';app.element('speed').dispatch('input');
+  await app.advance(2000);assert.equal(app.ui().state().phase,'auto-gap');assert.equal(D.labelMode(),'none');assert.equal(String(app.element('speed').value),'6');
+  await app.advance(501);assert.equal(app.ui().state().phase,'executing');assert.equal(String(app.element('speed').value),'6','the next incremental stage preserves user rate');
+  D.setLabelMode('some');assert.equal(String(app.element('speed').value),'6');
+  app.element('speed').value='7';app.element('speed').dispatch('input');
+  await app.settle();app.assertSolved();assert.equal(D.labelMode(),'some');assert.equal(D.highlights3D(),false);assert.equal(D.ringLabelsVisible(),true);assert.equal(app.element('ringFocus').textContent,'Focus on rings');assert.equal(String(app.element('speed').value),'7','completion preserves 8x');
 });
 
 test('Suggest holds replaces prior holds, clears endpoints, and immediately selects the first swap endpoint tool',async()=>{
@@ -290,10 +290,10 @@ test('first Auto Stop completes and verifies the whole stage across native queue
   }
 });
 
-test('manual mode presets apply during setup; user overrides survive completion and exit restores defaults',async()=>{
+test('manual setup, verified swap playback and exit preserve independent user preferences',async()=>{
   for(const id of ['cube2','homer']){
     const app=host(id),D=app.context.PuzzleAxisDisplay;D.setHighlights3D(false);
-    await app.ready();assert.equal(D.labelMode(),'all',id);assert.equal(D.highlights3D(),true,id);assert.equal(String(app.element('speed').value),'1');assert.equal(app.ui().blocksManualMoves(),true);
+    await app.ready();assert.equal(D.labelMode(),'none',id);assert.equal(D.highlights3D(),false,id);assert.equal(String(app.element('speed').value),'5');assert.equal(app.ui().blocksManualMoves(),true);
     assert.equal(app.context.PUZZLE_API.move('U'),false,'manual move entry is locked during setup');
     const map=app.core().mapSnapshot(app.model,app.snapshot()),half=app.model.moves.find(m=>m.name==='R2'),a=map.occupiedNodes.find(n=>half.perm[n]!==n),b=half.perm[a];
     app.ui().setTool('swap');app.ui().selectNode(map.nodeToSticker[a]);app.ui().selectNode(map.nodeToSticker[b]);app.click('csGo');
@@ -301,7 +301,7 @@ test('manual mode presets apply during setup; user overrides survive completion 
     worker.reply({id:worker.request.id,type:'result',result:{status:'solved',moveIndices:[r,r]},modelFingerprint:app.core().modelFingerprint(app.model)});await app.advance(0);
     D.setLabelMode('some');D.setHighlights3D(false);app.element('speed').value='4';app.element('speed').dispatch('input');
     await app.settle();assert.equal(app.ui().state().phase,'selecting');assert.equal(D.labelMode(),'some');assert.equal(D.highlights3D(),false);assert.equal(String(app.element('speed').value),'4','completion preserves the user override while still in manual mode');
-    app.ui().setActive(false);assert.equal(D.labelMode(),'some');assert.equal(D.highlights3D(),id!=='homer');assert.equal(String(app.element('speed').value),'3');assert.equal(app.ui().blocksManualMoves(),false);
+    app.ui().setActive(false);assert.equal(D.labelMode(),'some');assert.equal(D.highlights3D(),false);assert.equal(String(app.element('speed').value),'4');assert.equal(app.ui().blocksManualMoves(),false);
   }
 });
 
@@ -309,8 +309,8 @@ test('repeated mode selection cannot escalate graceful Auto Stop and enters manu
   const app=host('homer');await app.scramble();await app.start();const payload=app.stagedReply([['F',"F'","U'"],["R'"]]);
   app.fullWorker().reply(payload);await app.advance(0);app.click('constrainedSolverToggle');app.click('constrainedSolverToggle');
   assert.equal(app.ui().state().auto.stopRequested,'sequence');assert.equal(app.stopCalls.length,0);await app.settle();
-  assert.equal(app.snapshot().history.length,5);assert.equal(app.ui().state().active,true);assert.equal(app.ui().state().phase,'selecting');assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'all');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),true);assert.equal(String(app.element('speed').value),'1');
-  assert(app.ui().state().held.length>0);app.click('ringModeDefault');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),false);assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'some');
+  assert.equal(app.snapshot().history.length,5);assert.equal(app.ui().state().active,true);assert.equal(app.ui().state().phase,'selecting');assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'none');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),true);assert.equal(String(app.element('speed').value),'5');
+  assert(app.ui().state().held.length>0);app.click('ringModeDefault');assert.equal(app.context.PuzzleAxisDisplay.highlights3D(),true);assert.equal(app.context.PuzzleAxisDisplay.labelMode(),'none');
 });
 
 // This is a source-cascade layout budget, not a browser screenshot. It follows
@@ -323,9 +323,9 @@ function solverLayout(app,width){
   const f=style(feedback),rows=f['grid-template-rows'].split(/\s+/).map(Number.parseFloat);
   assert(rows.every(Number.isFinite),'feedback uses fixed rows, not content-sized rows');
   const c=style(controls),available=panelWidth-px(c,'padding-left')-px(c,'padding-right');
-  const intrinsic=el=>{const s=style(el);if(el.classList.contains('cs-tools'))return intrinsic(app.element('csHold'));if(el.classList.contains('cs-pair-chip'))return 20+52+px(s,'column-gap')+px(s,'padding-left')+px(s,'padding-right')+2;return Math.max(px(s,'min-width'),px(s,'width'),measure(el.textContent,s)+px(s,'padding-left')+px(s,'padding-right')+2);};
+  const intrinsic=el=>{const s=style(el);if(el.classList.contains('cs-tools'))return groupWidth(el)+px(s,'padding-left')+px(s,'padding-right')+2;if(el.id==='csHold')return px(style(app.element('csHeldCount')),'min-width')+measure('Hold',s)+px(s,'gap')+px(s,'padding-left')+px(s,'padding-right')+2;if(el.classList.contains('cs-pair-chip'))return Math.max(px(s,'min-width'),20+Math.max(px(style(el.querySelector('.cs-slot-value')),'min-width'),measure('Swap',style(el.querySelector('.cs-slot-value'))))+px(s,'column-gap')+px(s,'padding-left')+px(s,'padding-right')+2);return Math.max(px(s,'min-width'),px(s,'width'),measure(el.textContent,s)+px(s,'padding-left')+px(s,'padding-right')+2);};
   const groupWidth=el=>{const children=el.children.filter(e=>e.nodeType!==3&&!e.hidden&&style(e).display!=='none');return children.reduce((sum,e)=>sum+intrinsic(e),0)+px(style(el),'gap')*(children.length-1);};
-  const twoRows=!toolbar.hidden&&groupWidth(toolbar)+8+groupWidth(selection)>available,actionHeight=twoRows?64+px(style(actions),'row-gap',5):32;
+  const twoRows=style(selection)['grid-row']==='2',actionHeight=actions.hidden?0:twoRows?64+px(style(actions),'row-gap',5):32;
   return {height:actionHeight+rows.reduce((a,b)=>a+b,0)+px(f,'row-gap')*(rows.length-1)+px(c,'gap')+px(c,'padding-top')+px(c,'padding-bottom'),toolbar:!toolbar.hidden,rows,slot:px(style(slot),'height')};
 }
 test('manual selecting, checking, running and completion retain one reserved feedback footprint',async()=>{
@@ -344,14 +344,17 @@ test('manual selecting, checking, running and completion retain one reserved fee
   assert.equal(app.element('csStatus').hidden,false);assert.equal(app.element('csEligibilityNote').hidden,true,'completion and background eligibility never overlay one another');
   assertPlaybackAction(app,null);
 });
-test('automatic playback and pauses keep identical panel rows without a duplicate secured counter',async()=>{
+test('automatic playback and pauses show only progress, without Current/Goal selectors or a duplicate secured counter',async()=>{
   const app=host();await app.scramble();await app.start();app.fullWorker().reply(app.stagedReply());await app.advance(0);
   const widths=[320,360,412,1280],base=widths.map(width=>solverLayout(app,width));
-  assert.equal(app.ui().state().phase,'executing');assert.equal(app.element('csHeldCount').hidden,true);assert.equal(app.element('csHeldCount').parentNode.hidden,true,'the redundant count row is entirely removed');
+  assert.equal(app.element('csPairA').closest('.cs-action-row').hidden,true,'Auto Solve hides the full selector row without reserving it');
+  assert.equal(app.element('csGuide').closest('.cs-action-row').hidden,true);
+  assert.equal(app.ui().state().phase,'executing');assert.equal(app.element('csHeldCount').hidden,true);assert.equal(app.element('csHeldCount').closest('.cs-toolbar').hidden,true,'the hold controls are entirely removed during Auto Solve');
   assertPlaybackAction(app,'U',-1);
   for(const state of base){assert.equal(state.toolbar,false);assert.deepEqual(state.rows,[44]);}assert.equal(app.element('csStatus').parentElement.hidden,true);
   await app.advance(2000);assert.equal(app.ui().state().phase,'auto-gap');assertPlaybackAction(app,null);widths.forEach((width,i)=>assert.deepEqual(solverLayout(app,width),base[i]));
   await app.advance(501);assert.equal(app.ui().state().phase,'executing');assertPlaybackAction(app,'R',-1);widths.forEach((width,i)=>assert.deepEqual(solverLayout(app,width),base[i]));
   assert.match(app.element('csAutoProgressLabel').textContent,/secured/,'the meaningful secured count remains with the total progress bar');await app.settle();app.assertSolved();
+  app.ui().setActive(true);await app.advance(0);assert.equal(app.element('csPairA').closest('.cs-action-row').hidden,false,'manual controls return when manual mode is opened');
   assertPlaybackAction(app,null);
 });
