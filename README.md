@@ -94,18 +94,6 @@ Then open **http://localhost:8000**. On Windows, `py` can be used instead of `py
 
 With the complete repository downloaded, local HTTP serving works without internet access. It uses your own computer, not an external compute service. Visiting the hosted site requires a connection to retrieve its files; automatic offline caching is not required or promised. Optional reference links and the GitHub-hosted screenshot in this README are external resources, not dependencies of the puzzle runtime.
 
-## Deploy to GitHub Pages
-
-The included `.github/workflows/static.yml` workflow publishes **`./dist`** when changes are pushed to `main`, and can also be run manually from GitHub Actions.
-
-1. Keep the repository layout intact; do not move `dist/` contents into the repository root.
-2. In **Settings → Pages**, select **GitHub Actions** as the publishing source.
-3. Commit all changed and new files, including bundled scripts, images, solver models, and caches.
-4. Push to `main` and wait for the deployment workflow to succeed.
-5. Open the published site and test a puzzle. If necessary, hard-refresh to discard an older cached page.
-
-Local HTTP testing checks the static package before deployment; the final GitHub Pages URL should still be checked after publication.
-
 ## Project layout
 
 | Path | Contents |
