@@ -2,7 +2,7 @@
 
 An interactive collection of **36 twisty puzzles**, with linked 3D views and ring maps, built-in solution guides, and browser-based solvers powered by permutation groups and stabilizer chains.
 
-**[Play Puzzle Atlas](https://luke-a-wendt.github.io/puzzle-atlas/)** · **[Solving handbook](https://luke-a-wendt.github.io/puzzle-atlas/solver-handbook.html)**
+**[Play Puzzle Atlas!](https://luke-a-wendt.github.io/puzzle-atlas/)**
 
 Explore how a puzzle moves, solve it by hand, watch an incremental automatic solution, or experiment with exchanging two tiles while preserving selected colors.
 
