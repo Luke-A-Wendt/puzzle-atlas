@@ -115,7 +115,7 @@ The development tools are not required to serve the prepared `dist/` website.
 
 ## References and feedback
 
-Puzzle guides and the solving handbook contain relevant webpages and scholarly references. [Jaap’s Puzzle Page](https://www.jaapsch.net/puzzles/indxgraf.htm) is a useful resource for puzzle descriptions and solving methods.
+Puzzle guides and the solving handbook contain relevant webpages and scholarly references.
 
 When reporting an issue, include the puzzle name, browser and device, whether you are using GitHub Pages or a local HTTP server, reproduction steps, and any displayed diagnostic. Screenshots and the move journal can help reproduce a problem.
 
