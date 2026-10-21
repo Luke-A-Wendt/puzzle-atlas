@@ -12,6 +12,44 @@
     active: Object.freeze({fill:'#f3f3f5', stroke:'#101116', text:'#101116'}),
     inactive: Object.freeze({fill:'#101116', stroke:'#f3f3f5', text:'#f3f3f5'})
   });
+  // One direction marker per active orbit. Cache by geometry and resting-node
+  // layout; neither moving colors nor animation frames invalidate placement.
+  const directionPlacements = new WeakMap();
+  function drawRingDirection(ctx, curve, options) {
+    if(!labelsOnRings)return null;
+    const {at,period,nodes,radius,scale=1,direction=1}=options;
+    if(!(period>0&&scale>0)||!nodes?.length)return null;
+    const bounds=options.bounds||{x0:0,y0:0,x1:500,y1:500};
+    const size=Math.max(7/scale,Math.min(16/scale,radius*1.8));
+    const key=[scale,size,bounds.x0,bounds.y0,bounds.x1,bounds.y1].join(',');
+    let marker=directionPlacements.get(curve);
+    if(!marker||marker.nodes!==nodes||marker.key!==key){
+      const margin=size*.65, samples=256;
+      const candidate=t=>{
+        const point=at((t%period+period)%period);
+        if(!Number.isFinite(point.x+point.y))return null;
+        let clearance=Infinity;
+        for(const node of nodes){const dx=point.x-node.x,dy=point.y-node.y;clearance=Math.min(clearance,dx*dx+dy*dy);}
+        const edge=Math.min(point.x-bounds.x0,bounds.x1-point.x,point.y-bounds.y0,bounds.y1-point.y);
+        return {t,point,score:Math.sqrt(clearance)-Math.max(0,margin-edge)*100};
+      };
+      let best=null;
+      for(let i=0;i<samples;i++){const c=candidate(period*i/samples);if(c&&(!best||c.score>best.score))best=c;}
+      if(!best)return null;
+      // Refine locally without changing the ring or its resting intersections.
+      let step=period/samples;
+      for(let pass=0;pass<4;pass++){const center=best.t;for(const offset of [-.5,-.25,.25,.5]){const c=candidate(center+offset*step);if(c&&c.score>best.score)best=c;}step/=2;}
+      marker={...best,size,nodes,key};directionPlacements.set(curve,marker);
+    }
+    const sample=t=>at((t%period+period)%period),epsilon=period*1e-5,a=sample(marker.t-epsilon),b=sample(marker.t+epsilon),length=Math.hypot(b.x-a.x,b.y-a.y);
+    if(!(length>1e-9))return null;
+    const dx=(b.x-a.x)/length*Math.sign(direction),dy=(b.y-a.y)/length*Math.sign(direction),{x,y}=marker.point;
+    const tip={x:x+dx*size*.45,y:y+dy*size*.45},tail={x:x-dx*size*.45,y:y-dy*size*.45};
+    ctx.save();ctx.lineWidth=Math.min(2.3/scale,Math.max(1.6/scale,size*.14));ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.fillStyle=ctx.strokeStyle;
+    ctx.beginPath();ctx.moveTo(tail.x-dy*size*.5,tail.y+dx*size*.5);ctx.lineTo(tip.x,tip.y);ctx.lineTo(tail.x+dy*size*.5,tail.y-dx*size*.5);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+    return marker;
+  }
   const controls = {};
   let clearNodeInspection = () => {};
   let presentedAxis = null, turnSyncPending = false, turnObserver = null, chromeObserver = null;
@@ -196,7 +234,7 @@
     if (controls.ringLabels) {
       controls.ringLabels.textContent = labelsOnRings ? 'Hide labels' : 'Show labels';
       controls.ringLabels.setAttribute('aria-pressed', String(labelsOnRings));
-      controls.ringLabels.title = labelsOnRings ? 'Hide axis labels on the ring map.' : 'Show clickable axis labels on the ring map.';
+      controls.ringLabels.title = labelsOnRings ? 'Hide axis labels and direction arrows on the ring map.' : 'Show clickable axis labels and one positive-turn arrow per active ring.';
     }
     queueTurnSync();
   }
@@ -402,6 +440,7 @@
       on = !!on; if (on === outline3D) return;
       outline3D = on; syncControls(); pulse(controls.highlights); repaint();
     },
+    drawRingDirection,
     ringLabelsVisible() {
       // One shared preference in turn-ring and constrained-solver modes.
       return labelsOnRings;

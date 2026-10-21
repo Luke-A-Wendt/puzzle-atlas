@@ -95,7 +95,7 @@ function install(G){
  // Ring arrows denote the positive physical turn from the named outward
  // pole. The projected screen winding can differ between opposite poles.
  G.positiveQuarterTurns=name=>-(root.MirrorEngine||root.CubeEngine).configs[name].turn;
- function arrow(ctx,at,t,direction,scale){const a=at(t-.012*direction),b=at(t+.012*direction),angle=Math.atan2(b.y-a.y,b.x-a.x),length=5/scale;ctx.beginPath();ctx.moveTo(b.x-length*Math.cos(angle-.5),b.y-length*Math.sin(angle-.5));ctx.lineTo(b.x,b.y);ctx.lineTo(b.x-length*Math.cos(angle+.5),b.y-length*Math.sin(angle+.5));ctx.stroke();}
+
  G.drawFaceRings=function(ctx,selected,options={}){
   const scale=options.scale||options.zoom||1;
   ctx.save();ctx.shadowBlur=0;
@@ -103,7 +103,7 @@ function install(G){
    if((track.name===selected)!==active)continue;
    ctx.globalAlpha=active?1:options.focus===false?.62:.24;
    ctx.beginPath();track.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
-   ctx.strokeStyle=active?'#baacfb':'#797087';ctx.lineWidth=(active?2:.65)/scale;ctx.stroke();if(active)for(const f of [.18,.58])arrow(ctx,track.at,track.period*f,G.positiveQuarterTurns(selected),scale);
+   ctx.strokeStyle=active?'#ffffff':'#797087';ctx.lineWidth=(active?2:.65)/scale;ctx.stroke();if(active)root.PuzzleAxisDisplay?.drawRingDirection?.(ctx,track,{at:track.at,period:track.period,direction:G.positiveQuarterTurns(selected),nodes:resting,radius:G.nodeRadius(scale),scale});
   }
   ctx.restore();
  };
@@ -114,13 +114,13 @@ function install(G){
    ctx.globalAlpha=options.focus===false?.72:.28;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#797087';ctx.lineWidth=.7/scale;ctx.stroke();
   }
   G.drawFaceRings(ctx,selected,{scale,focus:options.focus});
-  if(selected){const r=G.getRing(selected);ctx.globalAlpha=1;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#baacfb';ctx.lineWidth=2/scale;ctx.stroke();for(const f of [.18,.58])arrow(ctx,t=>({x:r.cx+r.r*Math.cos(t),y:r.cy+r.r*Math.sin(t)}),TAU*f,-G.positiveQuarterTurns(selected),scale);}
+  if(selected){const r=G.getRing(selected);ctx.globalAlpha=1;ctx.beginPath();ctx.arc(r.cx,r.cy,r.r,0,TAU);ctx.strokeStyle='#ffffff';ctx.lineWidth=2/scale;ctx.stroke();root.PuzzleAxisDisplay?.drawRingDirection?.(ctx,r,{at:t=>({x:r.cx+r.r*Math.cos(t),y:r.cy+r.r*Math.sin(t)}),period:TAU,direction:-G.positiveQuarterTurns(selected),nodes:resting,radius:G.nodeRadius(scale),scale});}
   ctx.restore();
  };
  G.drawNode=function(ctx,p,color,active,scale){
   const radius=G.nodeRadius(scale),halo=Math.min(1.8/scale,G.nodeSpacing*.075);
   ctx.globalAlpha=1;ctx.shadowBlur=0;
-  if(active){ctx.beginPath();ctx.arc(p.x,p.y,radius+halo,0,TAU);ctx.fillStyle='#17131f';ctx.fill();ctx.strokeStyle='#d3bdff';ctx.lineWidth=.85/scale;ctx.stroke();}
+  if(active){ctx.beginPath();ctx.arc(p.x,p.y,radius+halo,0,TAU);ctx.fillStyle='#17131f';ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=.85/scale;ctx.stroke();}
   ctx.beginPath();ctx.arc(p.x,p.y,radius,0,TAU);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=active?'#ffffff':'#111019';ctx.lineWidth=(active?1.15:.75)/scale;ctx.stroke();
  };
  G.drawAxisLabel=function(ctx,selected,label,scale,options={}){

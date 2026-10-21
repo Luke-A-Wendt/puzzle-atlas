@@ -19,8 +19,8 @@
   const actionRow = make('div', '', 'cs-action-row');
   const toolbar = make('div', '', 'cs-toolbar');
   const tools = make('div', '', 'cs-tools cs-hold-group'); tools.setAttribute('role', 'group'); tools.setAttribute('aria-label', 'Hold controls');
-  const holdTitle=make('span','','cs-hold-title','Hold'),manualHolds=make('div','','cs-manual-hold');
-  const hold = button('csHold', ''), swap = button('csSwap', 'Swap pair'); manualHolds.append(hold);tools.append(holdTitle,manualHolds);swap.hidden=true;swap.tabIndex=-1;tools.append(swap);
+  const holdTitle=make('span','','cs-hold-title','Hold');
+  const hold = button('csHold', ''), swap = button('csSwap', 'Swap'); tools.append(holdTitle);
   hold.title='Select holds manually: click a tile or lasso nodes to toggle holds. Turns Auto hold off.';
   const clear = button('csClear', 'Clear', 'small outline'), cancel = button('csCancel', 'Cancel search', 'small outline');
   clear.title='Clear every hold and both swap selections';
@@ -28,14 +28,14 @@
   toolbar.append(tools);
   const selection = make('div', '', 'cs-selection');
   const heldCount = make('span', 'csHeldCount', 'cs-held-count', '0');
-  const holdCaption=make('span','','cs-hold-caption','Select');hold.append(heldCount,holdCaption);
+  const holdCaption=make('span','','cs-hold-caption','Select');hold.append(holdCaption);heldCount.setAttribute('aria-label','Held nodes');tools.append(heldCount,clear,hold);
   const aChip = button('csPairA', '1 · choose a node', 'cs-pair-chip'), bChip = button('csPairB', '2 · choose a node', 'cs-pair-chip');
-  const slotParts=[aChip,bChip].map((chip,i)=>{chip.textContent='';const label=make('span','','cs-slot-label',i?'2':'1'),value=make('span','','cs-slot-value','Swap'),action=make('span','','cs-slot-action','Choose');chip.append(value,label,action);return {value,action};});
-  const pairArrow = make('span', '', 'cs-swap-arrow', '↔');selection.append(aChip, pairArrow, bChip);
+  [aChip,bChip].forEach((chip,i)=>{chip.textContent='';chip.append(make('span','','cs-slot-label',i?'2':'1'));});
+  const pairArrow = make('span', '', 'cs-swap-arrow', '↔');pairArrow.hidden=true;selection.setAttribute('role','group');selection.setAttribute('aria-label','Swap selections');selection.append(swap,aChip,pairArrow,bChip);
   const suggestHolds=button('csSuggestHolds','Auto','small outline');suggestHolds.title='Auto hold: keeps holds and the next white-ringed choices updated after every guided step';suggestHolds.setAttribute('aria-pressed','false');
   const guide=make('a','csGuide','small outline cs-guide','Guide');guide.href=new URL('../solver-handbook.html#using-constrained-solver',scriptBase).href;guide.target='_blank';guide.rel='noopener';guide.title='Open Using the Constrained Solver in the solving handbook (new tab)';guide.setAttribute('aria-label','Constrained Solver guide (opens in a new tab)');
   const showGoal=button('csShowGoal','Show goal','small outline cs-show-goal');showGoal.title='Press and hold to see the solved colors at these node locations; release to return to the current colors';showGoal.setAttribute('aria-pressed','false');
-  const searchActions=make('div','','cs-search-actions');searchActions.append(cancel,retry);manualHolds.append(clear);tools.append(suggestHolds);head.insertBefore(showGoal,document.getElementById('ringPanelHide'));
+  const searchActions=make('div','','cs-search-actions');searchActions.append(cancel,retry);tools.append(suggestHolds);head.insertBefore(showGoal,document.getElementById('ringPanelHide'));
   const searchProgress=make('div','csSearchProgress','cs-search-progress');searchProgress.hidden=true;
   const searchProgressLabel=make('span','csSearchProgressLabel');
   const searchActivity=make('progress','csSearchActivity');searchActivity.setAttribute('aria-label','Searching for a verified swap; completion percentage is unknown');
@@ -59,6 +59,8 @@
   // One persistent feedback area prevents the canvas moving when a check turns
   // into playback. Search and playback use the same slot; idle keeps it blank.
   const feedback=make('div','','cs-feedback'),progressSlot=make('div','','cs-progress-slot'),detailSlot=make('div','','cs-detail-slot');
+  const completion=make('div','csCompletion','cs-completion'),completionValue=make('strong','csCompletionValue','','0%'),completionCaption=make('span','','cs-completion-caption','complete');
+  completion.append(completionValue,completionCaption);completion.hidden=true;wrap.appendChild(completion);
   progressSlot.append(searchProgress,autoProgress);detailSlot.append(eligibilityNote,status);
   feedback.append(progressSlot,searchActions,detailSlot);
   actionRow.append(toolbar,selection,guide);controls.append(actionRow, feedback, bottom); panel.appendChild(controls);
@@ -80,7 +82,8 @@
   // Readiness is stronger than mathematical reachability: it always carries a
   // bounded, executable word. A proved orbit relation alone is not a sequence.
   let lastSwapWitness=null,manualSearch=null;const rejectedReadiness=new WeakSet();
-  let autoHoldsPending=false,autoHold=false,guidedSession=null,guidedChoiceMemo=null,guidedHintMemo=null,goalHintsMemo=null;
+  let autoHoldsPending=false,autoHold=false,manualHoldSelected=true,guidedSession=null,guidedChoiceMemo=null,guidedHintMemo=null,goalHintsMemo=null;
+  let completionMirror=null;
   const goalFields=new WeakMap(),emptyHints=new Set();
   const cache = new Map(); let cacheBytes = 0; const CACHE_LIMIT = 1024 * 1024;
   const isBusy = () => ['loading', 'unavailable', 'solving', 'executing', 'auto-gap'].includes(phase);
@@ -158,7 +161,7 @@
     goalPreview=value;showGoal.setAttribute('aria-pressed',String(value));
     window.PuzzleJournal?.sync?.();panel.classList.toggle('cs-goal-preview',value);overlay.hidden=!active&&!value;overlay.style.pointerEvents=active?'':'none';lastDraw='';bridge.requestRender();return true;
   }
-  function dropGuidance() { autoHold=false;guidedSession=null;guidedChoiceMemo=null;guidedHintMemo=null;goalHintsMemo=null;lastDraw=''; }
+  function dropGuidance() { autoHold=false;manualHoldSelected=true;guidedSession=null;guidedChoiceMemo=null;guidedHintMemo=null;goalHintsMemo=null;lastDraw=''; }
   function guidedStage() { return guidedSession?.plan.stages[guidedSession.completed]||null; }
   function guidedChoices() {
     const stage=guidedStage();if(!stage)return [];
@@ -285,6 +288,22 @@
     progressBar.setAttribute('aria-valuetext',count+' of '+total+' nodes secured');
     progressLabel.textContent=autoJob?'Step '+Math.min(autoJob.completed+1,autoJob.stages.length)+' / '+autoJob.stages.length+' · '+count+' / '+total+' secured':phase==='solving'?'Planning solution…':count+' / '+total+' secured';
     progressLabel.title=progressLabel.textContent;
+  }
+  function updateGoalCompletion(){
+    // A display-only goal-match checkpoint, independent of holds and input mode.
+    // Exclude hypothetical empty shape poses and transient sequence positions.
+    if(!active)return;
+    if(!model){completionValue.textContent='—';completion.setAttribute('aria-label','Completion available when the puzzle model loads');return;}
+    if(phase==='executing'||!idle(api.snapshot()))return;
+    completionMirror=mirrorActive();
+    try{
+      const snapshot=api.snapshot(),progress=core.solvedProgress(model,snapshot);
+      const count=progress.solvedCount,total=progress.totalCount;
+      const value=total?Math.floor(100*count/total):0,text=value+'%';
+      if(completionValue.textContent!==text)completionValue.textContent=text;
+      completion.title=count+' of '+total+' nodes match the goal. Updates after each completed sequence.';
+      completion.setAttribute('aria-label',text+' complete: '+count+' of '+total+' nodes matching the goal');
+    }catch(_){completionValue.textContent='—';completion.setAttribute('aria-label','Completion unavailable for the current state');}
   }
   function updateStepProgress(snap = api.snapshot()) {
     const job = execution, previous = autoRequested ? lastAutoStep : lastManualStep;
@@ -425,10 +444,11 @@
   }
   function syncPairUI() {
     const invalid=selectedPairStatus()===2;
+    swap.textContent=autoHold?'Move':'Swap';
+    swap.title=autoHold?'Auto hold keeps Move active. Choose 1, then 2 for the next guided step.':tool==='swap'?'Swap is active. Choose Select to edit holds, or Clear to reset.':'Choose a pair to swap';
+    selection.setAttribute('aria-label',autoHold?'Guided move selections':'Swap selections');
     [aChip,bChip].forEach((chip,i)=>{
       const selected=pair[i]!=null, editing=tool==='swap' && pairTarget===i && !isBusy() && !autoRequested;
-      slotParts[i].value.textContent=guidedSession?'Move':'Swap';
-      slotParts[i].action.textContent=autoRequested?(i?'Target':'Current'):isBusy()?'Selected':editing?'Pick on map':selected?'Change':'Choose';
       chip.classList.toggle('chosen',selected);chip.classList.toggle('editing',editing);chip.classList.toggle('invalid',invalid);
       chip.setAttribute('aria-pressed',String(editing));chip.setAttribute('aria-label',(selected?'Change ':'Choose ')+(i?'2':'1')+(selected?': '+nodeName(pair[i]):''));
       chip.title=guidedSession?'Guided step: choose '+(i?'the second marked tile':'a white-ringed tile')+'. This can place or cycle tiles; all secured holds are restored.':selected?nodeName(pair[i])+' · '+(held.has(pair[i])&&!autoRequested?'Held location: temporarily released for this swap, then held again with its new color':'Choose another '+(i?'2':'1')):'Choose '+(i?'2':'1')+' on the ring map';
@@ -511,20 +531,20 @@
   }
   function sync() {
     panel.classList.toggle('cs-active', active); panel.classList.toggle('cs-auto-active', active && autoRequested); document.body.classList.toggle('cs-working', active && ['loading','solving','executing','auto-gap'].includes(phase));
-    controls.hidden = !active; overlay.hidden = !active&&!goalPreview; overlay.style.pointerEvents=active?'':'none'; backdrop.hidden = !active;
+    controls.hidden = !active; completion.hidden = !active; overlay.hidden = !active&&!goalPreview; overlay.style.pointerEvents=active?'':'none'; backdrop.hidden = !active;
     toggle.setAttribute('aria-pressed', String(active));normalMode.setAttribute('aria-pressed',String(!active));toggle.disabled=false;normalMode.disabled=returnToDefault||!!autoJob?.stopAfterTurn;
     toggle.title='Preserve colors at held locations and swap a pair';normalMode.title=phase==='executing'?'Return to ring turns after the current turn':'Return to ordinary ring turns';
     normalMode.textContent='Turn rings';normalMode.setAttribute('aria-label',normalMode.disabled?'Returning to Turn rings after the current turn':'Turn rings');modeSwitch.setAttribute('aria-busy',String(normalMode.disabled));
-    hold.setAttribute('aria-pressed', String(!autoHold)); swap.setAttribute('aria-pressed', String(tool === 'swap'));
-    hold.classList.toggle('selecting',tool==='hold'&&!autoHold);tools.setAttribute('data-hold-mode',autoHold?'auto':'manual');tools.setAttribute('data-selection-tool',tool);
-    hold.disabled = !!autoRequested||(isBusy()&&!autoHoldsPending);swap.disabled=isBusy();clear.disabled=isBusy()||autoHold;
+    hold.setAttribute('aria-pressed', String(manualHoldSelected&&!autoHold)); swap.setAttribute('aria-pressed', String(tool === 'swap'));
+    hold.classList.toggle('selecting',tool==='hold'&&!autoHold);tools.setAttribute('data-hold-mode',autoHold?'auto':manualHoldSelected?'manual':'none');tools.setAttribute('data-selection-tool',tool);
+    hold.disabled = !!autoRequested||(isBusy()&&!autoHoldsPending);swap.disabled=isBusy();clear.disabled=!!autoRequested||(isBusy()&&!autoHoldsPending);
     suggestHolds.hidden=!active||!!autoRequested;suggestHolds.disabled=!!autoRequested||(isBusy()&&!autoHoldsPending);suggestHolds.setAttribute('aria-pressed',String(autoHold));suggestHolds.setAttribute('aria-busy',String(autoHoldsPending));
     suggestHolds.setAttribute('aria-label',autoHold?'Auto hold on. Turn off automatic holds.':'Auto hold off. Turn on automatic holds.');
     suggestHolds.title=autoHold?'Auto hold is on: holds and white-ringed choices advance after each step. Click to return to manual swaps.':'Turn on Auto hold: prepare a verified route and automatically update holds after each chosen pair';
-    clear.title=autoHold?'Choose Select to edit or clear the automatic holds':'Clear every hold and both swap selections';syncGoalAvailability();
+    clear.title='Clear all holds and selections; turn off Select, Auto, and Swap';syncGoalAvailability();
     if(goalPreview&&(mirrorActive()||isBusy()||autoRequested||!idle(api.snapshot())))setGoalPreview(false);
     actionRow.hidden=!!autoRequested;toolbar.hidden=!!autoRequested;heldCount.hidden=!!autoRequested;
-    heldCount.textContent = String(held.size);hold.setAttribute('aria-label','Select holds manually: '+held.size+' held'+(autoHold?'; turns Auto hold off':'; click or lasso nodes to toggle'));tools.setAttribute('aria-label','Hold controls: '+held.size+' held; '+(autoHold?'automatic':'manual'));
+    heldCount.textContent = String(held.size);heldCount.setAttribute('aria-label',held.size+' held nodes');hold.setAttribute('aria-label','Select holds manually: '+held.size+' held'+(autoHold?'; turns Auto hold off':'; click or lasso nodes to toggle'));tools.setAttribute('aria-label','Hold controls: '+held.size+' held; '+(autoHold?'automatic':manualHoldSelected?'manual':'no hold mode selected'));
     cancel.hidden = phase !== 'solving' && !(autoRequested && phase==='loading');
     retry.hidden=!active||phase!=='selecting'||result?.status!=='unknown'||(!autoRequested&&!canContinueSearch());
     const next=manualSearch?.search?.nextBudgetMs||10000,previous=manualSearch?.search?.budgetMs||3000;
@@ -534,6 +554,7 @@
     tools.hidden = !!autoJob || (autoRequested && phase === 'solving'); clear.hidden = !!autoJob; pairArrow.textContent = autoRequested ? '→' : '↔';
     autoProgress.hidden = !active || (!autoRequested && phase!=='executing'); progressBar.hidden = progressLabel.hidden = !autoRequested;
     updateGoalProgress();
+    updateGoalCompletion();
     updateStepProgress();
     ensureEligibility();syncPairUI();syncEligibilityNote();syncNodeLabel();
     // Readiness/results and progress share the same reserved footprint. The
@@ -546,7 +567,7 @@
   }
   function instructions() {
     if(guidedSession){setMessage(guidedStage()?'Choose white-ringed Move 1, then Move 2. Auto hold preserves secured holds, adds new ones, and offers the next choices automatically. Choose Select to edit holds manually.':'Goal reached. All nodes secured.','help');return;}
-    setMessage(tool==='hold'?'Click or lasso nodes to toggle holds. Auto hold updates holds automatically along a verified route. Choose 1 and 2 to start a manual swap.':hasPair()?'The pair is being checked. A verified swap starts after a short pause. Other unheld nodes may move.':'Choose '+(pairTarget?'2':'1')+' on the map or 3D puzzle. White rings mark swaps with an unheld partner that correct at least one endpoint. Bright nodes have a verified swap; gray nodes have no swap ready. Auto hold follows a complete verified route.','help');
+    setMessage(tool==='none'?'Choose Select, Swap, or Auto to continue.':tool==='hold'?'Click or lasso nodes to toggle holds. Auto hold updates holds automatically along a verified route. Choose 1 and 2 to start a manual swap.':hasPair()?'The pair is being checked. A verified swap starts after a short pause. Other unheld nodes may move.':'Choose '+(pairTarget?'2':'1')+' on the map or 3D puzzle. White rings mark swaps with an unheld partner that correct at least one endpoint. Bright nodes have a verified swap; gray nodes have no swap ready. Auto hold follows a complete verified route.','help');
   }
   function clearManualPair() {
     pair=[];pairTarget=0;tool='swap';lastManualStep=0;
@@ -582,7 +603,7 @@
     const snap = api.snapshot();
     if (!idle(snap)) { toggle.title = 'Wait for the current sequence to finish'; return false; }
     setGoalPreview(false);window.PuzzleAxisDisplay?.clear();window.PuzzleSelection3D?.clearHover?.();
-    active = true; phase = 'loading'; tool = 'hold'; if(!autoRequested)enterManualDefaults();setMessage('Loading the puzzle move model…'); sync();
+    active = true; phase = 'loading'; tool = 'hold';manualHoldSelected=true; if(!autoRequested)enterManualDefaults();setMessage('Loading the puzzle move model…'); sync();
     const id = ++epoch;
     try {
       model = await core.loadModel(api.puzzle);
@@ -606,7 +627,13 @@
     hideAutoNotice();autoRequested=false;pointerStart=null;lasso=null;tool=value;if(value==='swap'){if(pair[0]==null)pairTarget=0;else if(pair[1]==null)pairTarget=1;}
     instructions();sync();return true;
   }
-  function clearSelection() { if (!active || isBusy() || goalPreview || autoHold) return false;dropGuidance();discardManualSearch();hideAutoNotice(); autoRequested=false;lastManualStep=0;held.clear();pair=[];pairTarget=0;result=null;anchors=[];referencesDirty=true;instructions();sync();return true; }
+  function clearSelection() {
+    if(!active||goalPreview||autoRequested||(isBusy()&&!autoHoldsPending))return false;
+    if(autoHoldsPending){epoch++;terminateWorker();phase='selecting';}
+    dropGuidance();manualHoldSelected=false;tool='none';discardManualSearch();hideAutoNotice();
+    lastManualStep=0;held.clear();pair=[];pairTarget=0;result=null;anchors=[];pointerStart=null;lasso=null;referencesDirty=true;
+    instructions();sync();return true;
+  }
   function changedHolds() {
     goalHintsMemo=null;
     if(guidedSession){dropGuidance();pair=[];pairTarget=0;}
@@ -618,7 +645,7 @@
   }
   function selectNode(id) {
     id=String(id);
-    if(!active || isBusy() || goalPreview || !model || !nodes().some(n=>n.stickerId===id))return false;
+    if(!active || isBusy() || goalPreview || tool==='none' || !model || !nodes().some(n=>n.stickerId===id))return false;
     if(!idle(api.snapshot())){setMessage('Wait for the puzzle to finish moving.');return false;}
     focusId=id;
     if(tool==='hold'){
@@ -801,7 +828,7 @@
         // incidental correct colors would merge these into very long stages.
         const stages=r.stages.map(s=>({...s,moveIndices:s.moveIndices.slice(),protectedNodes:s.protectedNodes.slice(),newlySolvedNodes:s.newlySolvedNodes.slice()}));
         autoJob={stages,goalSemantics:r.goalSemantics||'identity',completed:0,locked:new Set(r.initialProtectedNodes || stages[0]?.protectedNodes || []),paused:false,stopAfterStep:false,stopAfterTurn:false,gapUntil:0,totalMoves:r.moveIndices.length};
-        updateSecured(); observed=startKey;
+        updateSecured(); updateGoalCompletion(); observed=startKey;
         if (!stages.length) finishAuto(false); else beginAutoStage();
       } catch (error) { autoJob=null; execution=null; phase='selecting'; result=null; pair=[]; setSolverSpeed(false);reportAutoFailure('verification_error',error.message);sync(); }
     };
@@ -993,7 +1020,7 @@
     if(focusId===null)return;
     const heldLabel=held.has(focusId)?', held. ':', not held. ';
     const goalHint=goalImprovingNodes().has(focusId)?(guidedSession?'Verified guided step: preserves solved holds and adds new ones. ':'Verified swap corrects at least one endpoint; other unheld colors may change. '):'';
-    const action=tool==='hold'?goalHint+'Enter to '+(held.has(focusId)?'release this node.':'hold this node.'):candidateReady(focusId)?goalHint+(guidedSession?'Guided step ready. ':'Verified swap ready. ')+'Enter to choose this tile.':guidedSession?'Choose a white-ringed tile for this step.':'No verified swap ready. Choose a bright tile.';
+    const action=tool==='none'?'Choose Select, Swap, or Auto first.':tool==='hold'?goalHint+'Enter to '+(held.has(focusId)?'release this node.':'hold this node.'):candidateReady(focusId)?goalHint+(guidedSession?'Guided step ready. ':'Verified swap ready. ')+'Enter to choose this tile.':guidedSession?'Choose a white-ringed tile for this step.':'No verified swap ready. Choose a bright tile.';
     overlay.setAttribute('aria-label',nodeName(focusId)+heldLabel+action);
   }
   function navigate(key) {
@@ -1044,8 +1071,8 @@
     const b = rings.getBoundingClientRect(), list = nodes(), dpr = Math.min(window.devicePixelRatio || 1,2);
     const viewport=bridge.viewport?.(),goalHints=goalImprovingNodes();
     const blockedHover=tool==='swap' && hover!==null && !candidateReady(hover);
-    overlay.style.cursor=goalPreview?'default':isBusy()?'progress':blockedHover?'not-allowed':tool==='swap'?'pointer':'crosshair';
-    overlay.title=goalPreview?'Solved goal colors · release Show goal to resume.':blockedHover?'No verified swap ready with the current holds and selected tile':tool==='swap'?(hover!==null?(goalHints.has(hover)?(guidedSession?'Verified guided step preserves secured holds and adds new ones. ':'Verified swap corrects at least one endpoint; other unheld colors may change. '):candidateReady(hover)?'Verified sequence ready. ':'No verified swap ready. '):'')+'Choose '+(pairTarget?'2':'1')+' · click its card below to change the target':'Click or lasso to flip each node between held and not held';
+    overlay.style.cursor=goalPreview||tool==='none'?'default':isBusy()?'progress':blockedHover?'not-allowed':tool==='swap'?'pointer':'crosshair';
+    overlay.title=tool==='none'?'Choose Select, Swap, or Auto to continue.':goalPreview?'Solved goal colors · release Show goal to resume.':blockedHover?'No verified swap ready with the current holds and selected tile':tool==='swap'?(hover!==null?(goalHints.has(hover)?(guidedSession?'Verified guided step preserves secured holds and adds new ones. ':'Verified swap corrects at least one endpoint; other unheld colors may change. '):candidateReady(hover)?'Verified sequence ready. ':'No verified swap ready. '):'')+'Choose '+(pairTarget?'2':'1')+' · click its card below to change the target':'Click or lasso to flip each node between held and not held';
     const key = JSON.stringify([b.width,b.height,viewport,anchors,phase,tool,goalPreview,[...held],[...goalHints],pair,pairTarget,hover,focusId,lasso,eligibility?.status,document.activeElement === overlay,list.map(n=>[n.stickerId,n.x,n.y,n.r,n.highlightLineWidth,n.highlightOuterRadius,n.highlighted])]); if (key === lastDraw) return; lastDraw = key;
     const pixelWidth=Math.max(1,Math.round(b.width*dpr)),pixelHeight=Math.max(1,Math.round(b.height*dpr));
     // Retain backing stores between moves: assigning even the same canvas
@@ -1098,13 +1125,13 @@
       if (index >= 0 || improving || (!fixed && (hot || focused))) {
         ctx.beginPath(); ctx.arc(n.x,n.y,index>=0||improving?selectedRadius:radius,0,Math.PI*2); ctx.lineWidth=index>=0?4.8:improving?Math.max(3.2,nativeWidth*2):1.3; ctx.strokeStyle=index>=0||improving?'#ffffff':'#f5f5f5'; ctx.stroke();
       }
-      if (index >= 0) endpointLabels.push({x:Math.max(8,Math.min(b.width-8,n.x+selectedRadius+6)),y:Math.max(9,n.y-selectedRadius-4),label:index?'2':'1'});
+      if (index >= 0) endpointLabels.push({x:Math.max(10,Math.min(b.width-10,n.x+selectedRadius+7)),y:Math.max(10,Math.min(b.height-10,n.y-selectedRadius-6)),label:index?'2':'1'});
       // The solid hover/focus outline above keeps keyboard focus distinct from
       // the dashed held-node symbol; an unheld node never gets a dashed circle.
     }
     // Number badges are the top selection layer, above neighboring node
     // eligibility masks and held/hover outlines in dense ring maps.
-    for(const {x,y,label} of endpointLabels){ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();ctx.lineWidth=1.25;ctx.strokeStyle='#111111';ctx.stroke();ctx.font='700 9px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#171820';ctx.fillText(label,x,y+.4);}
+    for(const {x,y,label} of endpointLabels){ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();ctx.lineWidth=1.25;ctx.strokeStyle='#111111';ctx.stroke();ctx.font='700 12px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#171820';ctx.fillText(label,x,y+.4);}
     if(lasso?.length>1 && pointerStart?.dragged){ctx.beginPath();lasso.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle='rgba(255,255,255,.07)';ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);}
   }
   function frame() {
@@ -1116,6 +1143,7 @@
     if (active) {
       try {
         const snap = api.snapshot();
+        if(completionMirror!==mirrorActive())updateGoalCompletion();
         if(goalPreview&&!idle(snap))setGoalPreview(false);
         updateStepProgress(snap);updateSearchProgress();
         if (phase === 'executing' && autoJob) { const paused=!!snap.paused;if(autoJob.paused!==paused){autoJob.paused=paused;sync();} }
@@ -1134,6 +1162,6 @@
     }
     requestAnimationFrame(frame);
   }
-  window.ConstrainedSolverUI = Object.freeze({blocksManualMoves:()=>active||goalPreview||goalRequested,journalBusy:()=>goalPreview||goalRequested||autoRequested||!!autoJob||['loading','solving','executing','auto-gap'].includes(phase),setActive,closePanel,selectNode,canSelect3D,setTool,suggestHolds:suggestCurrentHolds,setGoalPreview,clearSelection,autoSolve,startAutoSolve:autoSolve,go:()=>startSearch(3000),stopAuto,autoStopActive,stop:stopManual,stopManualAfterStep:stopManual,manualStopActive,syncTransport,cancel:cancelSearch,visualState:()=>({active,...(autoStopActive()?{auto:true}:{}),...(goalPreview?{goalPreview:true}:{}),held:[...held],pair:pair.slice()}),state:()=>({active,tool,phase,pairTarget,goalPreview,holdMode:autoHold?'auto':'manual',autoHold,autoHolds:autoHoldsPending,guided:guidedSession?{stage:guidedSession.completed,completed:guidedSession.completed,totalStages:guidedSession.plan.stages.length,lockedNodes:[...guidedSession.locked],choices:guidedChoices()}:null,held:[...held],effectiveHeld:effectiveHeld(),pair:pair.slice(),anchors:anchors.map(a=>({...a})),status:message,eligibility:{status:eligibility?.status||'idle',goalImproving:[...goalImprovingNodes()],ready:nodes().filter(n=>eligibilityCode(n.stickerId)===1).map(n=>n.stickerId),uncertain:nodes().filter(n=>eligibilityCode(n.stickerId)===3).map(n=>n.stickerId),blocked:nodes().filter(n=>eligibilityCode(n.stickerId)===2).map(n=>n.stickerId),dimmed:nodes().filter(n=>eligibilityCode(n.stickerId)>=2).map(n=>n.stickerId)},result:result?{status:result.status,optimal:!!result.optimal}:null,search:manualSearch?{...manualSearch.search}:null,executed:execution?.offset || 0,total:execution?.length || 0,auto:autoJob?{active:true,stage:autoJob.completed,completed:autoJob.completed,totalStages:autoJob.stages.length,lockedNodes:[...autoJob.locked],paused:autoJob.paused,stopRequested:autoJob.stopAfterTurn?'turn':autoJob.stopAfterStep?'sequence':null,gapUntil:autoJob.gapUntil}:null})});
+  window.ConstrainedSolverUI = Object.freeze({blocksManualMoves:()=>active||goalPreview||goalRequested,journalBusy:()=>goalPreview||goalRequested||autoRequested||!!autoJob||['loading','solving','executing','auto-gap'].includes(phase),setActive,closePanel,selectNode,canSelect3D,setTool,suggestHolds:suggestCurrentHolds,setGoalPreview,clearSelection,autoSolve,startAutoSolve:autoSolve,go:()=>startSearch(3000),stopAuto,autoStopActive,stop:stopManual,stopManualAfterStep:stopManual,manualStopActive,syncTransport,cancel:cancelSearch,visualState:()=>({active,...(autoStopActive()?{auto:true}:{}),...(goalPreview?{goalPreview:true}:{}),held:[...held],pair:pair.slice()}),state:()=>({active,tool,phase,pairTarget,goalPreview,holdMode:autoHold?'auto':manualHoldSelected?'manual':'none',autoHold,autoHolds:autoHoldsPending,guided:guidedSession?{stage:guidedSession.completed,completed:guidedSession.completed,totalStages:guidedSession.plan.stages.length,lockedNodes:[...guidedSession.locked],choices:guidedChoices()}:null,held:[...held],effectiveHeld:effectiveHeld(),pair:pair.slice(),anchors:anchors.map(a=>({...a})),status:message,eligibility:{status:eligibility?.status||'idle',goalImproving:[...goalImprovingNodes()],ready:nodes().filter(n=>eligibilityCode(n.stickerId)===1).map(n=>n.stickerId),uncertain:nodes().filter(n=>eligibilityCode(n.stickerId)===3).map(n=>n.stickerId),blocked:nodes().filter(n=>eligibilityCode(n.stickerId)===2).map(n=>n.stickerId),dimmed:nodes().filter(n=>eligibilityCode(n.stickerId)>=2).map(n=>n.stickerId)},result:result?{status:result.status,optimal:!!result.optimal}:null,search:manualSearch?{...manualSearch.search}:null,executed:execution?.offset || 0,total:execution?.length || 0,auto:autoJob?{active:true,stage:autoJob.completed,completed:autoJob.completed,totalStages:autoJob.stages.length,lockedNodes:[...autoJob.locked],paused:autoJob.paused,stopRequested:autoJob.stopAfterTurn?'turn':autoJob.stopAfterStep?'sequence':null,gapUntil:autoJob.gapUntil}:null})});
   sync(); requestAnimationFrame(frame);
 })();

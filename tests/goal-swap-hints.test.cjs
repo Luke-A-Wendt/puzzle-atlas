@@ -41,7 +41,7 @@ test('ordinary manual swaps show local goal hints without claiming a certified s
  const map=app.map(),colors=app.core.colorsFromSnapshot(app.model,app.snapshot(),map),goals=new Map(Object.entries(app.model.homeBySticker).map(([id,n])=>[n,String(app.model.colorBySticker[id])]));
  const improves=(a,b)=>(colors[a]!==goals.get(a)&&colors[b]===goals.get(a))||(colors[b]!==goals.get(b)&&colors[a]===goals.get(b));
  const expected=[...new Set(pairs.filter(([a,b])=>improves(a,b)).flat().map(n=>app.id(n)))].sort();assert(expected.length);assert.deepEqual(app.hints(),expected);assert.equal(app.ui.state().guided,null);assert.equal(app.ui.state().holdMode,'manual');assert(app.ui.state().eligibility.ready.length);
- const [a,b]=pairs.find(([a,b])=>improves(a,b));assert(app.ui.selectNode(app.id(a)));assert(app.ui.selectNode(app.id(b)));await app.advance(0);assert.equal(app.ui.state().phase,'executing');await app.finishStep();assert.equal(app.ui.state().guided,null);
+ const [a,b]=pairs.find(([a,b])=>improves(a,b));assert(app.ui.selectNode(app.id(a)));assert(app.ui.selectNode(app.id(b)));await app.advance(0);assert.equal(app.ui.state().phase,'executing');await app.finishStep();assert.equal(app.ui.state().guided,null);assert.equal(app.ui.state().tool,'swap');assert.equal(app.element('csSwap').getAttribute('aria-pressed'),'true');assert.equal(app.element('csPairA').getAttribute('aria-pressed'),'true');
 });
 
 test('Auto installs a verified complete route without moving and marks only its next directed choices',async()=>{
@@ -49,7 +49,7 @@ test('Auto installs a verified complete route without moving and marks only its 
  assert.deepEqual(clean(app.snapshot()),before);assert.equal(app.ui.state().autoHolds,false);assert.equal(app.ui.state().autoHold,true);assert.equal(app.ui.state().holdMode,'auto');assert.equal(app.element('csSuggestHolds').getAttribute('aria-pressed'),'true');assert.equal(app.element('csHold').getAttribute('aria-pressed'),'false');assert.equal(app.ui.state().tool,'swap');assert.equal(app.ui.state().pairTarget,0);assert.deepEqual(clean(app.ui.state().pair),[]);
  assert.deepEqual(app.heldNodes(),plan.initialProtectedNodes.slice().sort((a,b)=>a-b));
  const first=Array.from(new Set(plan.stages[0].choices.map(c=>app.id(c.firstNode)))).sort();assert.deepEqual(app.hints(),first);
- assert.equal(app.element('csPairA').querySelector('.cs-slot-value').textContent,'Move');assert.equal(app.element('csPairB').querySelector('.cs-slot-value').textContent,'Move');
+ assert.equal(app.element('csSwap').textContent,'Move');const beforeMove=clean(app.ui.state().guided);app.click('csSwap');assert.equal(app.ui.state().autoHold,true);assert.equal(app.ui.state().tool,'swap');assert.deepEqual(clean(app.ui.state().guided),beforeMove);
  for(const id of first){app.click('csPairA');assert(app.ui.selectNode(id));const expected=Array.from(new Set(plan.stages[0].choices.filter(c=>app.id(c.firstNode)===id).map(c=>app.id(c.secondNode)))).sort();assert.deepEqual(app.hints(),expected);assert(expected.length);}
  app.click('csPairA');assert.deepEqual(app.hints(),first);
 });
@@ -77,9 +77,9 @@ test('Auto is a persistent toggle, its API activation is idempotent, and Select 
  app.click('csHold');assert.equal(app.ui.state().tool,'hold');const id=app.id(locked[0]);assert(app.ui.selectNode(id));assert.equal(app.heldNodes().length,locked.length-1);assert.equal(app.element('csClear').disabled,false);app.click('csClear');assert.deepEqual(app.heldNodes(),[]);
 });
 
-test('Auto hold cannot be changed by Clear, a lasso, or selecting a held tile, until Select is chosen',async()=>{
+test('Auto holds resist tile edits and lasso until Select is chosen',async()=>{
  const app=host();await app.start(['R','U']);await app.plan([["U'"],["R'"]]);const locked=app.heldNodes(),overlay=app.element('csNodeOverlay'),nodes=Array.from(app.context.PUZZLE_SOLVER_BRIDGE.nodes());assert(locked.length);
- assert.equal(app.element('csClear').disabled,true);assert.equal(app.ui.clearSelection(),false);app.click('csClear');assert.deepEqual(app.heldNodes(),locked);
+ assert.equal(app.element('csClear').disabled,false,'Clear can exit Auto between complete steps');
  const heldId=app.id(locked[0]);app.ui.selectNode(heldId);assert.deepEqual(app.heldNodes(),locked,'tile selection never changes holds while Auto is on');
  const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y),left=Math.min(...xs)-20,right=Math.max(...xs)+20,top=Math.min(...ys)-20,bottom=Math.max(...ys)+20,polygon=[[left,top],[right,top],[right,bottom],[left,bottom],[left,top]],event=([x,y])=>({clientX:x,clientY:y,pointerId:69});
  overlay.dispatch('pointerdown',event(polygon[0]));for(const point of polygon.slice(1)){overlay.dispatch('pointermove',event(point));await app.advance(0);}overlay.dispatch('pointerup',event(polygon.at(-1)));await app.advance(0);assert.deepEqual(app.heldNodes(),locked,'lasso cannot paint Auto holds');
@@ -123,7 +123,7 @@ test('goal rings stay bold, clear during goal preview, and return to the unchang
 
 for(const change of ['clear','hold'])test('manual '+change+' exits guidance before any later recommendation can be reused',async()=>{
  const app=host();await app.start();await app.plan();app.click('csHold');assert.equal(app.ui.state().holdMode,'manual');if(change==='clear')app.ui.clearSelection();else{assert(app.ui.selectNode(String(app.context.PUZZLE_SOLVER_BRIDGE.nodes()[0].stickerId)));}
- assert.equal(app.ui.state().guided,null);assert.deepEqual(app.hints(),[]);assert.equal(app.element('csPairA').querySelector('.cs-slot-value').textContent,'Swap');
+ assert.equal(app.ui.state().guided,null);assert.deepEqual(app.hints(),[]);assert.equal(app.element('csSwap').textContent,'Swap');
 });
 
 test('a canceled preview keeps the same guided checkpoint because no permutation was executed',async()=>{
@@ -167,4 +167,25 @@ for(const id of ['ghost','pyramorphix'])test('guided '+id+' completion supports 
  const choice=choices.find(c=>c.kind==='participants')||choices[0];assert(choice,'shape step exposes a certified choice');
  const locked=app.heldNodes();assert(app.ui.selectNode(choice.firstStickerId));assert(app.hints().includes(choice.secondStickerId));assert(app.ui.selectNode(choice.secondStickerId));await app.finishStep();
  assert.equal(completed(app.ui.state()),plan.stages.length);assert.equal(app.heldNodes().length,app.model.stickerCount);assert(app.heldNodes().length>locked.length);assert.deepEqual(clean(app.map().stickerToNode),app.model.homeBySticker);assert.deepEqual(app.hints(),[]);
+});
+
+test('manual shared Swap stays selected until Select or Clear is chosen',async()=>{
+ const app=host();await app.start();assert.equal(app.ui.state().tool,'hold');
+ app.click('csSwap');assert.equal(app.ui.state().tool,'swap');assert.equal(app.element('csHold').getAttribute('aria-pressed'),'true');assert.equal(app.element('csSwap').getAttribute('aria-pressed'),'true');assert.equal(app.element('csPairA').getAttribute('aria-pressed'),'true');
+ app.click('csSwap');assert.equal(app.ui.state().tool,'swap');assert.equal(app.element('csSwap').getAttribute('aria-pressed'),'true');app.click('csHold');assert.equal(app.ui.state().tool,'hold');assert.equal(app.element('csSwap').getAttribute('aria-pressed'),'false');assert.equal(app.element('csPairA').getAttribute('aria-pressed'),'false');
+ app.click('csPairA');assert.equal(app.ui.state().tool,'swap');assert.equal(app.element('csSwap').getAttribute('aria-pressed'),'true');
+});
+
+for(const scenario of ['manual','auto','planning'])test('Clear resets holds and both hold policies from '+scenario,async()=>{
+ const app=host();await app.start();let pending;
+ if(scenario==='auto')await app.plan();
+ else if(scenario==='planning'){app.click('csSuggestHolds');pending=await app.pending();}
+ else {app.ui.selectNode(app.id(app.map().occupiedNodes[0]));app.click('csSwap');}
+ assert.equal(app.element('csClear').disabled,false);app.click('csClear');
+ assert.deepEqual(app.heldNodes(),[]);assert.deepEqual(clean(app.ui.state().pair),[]);assert.equal(app.ui.state().holdMode,'none');assert.equal(app.ui.state().tool,'none');assert.equal(app.ui.state().guided,null);assert.equal(app.element('csHeldCount').textContent,'0');
+ for(const id of ['csHold','csSuggestHolds','csSwap','csPairA','csPairB'])assert.equal(app.element(id).getAttribute('aria-pressed'),'false',id+' is inactive');
+ assert.equal(app.ui.selectNode(app.id(app.map().occupiedNodes[0])),false,'neutral mode does not silently hold or swap');
+ if(pending){assert(pending.worker.terminated);await app.answer(pending,fixturePlan(app.model,app.snapshot(),[["U'"],["D'"]]),true);assert.equal(app.ui.state().holdMode,'none');assert.deepEqual(app.heldNodes(),[]);}
+ app.click('csSwap');assert.equal(app.ui.state().tool,'swap');assert.equal(app.ui.state().holdMode,'none');
+ app.click('csHold');assert.equal(app.ui.state().holdMode,'manual');assert.equal(app.ui.state().tool,'hold');
 });

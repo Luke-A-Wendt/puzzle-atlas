@@ -465,7 +465,7 @@ FINALIZE:
       `<p>Initialize equal-endpoint pairs, held endpoints, and noncandidate endpoints as known infeasible. Initialize other pairs as unchecked. On a resource limit, retain already certified point-orbit exclusions and completed pair orbits, then finalize. <code>complete</code> means the table is fully classified; it does not mean every pair is feasible.</p>
       <p>Browser availability caps are 3,000 ms, 48 MiB estimated storage, 2,000 strong generators, 100,000,000 counted operations, and 50,000 adjacent base swaps. Operations are checked in batches, with time checks at orbit/base boundaries too. Missing complete cache, time, storage, operation, generator, or base-swap limits preserve unknown entries. Invalid models or malformed cache structure give <code>invalid</code>.</p>`)+
     subsection('tech-goal-hints', 'Manual goal hints and persistent Auto hold guidance',
-      `<p>The Hold group has a persistent policy: manual Select or Auto. Input selection is separate: choosing a Swap or Move marker changes which endpoint a click selects, without changing that hold policy. Manual Select permits hold edits and Clear. Auto disables both, retains its route between pair selections, and updates its holds after every completed guided step. Clicking Select explicitly leaves Auto while keeping the current holds; clicking an active Auto also leaves guidance, returning to manual pair selection. Display and playback settings are unaffected.</p>`+
+      `<p>The Hold group has a shared counter followed by separate Clear, Select, and Auto buttons. Its policy is manual Select, Auto, or neither after Clear. Input selection is separate: choosing a Swap or Move marker changes which endpoint a click selects, without changing that hold policy. The shared Swap button activates manual pair input; its compact 1 and 2 selectors show the next endpoint. A successful manual exchange clears the endpoints and keeps Swap active at endpoint 1. Clicking active Swap does not deactivate it. Select, Clear, or Auto changes away from manual Swap input. In Auto the shared button says Move and cannot deactivate pair input. Manual Select permits hold edits and Clear. Auto prevents manual hold edits, retains its route between pair selections, and updates its holds after every completed guided step. Clicking Select explicitly leaves Auto while keeping the current holds; clicking an active Auto also leaves guidance, returning to manual pair selection. Clear cancels pending Auto planning with an epoch increment, drops the guided route, clears holds and endpoints, and sets the input tool and hold policy to none. Late planning replies cannot restore a cleared route. Clear remains locked while moves execute. Display and playback settings are unaffected.</p>`+
       code('Manual white-ring predicate', `q(v) := canonical goal color at occupied home address v, if defined
 c(v) := current color at occupied address v
 H := marked held addresses
@@ -504,7 +504,8 @@ K_final = every physical home address
   replace user holds with K; clear markers; show Move 1 / Move 2
   execute nothing
 ON-AUTO-ON:
-  select the persistent Auto hold policy; disable manual hold edits and Clear
+  select the persistent Auto hold policy; disable manual hold edits
+  allow Clear between stages (cancel route, clear holds, select neither policy)
   prepare the verified plan above; select Move 1 input
   if planning fails or is canceled: return to manual policy, no automatic retry
 ON-SELECT:
