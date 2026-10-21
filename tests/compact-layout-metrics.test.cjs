@@ -172,7 +172,7 @@ test('10×10 fourth-slice labels agree in both canvases and readouts while click
  for(const id of Object.keys(texts))app.element(id).drawing.fillText=text=>texts[id].push(String(text));
  app.context.PuzzleAxisDisplay.setLabelMode('all');app.context.PuzzleAxisDisplay.toggleRingLabels();
  const key=app.element('viewRingSelector').querySelectorAll('.ring-key').find(el=>el.dataset.face==='Riiii');assert.equal(key.textContent,'Riv');key.click();await app.advance(0);
- assert.equal(app.element('selectedName').textContent,'Riv');assert.equal(app.element('viewRingSelectedName').textContent,'Riv');
+ assert.equal(app.element('selectedName').textContent,'Riv');assert.equal(app.element('viewRingSelectedName').textContent,'');
  for(const [id,labels]of Object.entries(texts)){assert(labels.includes('Riv'),id+' shows the same short label');assert(!labels.includes('Riiii'),id+' does not show a different spelling');}
  assert(app.context.PuzzleAxisDisplay.axisLabelTargets().some(target=>target.face==='Riiii'),'3D click target still selects the canonical legal slice');
  assert.deepEqual(JSON.parse(JSON.stringify(app.context.CubeEngine.normalizeMove('Riv'))),JSON.parse(JSON.stringify(app.context.CubeEngine.normalizeMove('Riiii'))));

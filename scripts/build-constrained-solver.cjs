@@ -25,6 +25,7 @@ modules['./group.cjs']=replaceOnce(read('group'),'const now = () => Number(proce
 modules['./atlas-adapter.cjs']=adapter;
 modules['./auto-adapter.cjs']=autoAdapter;
 modules['./guided-plan.cjs']=read('guided-plan');
+modules['./monotone-plan.cjs']=read('monotone-plan');
 modules['./full-solve.cjs']=read('full-solve');
 modules['./eligibility.cjs']=read('eligibility');
 modules['./eligibility-status.cjs']=read('eligibility-status');
@@ -134,12 +135,12 @@ async function loadModel(id){
 function freeze(value){if(value&&typeof value==='object'&&!Object.isFrozen(value)){for(const v of Object.values(value))freeze(v);Object.freeze(value);}return value;}
 `;
 const coreIndex=portable.slice(0,portable.indexOf('function solveSync(')).replace("const {search}=require('./search.cjs');\n",'')+'\nmodule.exports={normalize,verify,permutation};\n';
-const helper=banner+'(function(root){\n\'use strict\';\n'+bundle({'./index.cjs':coreIndex,'./atlas-adapter.cjs':adapter,'./auto-adapter.cjs':autoAdapter,'./guided-plan.cjs':modules['./guided-plan.cjs'],'./eligibility-status.cjs':modules['./eligibility-status.cjs']})+`
+const helper=banner+'(function(root){\n\'use strict\';\n'+bundle({'./index.cjs':coreIndex,'./atlas-adapter.cjs':adapter,'./auto-adapter.cjs':autoAdapter,'./guided-plan.cjs':modules['./guided-plan.cjs'],'./monotone-plan.cjs':modules['./monotone-plan.cjs'],'./eligibility-status.cjs':modules['./eligibility-status.cjs']})+`
 const core=require('./index.cjs'),bridge=require('./atlas-adapter.cjs'),autoBridge=require('./auto-adapter.cjs');
 const scriptURL=typeof document==='object'?(document.currentScript?.src||document.baseURI):null;
 const assetBase=scriptURL&&typeof URL==='function'?new URL('.',scriptURL):null;
 ${loading}
-root.ConstrainedSolverCore=Object.freeze({...core,...bridge,...autoBridge,...require('./guided-plan.cjs'),...require('./eligibility-status.cjs'),loadModel,modelFingerprint,modelIds:Object.freeze(Object.keys(fingerprints)),assetBase:assetBase?.href??null,assetRelease,workerURL:assetBase?new URL('constrained-solver-worker.js?v='+assetRelease,assetBase).href:null});
+root.ConstrainedSolverCore=Object.freeze({...core,...bridge,...autoBridge,...require('./guided-plan.cjs'),...require('./monotone-plan.cjs'),...require('./eligibility-status.cjs'),loadModel,modelFingerprint,modelIds:Object.freeze(Object.keys(fingerprints)),assetBase:assetBase?.href??null,assetRelease,workerURL:assetBase?new URL('constrained-solver-worker.js?v='+assetRelease,assetBase).href:null});
 })(globalThis);
 `;
 fs.writeFileSync(path.join(out,'constrained-solver-core.js'),helper);
@@ -195,6 +196,17 @@ self.onmessage=async event=>{
   let model;
   progress('loading-model');
   try{model=await loadModel(message.modelId);}catch(e){self.postMessage({id,type:'result',result:{status:'unknown',reason:e.code||'model_unavailable',detail:e.message,optimal:false}});return;}
+  if(message.task==='auto-holds'){
+   const mapping=bridge.mapSnapshot(model,message.snapshot),request={occupiedNodes:mapping.occupiedNodes,colorByNode:bridge.colorsFromSnapshot(model,message.snapshot,mapping),holdSemantics:'color',exemptSwapEndpoints:true},options=eligibilityOptionsFor(message.options);
+   if(!eligibilityAnalyzer||eligibilityAnalyzer.model!==model)eligibilityAnalyzer=new EligibilityAnalyzer(model,null,{cacheBytes:2*1024*1024});
+   let cacheError;if(!eligibilityAnalyzer.colorCache){try{eligibilityAnalyzer.setColorCache(await loadColorCache(model.id));}catch(e){cacheError=e.message;}}
+   const result=eligibilityAnalyzer.suggestHolds(request,options);
+   if(result.status==='ready'&&!core.verify(model,core.normalize(model,{...request,protected:result.protectedNodes,swap:result.pair}),result.word)){
+    self.postMessage({id,type:'result',result:{status:'invalid',reason:'auto_holds_verification_failed',protectedNodes:[]},modelFingerprint:modelFingerprint(model.id)});return;
+   }
+   if(cacheError)result.detail=cacheError;
+   self.postMessage({id,type:'result',result,modelFingerprint:modelFingerprint(model.id)});return;
+  }
   if(message.task==='eligible-swaps'){
    const mapping=bridge.mapSnapshot(model,message.snapshot),selection=message.selection??{};
    const ids=selection.protectedStickerIds??[];if(!Array.isArray(ids))throw Error('Protected sticker IDs must be an array');
@@ -208,12 +220,12 @@ self.onmessage=async event=>{
    if(cacheError)result.detail=cacheError;
    self.postMessage({id,type:'result',result,modelFingerprint:modelFingerprint(model.id)});return;
   }
-  if(message.task==='full-solve'||message.task==='guided-solve'){
+  if(message.task==='full-solve'||message.task==='guided-solve'||message.task==='auto-holds-plan'){
    const request=autoBridge.autoRequestFromSnapshot(model,message.snapshot),options=autoOptionsFor(message.options);
    progress('loading-cache');
    let cache;try{cache=await loadFullCache(model.id);}catch(e){self.postMessage({id,type:'result',result:{status:'unknown',reason:e.code||'cache_unavailable',detail:e.message,optimal:false}});return;}
    progress('planning');
-   let result=fullSolver.solveFull(model,request,{...options,cache});
+   let result=fullSolver.solveFull(model,request,{...options,cache,...(message.task==='auto-holds-plan'&&message.snapshot?.mirrorMode?{colorOptimize:false}:{})});
    if(result.status==='solved')progress('verifying');
    if(result.status==='solved'&&!autoBridge.verifyAutoPlan(model,message.snapshot,result))result={status:'unknown',reason:'internal_auto_witness_verification_failed',optimal:false};
    if(result.status==='solved'&&message.task==='guided-solve'){
@@ -224,6 +236,7 @@ self.onmessage=async event=>{
     if(checkpoints.status==='solved'&&!guided.verifyGuidedPlan(model,message.snapshot,checkpoints))result={status:'unknown',reason:'internal_guided_witness_verification_failed',optimal:false};
     else result=checkpoints;
    }
+   if(result.status==='solved'&&message.task==='auto-holds-plan')result=require('./monotone-plan.cjs').makeAutoHoldsPlan(model,message.snapshot,result);
 
    const engineStages=result.status==='solved'?result.stages.map(stage=>({...stage,engineMoves:stage.moveIndices.map(i=>({...model.moves[i].engineMove}))})):[];
    self.postMessage({id,type:'result',result,engineStages,modelFingerprint:modelFingerprint(model.id)});return;

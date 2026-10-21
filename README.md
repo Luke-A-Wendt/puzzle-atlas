@@ -12,7 +12,7 @@ Explore how a puzzle moves, solve it by hand, watch an incremental automatic sol
 
 - **36 public puzzles:** cubes from 2×2×2 through 10×10×10, plus tetrahedral, octahedral, dodecahedral, and shape-changing puzzles. There is also a hidden bonus puzzle.
 - **Linked 3D views and ring maps:** inspect the puzzle, select an axis, drag a ring to turn it, and see which tiles correspond to the map’s nodes.
-- **Constrained Solver:** choose colors to hold and two tiles to exchange, then execute a verified legal move sequence.
+- **Constrained Solver:** choose colors to hold and two tiles to exchange, automatically execute a verified legal move sequence after selecting the second tile.
 - **Incremental Auto Solve:** solve from the current configuration independently of the move journal, with secured-node and current-sequence progress bars.
 - **Puzzle-specific guides and a shared solving handbook:** solving strategies, mathematical explanations, pseudocode, implementation details, and references.
 - **Colored and mirror variants:** supported ShapeShifter puzzles have separate atlas entries for each mode. Mirror mode keeps the ring map visible with silver nodes.
@@ -47,23 +47,27 @@ The atlas’s **How to play** gives a quick overview. The shared **Solving handb
 
 Switch the ring-map panel from **Turn rings** to **Constrained Solver**:
 
-1. Use **Hold** to toggle held nodes by clicking or selecting a region. The adjacent count shows how many are marked; **Clear** releases them and **Suggest** replaces them with suggested holds.
-2. Choose **Swap ①** and **Swap ②**. You can select endpoints on the ring map or on the 3D tiles.
-3. Press **Go** to check the request and execute a verified sequence.
+1. In the **Hold** group, turn on **Auto** once. It prepares a verified route and selects its secured holds without moving the puzzle. Choose a white-ringed **Move ①**, then a white-ringed **Move ②**; the verified step starts after a brief pause.
+2. Auto stays on. After each completed step, it preserves earlier secured holds, adds at least one more, and offers the next white-ringed choices automatically. Keep choosing 1, then 2 until solved—there is no need to click Auto between steps.
+3. To choose your own holds, click **Select**. This turns Auto off, keeps the current holds, and enables clicking, tapping, or lassoing nodes to flip their held state. The counter shows the held total; **Clear** removes all manual holds and endpoint selections. Choose bright **Swap ①** and **Swap ②** endpoints for an ordinary verified exchange.
 
-Holds protect the **color at a location at the end of the complete sequence**, not necessarily the identity of the sticker occupying it. Another sticker of the same color may replace it. The selected endpoint stickers exchange places; other unheld tiles may also move.
+**Select** and **Auto** are mutually exclusive hold modes. Choosing a Swap button leaves hold-editing input while keeping manual hold mode. Auto prevents manual hold edits and disables Clear until you choose Select; clicking Auto again also returns to manual swapping. The separate top-level **Auto Solve** plays its whole plan, while Auto in the Hold group waits for your pair selections at every step.
 
-Held colors can be disturbed temporarily during playback. Stopping before the sequence finishes does not guarantee that they have been restored. Selecting a held node as an endpoint temporarily exempts it from protection for that exchange while retaining its held classification.
+Auto prepares and independently verifies a complete route before offering its first guided choice. Its initial holds are the route’s secured set, which can be smaller than all currently correct colors. All white choices offered for a given step execute the same certified stage and lead to its verified next state. Once the stage completes, the held set strictly grows and the next choices appear without another click. The endpoint labels say **Move** in guidance because some necessary steps are placements or cycles rather than literal two-way swaps. On a shape-changing puzzle with an empty target pose, the two markers identify participating tiles; they do not imply that an invisible target is selectable.
 
-Availability updates with the current holds and selected endpoint. Dimmed choices are unavailable; a **?** means feasibility is unresolved and may require a bounded search. An unresolved request is not a proof of impossibility. Continuing a paused search retains useful work, subject to the solver’s time and memory limits.
+Manual holds protect the **color at a location at the end of the complete sequence**, not necessarily the identity of the sticker occupying it. Another sticker of the same color may replace it. The selected manual endpoints exchange their sticker identities; other unheld tiles may also move. A held manual endpoint is temporarily exempt from protection, then retains its held classification with the new color. Guided holds instead retain the plan’s secured color or exact-pose goal; they are never released merely to choose a guided endpoint.
 
-After a successful manual exchange, the endpoint selections clear and the holds remain. **Suggest** is a hold-selection aid; it does not guarantee that an arbitrary swap is possible or provide a complete solve plan.
+Holds can be disturbed temporarily during playback. Stopping before a complete step finishes cancels its remaining plan and clears the holds because their restoration is not yet guaranteed. Switching to Select, turning Auto off, making unrelated moves, or changing modes leaves guidance. Turn Auto on again to plan from the resulting position. The completion guarantee applies while following and completing the retained guided steps; it is not a shortest-path claim.
+
+In manual selection, **full-color** nodes have a stored verified swap: before choosing tile 1, at least one verified partner exists; afterward, full-color nodes are partners for that specific pair, including held endpoints. A **bold white circle** additionally marks a ready exchange with an unheld partner that would put at least one currently incorrect endpoint color at its goal location. These are local hints: other unheld colors can change, so they do not guarantee an increasing solved total or eventual completion. **Gray** nodes have no verified swap ready and cannot currently be selected for swapping. Gray does not prove mathematical impossibility; Select can still toggle gray nodes. Solid white hint circles sit outside dashed held circles. In Auto, white rings instead identify the certified next guided step, whose secured holds strictly increase.
+
+After a complete operation, endpoint selections clear. Auto stays active, expands its secured holds, and presents the next Move ① choices; a manual exchange retains its existing hold locations and refreshes swap availability. Failed verification makes no moves and returns to the first selection. If Auto cannot produce a verified complete route, it reports the failure and returns to manual mode without offering a speculative guided choice.
 
 ## How solving works
 
 Legal moves act as permutations of sticker addresses. Precomputed group data and stabilizer chains provide constructive sequences that preserve progressively more of the puzzle at operation boundaries.
 
-The manual solver combines cached legal sequences, bounded search, and stricter stabilizer-based constructions. Color-aware checks permit same-colored stickers to substitute at held locations. Proposed sequences are independently verified before playback.
+The browser offers only swaps backed by stored legal sequences. Bounded search and stricter stabilizer-based constructions remain available through the backend API. Color-aware checks permit same-colored stickers to substitute at held locations. Proposed sequences are independently verified before playback.
 
 Auto Solve uses verified incremental stages rather than reversing the move journal. Its upper progress bar tracks secured nodes; its lower bar tracks moves within the current stage. Those bars describe the plan’s progress, not the shortest remaining distance to a solution.
 
@@ -121,7 +125,8 @@ When reporting an issue, include the puzzle name, browser and device, whether yo
 
 ## Credits
 
-**Author:** [Dr. Luke A. Wendt](https://github.com/Luke-A-Wendt)  
+**Author:** [Dr. Luke A. Wendt](https://github.com/Luke-A-Wendt)
+
 **AI co-author:** [Astra Ultra](https://openai.com/index/gpt-6-astra/)
 
 See [LICENSE](LICENSE) for the repository’s license terms.

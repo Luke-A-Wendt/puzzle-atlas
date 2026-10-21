@@ -20,7 +20,7 @@ for(const puzzle of ids)test(puzzle+': manual actions retain their actual axis; 
   settle(app);await app.flush();
   assert.equal(app.snapshot().history.at(-1).face,axis,'journal records the exact outer/inner move');
   assert.equal(D.selection(app.snapshot().selected,null),axis,'manual action remains the selected ring after the animation');
-  assert.equal(app.element('viewRingSelectedName').textContent,api.axisLabel?.(axis)||axis);
+  assert.equal(app.element('viewRingSelectedName').textContent,'');
  }
  // API moves and ring-direction moves use the same legal native entry point.
  const axis=chosen[0].dataset.face;D.clear();assert.equal(api.move({face:axis,dir:1}),true);settle(app);await app.flush();

@@ -129,7 +129,7 @@
     controls.right = controls.ringCopy.querySelector('#viewRingCW');
     ringPairs[0][1] = controls.ringCopy;
   }
-  function syncRingCopy(blocked) {
+  function syncRingCopy(blocked, active) {
     if (!ringSource || !controls.ringCopy) return;
     const nativeElements = [ringSource, ...ringSource.querySelectorAll('*')];
     if (nativeElements.length !== ringPairs.length || nativeElements.some((node, index) => ringPairs[index]?.[0] !== node)) buildRingCopy();
@@ -138,9 +138,11 @@
       const physicalTurn = native.id === 'ccw' || native.id === 'cw';
       if (!physicalTurn && duplicate.title !== native.title) duplicate.title = native.title;
       if (duplicate.hidden !== native.hidden) duplicate.hidden = native.hidden;
-      // Native captions (including the direction-arrow spans) are preserved.
+      // Preserve native captions except the redundant selected-axis readout.
+      // The selected axis remains clear in the selector and rotation tooltips.
       // Only leaf text is updated, never a whole button's internal markup.
-      if (!native.children.length && duplicate.textContent !== native.textContent) duplicate.textContent = native.textContent;
+      const text = native.id === 'selectedName' && active ? '' : native.textContent;
+      if (!native.children.length && duplicate.textContent !== text) duplicate.textContent = text;
       for (const attribute of ['aria-pressed','aria-label','data-selected']) {
         if (physicalTurn && attribute === 'aria-label') continue;
         const value = native.getAttribute(attribute);
@@ -165,7 +167,7 @@
     if (ringName && ringName.getAttribute('data-selected') !== String(active)) ringName.setAttribute('data-selected', String(active));
     const ringCaption = doc?.getElementById?.('selectedName');
     if (!active && ringCaption && ringCaption.textContent !== 'Select axis') ringCaption.textContent = 'Select axis';
-    syncRingCopy(busy || manualBlocked);
+    syncRingCopy(busy || manualBlocked, active);
     for (const button of [controls.left, controls.right]) if (button && !active) button.disabled = true;
     syncPlayingTurn();
   }

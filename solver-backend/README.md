@@ -21,7 +21,11 @@ for all lazily fetched assets. A deployment needs only `dist/`.
 
 ## Color-aware behavior
 
-The website requests color holds at fixed locations; A/B still exchange their selected sticker identities. A compact legal-operation catalog and exact inverse-preimage tuple search expand the successful requests, with the cached strict solver retained as a bounded positive fallback. The browser keeps the tuple-search session between checks: its explored records, parents, queue position and next move index survive a time slice. Continue raises the total planning allowance from 3 to 10, 30 and finally 60 seconds. A state, storage or final-time limit ends that attempt honestly as unknown; no further identical retry is offered. A strict negative cannot prove a color request impossible. Eligibility combines full-group negatives with catalog/strict positives. Bright choices separately require a retained verified word; unresolved or mathematically feasible choices without a word are moderately dim with a question mark and remain selectable through Check & solve. Go executes a stored ready witness after independent validation, without repeating its search.
+Ordinary manual swaps protect colors at held locations and exchange the two selected sticker identities. Eligibility combines full-group negatives with catalog/strict positives. Bright choices require a retained verified word: before choosing 1, at least one verified partner exists; afterward, bright nodes are partners for that pair. Other choices are gray and unavailable for swapping, without claiming mathematical impossibility. The manual Select tool can still toggle gray nodes. Selecting endpoint 2 independently validates its word and starts after a short pause. Failed verification clears the pair while retaining manual holds.
+
+Auto in the Hold controls is a persistent toggle backed by a separate verified **guided plan**. It retains the full incremental route and offers white-ringed Move ①/Move ② choices for the next stage. Each completed stage restores the previous secured set and adds at least one goal address; holds and next choices refresh automatically, without clicking Auto again. All offered choices for one stage reach the same certified next state. Move markers can describe a placement or cycle, so they are never silently presented as two-way Swap endpoints. Auto prevents hold edits and disables Clear. Select turns Auto off, retains the holds, and enables manual editing; clicking an active Auto returns to manual pair selection. Ordinary manual swaps retain their exact exchange semantics. Their white rings are only local endpoint-goal hints for ready exchanges with an unheld partner, not a complete-route guarantee.
+
+The backend retains small legal-operation catalogs, exact inverse-preimage tuple search, cached strict fallback and resumable bounded-search APIs for programmatic use. The prior `ColorEligibilityAnalyzer.suggestHolds()` local endpoint heuristic remains callable, but no longer drives the browser Auto button. White rings have mode-specific meaning: certified next-stage choices in Auto, or local endpoint-color improvement in manual Select mode. Only the former inherits the finite-completion certificate.
 
 For explicitly safe fully occupied color goals, Auto Solve shortens the existing exact legal witness by deleting color loops, using bounded one-move shortcuts and merging identity-only progress stages. Shape/picture models keep exact goals. Accepted plans have no more turns or stages than their baseline; the pass adds bounded planning compute and does not claim shortest solutions.
 
@@ -45,6 +49,8 @@ See [`COLOR_SOLVER.md`](COLOR_SOLVER.md) for the complete algorithms, API, cache
   full solution from current sticker positions. No move journal is read.
 - `src/auto-adapter.cjs`: record solved progress and independently verify every
   proposed auto-solve stage, its retained constraints, and the final state.
+- `src/monotone-plan.cjs`: certify the strictly growing secured sets and marker
+  choices of an Auto-guided route retained for user-selected step playback.
 - `src/eligibility.cjs`: exact candidate-swap eligibility for arbitrary held
   nodes, with compact three-state results and bounded computation. See
   `ELIGIBILITY.md` for the algorithm, worker contract, and resource behavior.

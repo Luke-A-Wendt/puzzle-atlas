@@ -47,7 +47,7 @@ for(const puzzle of ['cube3','tetraminx','jewel'])test(puzzle+': exposed ring dr
   await reset();await gesture(app,path);
   const after=app.snapshot();assert.equal(after.history.length,1);assert.equal(after.history[0].face,path.face);assert.equal(after.history[0].dir,expectedDirection);
   assert.deepEqual(plain(after.stickers||after.pieces),expected,'drag reaches the existing legal engine permutation');
-  assert.equal(app.element('viewRingSelectedName').textContent,api.axisLabel?.(path.face)||path.face,'3D readout follows the dragged ring');
+  assert.equal(app.element('viewRingSelectedName').textContent,'','selected axis is not repeated between the turn buttons');
   assert.equal(app.element('viewRingCW').disabled,false);assert.equal(native.hidden,true);assert.equal(native.inert,true);
  }
  await reset();const path=route(1);await gesture(app,path,{click:true});assert.equal(app.snapshot().history.length,0);assert.equal(app.snapshot().selected,path.face,'click selects without a turn');

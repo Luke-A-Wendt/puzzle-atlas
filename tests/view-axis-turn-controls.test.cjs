@@ -20,7 +20,7 @@ for(const puzzle of puzzles)test(puzzle+' reserved 3D toolbar requests physical 
  // The 3D arrows request physical turns through the same native notation
  // handler; ring-map screen direction stays independently defined.
  for(const axis of [axes[0],axes.at(-1)])for(const [native,duplicate]of [['ccw','viewRingCCW'],['cw','viewRingCW']]){
-  api.reset();api.select(axis);display.syncTurnControls();assert.equal(app.element(duplicate).disabled,app.element(native).disabled);assert.equal(app.element('viewRingSelectedName').textContent,api.axisLabel?.(axis)||axis);
+  api.reset();api.select(axis);display.syncTurnControls();assert.equal(app.element(duplicate).disabled,app.element(native).disabled);assert.equal(app.element('viewRingSelectedName').textContent,'');
   const direction=native==='ccw'?-1:1;
   api.move({face:axis,dir:direction,turns:1});settle(app);const expected=physical(app),expectedMove=plain(app.snapshot().history.at(-1));
   api.reset();api.select(axis);display.syncTurnControls();app.click(duplicate);display.syncTurnControls();

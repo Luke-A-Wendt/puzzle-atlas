@@ -138,6 +138,90 @@ class ColorEligibilityAnalyzer{
   }
   return final;
  }
+ // Choose a small, already verified exchange before deciding what to hold.
+ // This is deliberately independent of full-solve and graph-search planning.
+ suggestHolds(request={},options={}){
+  let ctx,req,best=null,matching=[],goal,reason;
+  const stats=()=>({...ctx?.stats,elapsedMs:ctx?performance.now()-ctx.started:0});
+  try{
+   ctx=context(options);if(request.protection&&request.protection!=='endpoint')throw Error('Auto holds protect colors at sequence boundaries');req=normalize(this.model,{...request,protected:[],holdSemantics:'color',exemptSwapEndpoints:true});
+   req.colorByNode=req.colorByNode.map(color=>color===null?null:String(color));
+   const d=this.model.degree,colors=req.colorByNode;
+   goal=new Array(d).fill(null);
+   if(!this.model.homeBySticker||!this.model.colorBySticker)throw Error('Canonical goal colors are missing');
+   for(const [id,node]of Object.entries(this.model.homeBySticker)){
+    const color=this.model.colorBySticker[id];
+    if(!Number.isInteger(node)||node<0||node>=d||color===undefined||color===null||goal[node]!==null)throw Error('Invalid canonical goal colors');
+    goal[node]=String(color);
+   }
+   matching=req.occupiedNodes.filter(node=>goal[node]!==null&&colors[node]===goal[node]);
+   if(matching.length===req.occupiedNodes.length)return {status:'solved',protectedNodes:matching,stats:stats()};
+   ctx.stats.storageEstimateBytes=Math.ceil(d*d/8)*3+d*25;if(ctx.stats.storageEstimateBytes>ctx.config.maxStorageBytes)throw new ColorEligibilityLimit('storage_limit');
+   const correct=new Uint8Array(d);for(const node of matching)correct[node]=1;
+   const sourceEpoch=new Uint32Array(d),destinationEpoch=new Uint32Array(d),mapping=new Uint32Array(d);
+   let epoch=0;
+   const primitive=this.compiled.moves.map(move=>({word:[move.index],support:Array.from(move.perm).flatMap((dst,src)=>src===dst?[]:[src,dst])}));
+   let operations=[];const cache=this.colorCache;
+   if(cache){
+    if(cache.schemaVersion===1&&cache.kind==='color-macros'&&cache.degree===d&&cache.modelSignature===this.signature&&Array.isArray(cache.operations))operations=cache.operations;
+    else ctx.stats.colorCacheError='color_macro_cache_mismatch';
+   }
+   const better=(score,old)=>!old||score.some((value,i)=>value!==old[i]&&score.slice(0,i).every((v,j)=>v===old[j])&&value>old[i]);
+   for(let opIndex=0;opIndex<primitive.length+operations.length;opIndex++){
+    ctx.check();ctx.stats.macroTests++;
+    const isPrimitive=opIndex<primitive.length,op=isPrimitive?primitive[opIndex]:operations[opIndex-primitive.length];
+    if(!op||!Array.isArray(op.word)||!op.word.length||op.word.length>5000||!Array.isArray(op.support)||op.support.length%2||op.support.length>d*2){ctx.stats.invalidMacros++;continue;}
+    epoch=(epoch+1)>>>0;if(!epoch){sourceEpoch.fill(0);destinationEpoch.fill(0);epoch=1;}
+    const lost=new Set();let valid=true,finalMatches=matching.length;
+    for(let i=0;i<op.support.length;i+=2){
+     ctx.tick();const a=op.support[i],b=op.support[i+1];
+     if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||a>=d||b<0||b>=d||a===b||sourceEpoch[a]===epoch||destinationEpoch[b]===epoch){valid=false;break;}
+     sourceEpoch[a]=destinationEpoch[b]=epoch;mapping[a]=b;
+     if(correct[b]&&colors[a]!==colors[b])lost.add(b);
+     if(goal[b]!==null)finalMatches+=(colors[a]!==null&&colors[a]===goal[b]?1:0)-(correct[b]?1:0);
+    }
+    if(valid)for(let i=0;i<op.support.length;i+=2)if(destinationEpoch[op.support[i]]!==epoch){valid=false;break;}
+    if(!valid){ctx.stats.invalidMacros++;continue;}
+    let choice=null,score=null;
+    for(let i=0;i<op.support.length;i+=2){
+     ctx.tick();const a=op.support[i],b=op.support[i+1];
+     if(a>=b||colors[a]===null||colors[b]===null||sourceEpoch[b]!==epoch||mapping[b]!==a)continue;
+     const gains=Number(goal[a]!==null&&colors[a]!==goal[a]&&colors[b]===goal[a])+Number(goal[b]!==null&&colors[b]!==goal[b]&&colors[a]===goal[b]);
+     if(!gains)continue;
+     const holds=matching.length-lost.size-Number(correct[a]&&!lost.has(a))-Number(correct[b]&&!lost.has(b));
+     const candidate=[holds,gains,finalMatches,-op.word.length];
+     if(better(candidate,score)){score=candidate;choice=[a,b];}
+    }
+    if(!choice||!better(score,best?.score))continue;
+    const memo=this.verifiedOperations.get(op);
+    let verified=isPrimitive?true:memo&&memo.word.length===op.word.length&&memo.support.length===op.support.length&&memo.word.every((x,i)=>x===op.word[i])&&memo.support.every((x,i)=>x===op.support[i])?memo.valid:undefined;
+    if(verified===undefined){
+     ctx.stats.macroVerifications++;let p=identity(d);
+     for(const move of op.word){ctx.tick(d);if(!Number.isInteger(move)||move<0||move>=this.compiled.moves.length){valid=false;break;}p=compose(p,this.compiled.moves[move].perm);}
+     verified=valid&&p.every((dst,src)=>dst===(sourceEpoch[src]===epoch?mapping[src]:src));
+     this.verifiedOperations.set(op,{valid:verified,word:op.word.slice(),support:op.support.slice()});
+    }
+    if(!verified){ctx.stats.invalidMacros++;continue;}
+    best={score,pair:choice,word:op.word.slice(),support:op.support.slice(),protectedNodes:matching.filter(node=>!lost.has(node)&&!choice.includes(node))};
+   }
+  }catch(error){
+   if(!(error instanceof ColorEligibilityLimit))return {status:'invalid',reason:error.message,protectedNodes:[],stats:stats()};
+   reason=error.message;
+  }
+  if(!best)return {status:'no_ready_swap',reason:reason||'no_verified_goal_swap',protectedNodes:[],stats:stats()};
+  // Return the selected word's other verified exchanges too. Every bit is
+  // backed by that same complete word under the newly selected color holds.
+  const d=this.model.degree,protectedSet=new Set(best.protectedNodes),mapping=new Map();
+  for(let i=0;i<best.support.length;i+=2)mapping.set(best.support[i],best.support[i+1]);
+  const violations=[];for(const [src,dst]of mapping)if(protectedSet.has(dst)&&req.colorByNode[src]!==req.colorByNode[dst])violations.push(dst);
+  const pairs=[];
+  for(const [a,b]of mapping)if(a<b&&mapping.get(b)===a&&req.colorByNode[a]!==null&&req.colorByNode[b]!==null&&violations.every(x=>x===a||x===b))pairs.push([a,b]);
+  const eligibility=initResult(d,{...req,protectedNodes:best.protectedNodes});
+  for(const [a,b]of pairs){mark(eligibility,a,b,true);mark(eligibility,b,a,true);}
+  if(!retainWitness(eligibility,best.word,pairs,ctx))return {status:'no_ready_swap',reason:'no_retained_goal_swap',protectedNodes:[],stats:stats()};
+  const ready=finalize(eligibility,ctx,'catalog_witness_only');
+  return {status:'ready',protectedNodes:best.protectedNodes,pair:best.pair,word:best.word,eligibility:ready,stats:{...stats(),retainedHolds:best.protectedNodes.length,endpointCorrections:best.score[1],goalMatchesBefore:matching.length,goalMatchesAfter:best.score[2],...(reason?{scanStopped:reason}:{})}};
+ }
  macroWitnesses(result,ctx){
   const d=this.model.degree,colors=result.colorByNode;
   // Reuse bounded O(d) scratch arrays for every sparse macro instead of

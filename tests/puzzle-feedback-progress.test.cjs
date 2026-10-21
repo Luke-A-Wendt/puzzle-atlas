@@ -40,7 +40,7 @@ test('mirror callout appears once for eligible puzzles and reduced motion uses o
 
 test('move, Auto Solve gap, and Stop captions never pulse action buttons or unchanged settings',async()=>{
  const app=host(),feedback=app.context.PuzzleFeedback;await app.ready();feedback.refresh();await app.advance(520);
- const actions=['randomize','solve','pause','undo','redo','undoSequence','redoSequence','csGo','csRetry'];
+ const actions=['randomize','solve','pause','undo','redo','undoSequence','redoSequence','csPairB','csRetry'];
  for(let stage=0;stage<4;stage++){
   for(const id of actions){const button=app.element(id);button.hidden=false;button.disabled=stage%2===0;button.textContent=stage%2?'Stop':'Solving '+stage;app.mutation(button);feedback.pulse(button);}
   app.context.PuzzleAxisDisplay.resetDefaults({pulse:true});feedback.refresh();await app.flush();

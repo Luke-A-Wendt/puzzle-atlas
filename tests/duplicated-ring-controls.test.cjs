@@ -17,7 +17,7 @@ for(const puzzle of puzzles)test(puzzle+' keeps one visible 3D selector with nat
  for(const [original,duplicate]of [['ccw','viewRingCCW'],['cw','viewRingCW']]){
   assert.equal(app.element(duplicate).querySelector('.direction').textContent,app.element(original).querySelector('.direction').textContent);
   assert.match(app.element(original).textContent,/Turn (left|right)/);
-  assert.equal(app.element(duplicate).textContent.trim(),'Rotate '+app.element(original).querySelector('.direction').textContent);
+  assert.equal(app.element(duplicate).textContent.trim(),original==='ccw'?app.element(original).querySelector('.direction').textContent+' Rotate':'Rotate '+app.element(original).querySelector('.direction').textContent);
   assert.doesNotMatch(app.element(duplicate).textContent,/CCW|CW|Turn/);
   assert.match(app.element(duplicate).title,/looking inward/);
  }
@@ -31,7 +31,7 @@ for(const puzzle of puzzles)test(puzzle+' keeps one visible 3D selector with nat
    assert.equal(copies()[i].className,buttons()[i].className);
    assert.equal(copies()[i].getAttribute('aria-pressed'),buttons()[i].getAttribute('aria-pressed'));
   }
-  assert.equal(app.element('viewRingSelectedName').textContent,app.element('selectedName').textContent);
+  assert.equal(app.element('viewRingSelectedName').textContent,'');
  }
  // Hiding the map cannot remove or make its separate 3D controls inert.
  app.click('ringPanelHide');await app.flush();assert.equal(app.element('ringPanel').inert,true);

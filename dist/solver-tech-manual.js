@@ -28,8 +28,8 @@ window.SOLVER_TECH_MANUAL = function ({section, subsection, code, math, table}) 
   return UNKNOWN // strict impossibility cannot exclude relaxed solutions`)+
       `<p>The catalog is a supply of legal words, not a complete reachability table. Scan candidate operations containing the required 1/2 two-cycle, test their incoming colors on F, and choose the shortest accepted stored word. A catalog witness proves feasibility; failure proves nothing. A one-move witness is shortest because distinct 1/2 require a nonidentity action. Longer catalog words have no general minimum-length certificate. One- and two-move catalog witnesses return promptly; a longer one supplies an incumbent for a small attempt to improve it before playback.</p>
       <p>This describes the retained one-shot <code>solveSync</code> API, not the resumable browser-session protocol below. Catalog inspection is capped at min(100 ms,total budget/8). An incumbent longer than two moves receives at most 150 ms of shorter-depth color search and, when time remains, at most 50 ms of strict bidirectional tuple search to compete with it. Without an incumbent, color search receives at most min(450 ms,configured short-search time,total budget/3,remaining time), with at most 25,000 stored tuples and 16 MiB estimated storage. Remaining time goes to the strict fallback. A successful strict fallback need not be shortest for the relaxed request, even if it was shortest under sticker holds. Only a lower bound proved for the relaxed request can certify that claim.</p>`)+
-    subsection('tech-color-session','Progressive browser search: preserve work across Continue',
-      `<p><code>ManualSwapSession</code> keeps one immutable normalized request and a retained projected search in a browser worker. Its <code>advance({budgetMs,onProgress})</code> operation receives a <em>cumulative</em> planning allowance. The UI uses 3,000, 10,000, 30,000 and 60,000 ms: after spending the full previous allowance, these permit approximately 7,000, 20,000 and 30,000 ms of additional planning. Asset download time and time spent waiting for another click do not consume that allowance. Runtime checks occur at checkpoints, so a slice can overrun slightly.</p>
+    subsection('tech-color-session','Retained backend search sessions: programmatic continuation',
+      `<p><strong>Backend API, not the normal selection UI.</strong> The website offers verified-ready swaps only. The retained search protocol below remains available to programmatic callers; gray nodes do not start it and the normal interface has no speculative Continue action.</p><p><code>ManualSwapSession</code> keeps one immutable normalized request and a retained projected search in a browser worker. Its <code>advance({budgetMs,onProgress})</code> operation receives a <em>cumulative</em> planning allowance. The retained worker protocol supports cumulative allowances of 3,000, 10,000, 30,000 and 60,000 ms: after spending the full previous allowance, these permit approximately 7,000, 20,000 and 30,000 ms of additional planning. Asset download time and time spent waiting for another click do not consume that allowance. Runtime checks occur at checkpoints, so a slice can overrun slightly.</p>
       <p>A session retains normalized holds, the full current color/occupancy arrays and 1/2; primitive inverse arrays; the pair-index candidate list and its scan cursor; and the BFS seen map, record queue, parent indices, incoming moves, depths, queue head, next primitive index and an optional already-tested transition awaiting storage. Retaining only a layer number or restarting BFS with a larger deadline would repeat work. The move cursor also matters: a pause in the middle of expanding a node resumes its next untested outgoing edge.</p>`+
       code('Resumable exact projected search', `CREATE-SESSION(model, request, limits):
   validate and copy the normalized request; treat it as immutable
@@ -78,9 +78,9 @@ ADVANCE(cumulativeBudget):
   return IMPOSSIBLE only after the entire projected orbit is exhausted
   on every return, add only active planning time to elapsed`)+
       `<p>The cached strict constructor is a separate bounded shortcut. A successful prepared chain can be reused. Before the first cached attempt, the same retained BFS gets a probe of at most min(150 ms,remaining time/4), so an easy short solution need not wait for or expand a long constructive word. Only a constructor result with <code>time_limit</code> schedules another attempt. Its nominal allowances are 800, 2,500, 8,000 and 16,000 ms at the four stages, bounded by the actual time remaining. At the final 60-second stage, if BFS has already stopped at a hard limit, the constructor may use all remaining planning time rather than leaving it unused. The tuple frontier remains intact. Therefore BFS transitions are not replayed across continuations, but not every internal operation of a timed-out group construction is a resumable checkpoint. Strict impossibility never proves a color request impossible. Catalog or cached witnesses can be shorter to compute without being shortest in primitive turns.</p>
-      <p>The session stops offering Continue after the 60-second planning stage, or sooner when all remaining routes have stopped. A BFS memory/state limit can leave one useful continuation when a cached construction is still eligible for a longer attempt; a terminal limit with no such work remaining ends the session. The browser guards are 100,000 retained states, a 48 MiB combined working-storage estimate, depth 30 for projected BFS and 5,000 output moves. The BFS depth limit does not restrict a valid longer word from the constructive route; it limits which primitive paths BFS explores. The standalone session defaults its depth bound to the output bound when no depth is supplied. Each record is charged 256+40q bytes. Inverse arrays, initial metadata and one temporary/pending row are charged 2MN+16N+32q+(256+40q) bytes; retained cached preparation is additionally accounted. Before the first constructive attempt and while a timed-out attempt can be extended, BFS reserves at least half the storage allowance for construction, or the retained prepared-cache size if larger. If that reservation stops BFS, save the already-computed transition as a pending row. When construction stops permanently, release the extra reservation and enqueue that row if it fits; advance the move cursor without repeating the transition. Actual retained preparation remains charged. The constructor receives only the allowance left after current BFS storage. These are safeguards, not exact browser heap measurements. Loaded immutable move models and precomputed cache assets are separate from the bounded search-workspace estimate. Terminal resource limits return <code>unknown</code> with a reason and leave the puzzle unchanged. Only full projected-orbit exhaustion justifies <code>impossible</code>. No incomplete frontier is treated as an impossibility proof.</p>
+      <p>The retained protocol stops permitting continuation after the 60-second planning stage, or sooner when all remaining routes have stopped. A BFS memory/state limit can leave one useful continuation when a cached construction is still eligible for a longer attempt; a terminal limit with no such work remaining ends the session. The browser guards are 100,000 retained states, a 48 MiB combined working-storage estimate, depth 30 for projected BFS and 5,000 output moves. The BFS depth limit does not restrict a valid longer word from the constructive route; it limits which primitive paths BFS explores. The standalone session defaults its depth bound to the output bound when no depth is supplied. Each record is charged 256+40q bytes. Inverse arrays, initial metadata and one temporary/pending row are charged 2MN+16N+32q+(256+40q) bytes; retained cached preparation is additionally accounted. Before the first constructive attempt and while a timed-out attempt can be extended, BFS reserves at least half the storage allowance for construction, or the retained prepared-cache size if larger. If that reservation stops BFS, save the already-computed transition as a pending row. When construction stops permanently, release the extra reservation and enqueue that row if it fits; advance the move cursor without repeating the transition. Actual retained preparation remains charged. The constructor receives only the allowance left after current BFS storage. These are safeguards, not exact browser heap measurements. Loaded immutable move models and precomputed cache assets are separate from the bounded search-workspace estimate. Terminal resource limits return <code>unknown</code> with a reason and leave the puzzle unchanged. Only full projected-orbit exhaustion justifies <code>impossible</code>. No incomplete frontier is treated as an impossibility proof.</p>
       <p>Progress metadata includes the cumulative budget and planning time, retained-state and attempted-transition counts, whether work was resumed, whether another slice is allowed, the next budget and a terminal reason. Counts describe the bounded projected search, not the percentage of all puzzle configurations searched: the full search size is generally unknown. A newly created session can have a small initialization cost before its first progress update.</p>
-      <p>The main thread retains a paused worker only for that exact request and live sticker-address snapshot. Altering the holds, endpoints 1 and 2, colors, occupied poses, puzzle state or mode invalidates the session and its continuation button. Cancel also disposes of it. Selecting a ready pair bypasses construction: retrieve its stored word and independently replay it before playback. If background eligibility later supplies a verified word for a previously unresolved pair, Go can become available without restarting its exhausted search. A failed check does not change the puzzle. Manual endpoint selection requests the exact exchange defined above, shows the move count, and waits for Go. There is no full-solution suggestion disguised as a two-node exchange. Auto Solve uses the separately described incremental stage playback below.</p>`)+
+      <p>A programmatic caller can retain a paused worker only for that exact request and live sticker-address snapshot. Altering the holds, endpoints 1 and 2, colors, occupied poses, puzzle state or mode invalidates the session and its continuation eligibility. Cancel also disposes of it. Selecting a ready pair bypasses construction: retrieve its stored word and independently replay it before playback. If background eligibility later supplies a verified word for a previously unresolved pair, the newly ready pair can use that witness without restarting its exhausted search. A failed check does not change the puzzle. Selecting a verified-ready endpoint 2 requests the exact exchange defined above automatically, shows the move count, and pauses briefly before playing a verified sequence. An unsuccessful request clears both endpoints, keeps holds, and returns to the first-endpoint tool. A full-solution placement is never advertised as a manual two-node exchange. Auto-guided play uses Move markers and a separate verified plan; ordinary Swap remains the exact endpoint exchange. Auto Solve uses its existing incremental stage playback below.</p>`)+
     subsection('tech-guided-checkpoints','Incremental Auto Solve stages and progress measurements',
       `<p>Auto Solve plays the independently verified stages returned by <code>solveFull</code>. Let S be the physical stickers, M=|S|, N the geometric addresses, h:S→{0,…,N−1} their injective home-address mapping, x:S→{0,…,N−1} their current-address mapping, and c(s) their immutable colors. Let C(x) contain home addresses occupied by their goal color and I(x) contain addresses occupied by their exact-home sticker. Empty hypothetical poses never count as physical stickers.</p>
       <p>Let J(x)=|C(x)| for a color-safe fully occupied model outside mirror mode, and J(x)=|I(x)| when exact identities or poses define the goal. This overlap does not measure the minimum remaining move distance.</p>`+
@@ -111,7 +111,7 @@ ON-SECOND-AUTO-STOP-OR-MANUAL-STOP:
   verify the completed prefix against its predicted permutation
   clear held and numbered selections
   discard remaining plan; partial endpoints need not restore holds`)+
-      `<p><strong>Why small boundaries matter.</strong> Protecting the whole C(x), rather than the declared secured set K, forces a later stage to restore every coincidental correct color too. The optional <code>groupGuidedPlan</code> backend helper concatenates stages until C(before)⊆C(after) and J(after)&gt;J(before). That preserves a monotonic goal count but can merge almost the entire solve into one long operation. Normal Auto Solve deliberately does not call it. It preserves the existing verified placement boundaries, which are incremental constructions, not globally shortest swaps. Suggest is a separate manual convenience selecting C(x); it does not promise a short or legal arbitrary pair exchange.</p>
+      `<p><strong>Why small boundaries matter.</strong> Protecting the whole C(x), rather than the declared secured set K, forces a later stage to restore every coincidental correct color too. The optional <code>groupGuidedPlan</code> backend helper concatenates stages until C(before)⊆C(after) and J(after)&gt;J(before). That preserves a monotonic goal count but can merge almost the entire solve into one long operation. Normal Auto Solve deliberately does not call it. It preserves the existing verified placement boundaries, which are incremental constructions, not globally shortest swaps. Auto in the Hold controls now retains a verified incremental plan and lets the user choose one certified step at a time. It preserves the plan’s secured set rather than every incidental member of C(x). This provides finite completion without joining stages merely to preserve all color matches. It does not change ordinary Auto Solve or certify a shortest route.</p>
       <p><strong>Independent verification and cost.</strong> The verifier checks each primitive index, the source-to-target transport, inclusion of the earlier secured prefix, the protected and newly solved goals, equality of flattened and staged move lists, and the final goal. Identity-mode stages must fix the protected addresses pointwise; color-mode stages may substitute equal-colored stickers. For L primitive turns, M occupied stickers, N addresses, and B stages, replay costs O(L(N+M)) with additional node-set checks bounded conservatively by O(BN²); the plan uses O(L+BN+N+M) memory. No configuration graph is enumerated. The browser rejects stale live mappings and retains the 20,000-move full-plan limit. Stop verifies only the completed legal prefix, since a partially played stage does not have its endpoint guarantees.</p>`)+
     subsection('tech-color-isolated','Exact two-address audit and same-color compensation',
       `<p>Let T(a,b) denote the identity permutation with only a and b exchanged. The literal isolated-swap question is exactly T(a,b)∈G, where G is generated by the legal moves. This is stronger than holding all other visible colors: equal-colored stickers can exchange identities without changing those colors. In a pose-expanded model, the exact permutation also fixes every unused address.</p>
@@ -152,7 +152,7 @@ SIFT(target, completeChain):
     if expansion exceeded a limit: remember the limitation; continue
   retain cursor if paused
   return UNKNOWN if this family is exhausted or any resource limit applies`)+
-      `<p>The browser session runs this optional scan after catalog inspection in slices of at most 250 ms. Its cursor, count and chain preparation survive Continue. Memory for lazy inverse transversals and word expansion is reserved before enabling it; tight budgets skip this optional route. It shares the existing 5,000-move output limit. A time- or output-limited expansion is not an impossibility proof. Cached strict construction and the retained projected search remain available independently.</p>
+      `<p>The retained backend session runs this optional scan after catalog inspection in slices of at most 250 ms. Its cursor, count and chain preparation survive Continue. Memory for lazy inverse transversals and word expansion is reserved before enabling it; tight budgets skip this optional route. It shares the existing 5,000-move output limit. A time- or output-limited expansion is not an impossibility proof. Cached strict construction and the retained projected search remain available independently.</p>
       <p>The offline catalog additionally stores verified exact double-swap words taken from complete-chain transversals and short conjugations. The initial added family contained 2,760 words across 16 puzzles, using 227,360 additional bytes before audit metadata; later sparse conjugacy may add or shorten equivalent-support witnesses. Caps are 512 new operations and 512 KiB per puzzle, with at most 1,500 primitive turns per added word. Every word is replayed before export. Runtime catalog lookup checks the actual current colors and request again: the same word need not preserve colors after a different scramble. The cached family is deliberately incomplete, and no shortest-word claim is made.</p>
       <p>For degree N and M primitive generators, the pair graph has N(N−1)/2 vertices and at most M outgoing transitions per vertex. Orbit construction costs O(MN²) time and O(N²) auxiliary storage. With R pair orbits, straightforward full-base sifting adds O(RN²) time, excluding the already-built chain and output expansion. An on-demand scan can examine O(N²) compensating pairs, each with O(N²) worst-case array sifting; it is therefore bounded in the browser rather than promised constant-time. Implementations: <code>permutation-membership.cjs</code>, <code>color-compensation.cjs</code>, and <code>tools/precompute-transpositions.cjs</code>.</p>`)+
     subsection('tech-color-tuple','Backward preimages: a sufficient projected state',
@@ -267,7 +267,7 @@ SIFT(target, completeChain):
         ['Group storage / generators / word-DAG nodes', '64 MiB / 2,000 / 100,000'],
         ['Orbit records / Schreier tests', '100,000 / 3,000,000']
       ])+
-      `<p>The one-shot API remains useful for tools and tests. It does not retain its frontier after returning. The website’s progressive route is specified above and has its own lifetime and limits; it does not restart this one-shot call for each Continue. The standalone threaded API also enforces a worker heap limit and a total time +500 ms timeout.</p>
+      `<p>The one-shot API remains useful for tools and tests. It does not retain its frontier after returning. The retained worker continuation route is specified above and has its own lifetime and limits; advancing that API does not restart this one-shot call. Normal browser selection uses verified-ready pairs only. The standalone threaded API also enforces a worker heap limit and a total time +500 ms timeout.</p>
       <p>For V stored tuples and E attempted edges, tuple transformations and key construction cost O(Eq), with E≤MV for completed expansions; storage is O(Vq+MN). The implementation estimates 256+40q bytes per record to include keys, maps, frontier references, and allocation overhead. This is an accounting guard, not an exact JavaScript heap measurement. Limits yield <code>unknown</code>, never a fabricated proof of illegality.</p>`);
 
   const holdsBody =
@@ -391,7 +391,7 @@ SIFT(target, completeChain):
       <p>Standalone defaults are 3,000 ms, 5,000 output moves, a 48 MiB working-storage estimate, 100,000 pair states, and 300,000 DAG nodes. The one-shot request dispatcher gives this attempt at most min(800 ms,remaining time), after the strict projected search and before the legacy chain builder. The progressive browser session instead uses the scheduling specified above. A cached solved/impossible answer ends that strict attempt; an unknown or invalid cached attempt leaves any remaining time to the legacy fallback. The color wrapper still downgrades strict impossibility to unknown. No-holds transport uses the same ordered-pair method on primitive actions without loading a chain. No new precomputed table is required.</p>`);
 
   const eligibilityBody =
-    `<p>Availability has two separate outputs: <strong>mathematical feasibility</strong> and <strong>executable readiness</strong>. A group-orbit proof can establish that a sequence exists without delivering it within the playback bound. Only a stored, independently verified primitive word makes a pair ready and bright. Feasible-but-not-ready and unchecked pairs remain selectable, moderately dim with a question mark; proved-impossible pairs are strongly dim and disabled.</p>
+    `<p>Availability has two separate outputs: <strong>mathematical feasibility</strong> and <strong>executable readiness</strong>. A group-orbit proof can establish that a sequence exists without delivering it within the playback bound. Only a stored, independently verified primitive word makes a pair ready and bright. All pairs without a retained verified word are gray and disabled for interactive swaps. This includes feasible-but-not-ready, unchecked, and proved-impossible pairs. Backend results retain those mathematical distinctions; gray does not claim impossibility.</p>
     <p>Feasibility combines three sound sources. An exchange impossible in the full legal group remains impossible under any holds. An exchange possible while fixing every held sticker remains possible while preserving their colors. A short operation whose held endpoint colors verify proves an additional positive and can also supply its executable word. A negative from the strict held subgroup is deliberately discarded.</p>`+
     subsection('tech-color-eligibility','Merge proof bounds without treating unknown as impossible',
       code('COLOR-ELIGIBILITY', `H := persistent held addresses from the UI request
@@ -464,8 +464,104 @@ FINALIZE:
   otherwise partial if at least one pair is known, else unknown`)+
       `<p>Initialize equal-endpoint pairs, held endpoints, and noncandidate endpoints as known infeasible. Initialize other pairs as unchecked. On a resource limit, retain already certified point-orbit exclusions and completed pair orbits, then finalize. <code>complete</code> means the table is fully classified; it does not mean every pair is feasible.</p>
       <p>Browser availability caps are 3,000 ms, 48 MiB estimated storage, 2,000 strong generators, 100,000,000 counted operations, and 50,000 adjacent base swaps. Operations are checked in batches, with time checks at orbit/base boundaries too. Missing complete cache, time, storage, operation, generator, or base-swap limits preserve unknown entries. Invalid models or malformed cache structure give <code>invalid</code>.</p>`)+
+    subsection('tech-goal-hints', 'Manual goal hints and persistent Auto hold guidance',
+      `<p>The Hold group has a persistent policy: manual Select or Auto. Input selection is separate: choosing a Swap or Move marker changes which endpoint a click selects, without changing that hold policy. Manual Select permits hold edits and Clear. Auto disables both, retains its route between pair selections, and updates its holds after every completed guided step. Clicking Select explicitly leaves Auto while keeping the current holds; clicking an active Auto also leaves guidance, returning to manual pair selection. Display and playback settings are unaffected.</p>`+
+      code('Manual white-ring predicate', `q(v) := canonical goal color at occupied home address v, if defined
+c(v) := current color at occupied address v
+H := marked held addresses
+READY(a,b,H) := a retained legal word independently verifies the exchange
+                a -> b, b -> a and the colors at H minus {a,b}
+NEW-GOAL(a,b) := (q(a) exists and c(a)!=q(a) and c(b)=q(a))
+                or (q(b) exists and c(b)!=q(b) and c(a)=q(b))
+FIRST-GOAL-HINT(a) := exists occupied b!=a outside H:
+                     READY(a,b,H) and NEW-GOAL(a,b)
+SECOND-GOAL-HINT(b | a) := b outside H and b!=a:
+                         READY(a,b,H) and NEW-GOAL(a,b)
+// Full color still permits every READY pair, including held endpoints.
+// Gray means no retained verified exchange, not proven impossible.
+// Recompute hints after hold, endpoint, readiness or puzzle-state changes.
+// Cache the resulting node sets; drawing a frame is not a new search.`)+
+      `<p>The goal predicate is about the two exchanged endpoint colors only. Other unheld locations may become incorrect, and an endpoint match does not prove fewer turns remain. An empty hypothetical pose has no canonical goal color; it cannot supply a fictitious match. The solid white hint ring lies outside any dashed hold ring. The manual hints use the canonical underlying colors, including in mirror mode; only Auto’s declared exact/color goal determines its completion certificate.</p>
+      <p>A local endpoint improvement does not prove a route to the goal. It may disturb other correct colors or reach a state with no supported improving two-way exchange. Auto therefore retains an entire independently verified solution and exposes its next incremental checkpoint. Let M be the physical tile count, K<sub>0</sub> the initial secured addresses, and w<sub>i</sub> the legal word for stage i. Each stage declares protected addresses H<sub>i</sub> and newly secured addresses Δ<sub>i</sub>. The certificate requires:</p>`+
+      code('Monotonic certificate and finite completion', `K_i is a set of currently occupied, solved goal addresses
+H_i = K_i
+w_i restores every address in H_i at its complete endpoint
+w_i solves every address in Delta_i
+K_(i+1) := K_i union H_i union Delta_i
+|K_(i+1)| > |K_i|
+K_final = every physical home address
+// Therefore at most M - |K_0| nonempty stages remain.
+// Colors may substitute only under the plan's declared safe color goal.
+// Shape, picture and mirror goals retain exact home poses where required.`)+
+      `<p>This nested secured set supplies a discrete ranking function V<sub>i</sub>=M−|K<sub>i</sub>|. Every completed offered step strictly reduces V, which is a nonnegative integer, and the verified final checkpoint meets the goal. This is a constructive finite-completion certificate, not a heuristic estimate of remaining turns. All offered marker pairs for one stage select the same word and next state, so choosing any compatible white pair preserves the certificate. Holds can move during the primitive turns; their restoration is checked only at the complete checkpoint.</p>`+
+      code('Prepare and retain the guided route', `AUTO-HOLDS-PLAN(model, snapshot):
+  capture the request epoch, exact sticker-address map and model fingerprint
+  baseline := solveFull(model, autoRequestFromSnapshot(snapshot), complete cache)
+  require baseline.status == solved and verifyAutoPlan(model, snapshot, baseline)
+  plan := makeAutoHoldsPlan(model, snapshot, baseline)
+  require verifyAutoHoldsPlan(model, snapshot, plan)
+  retain plan.stages, cursor=0, K=plan.initialProtectedNodes
+  replace user holds with K; clear markers; show Move 1 / Move 2
+  execute nothing
+ON-AUTO-ON:
+  select the persistent Auto hold policy; disable manual hold edits and Clear
+  prepare the verified plan above; select Move 1 input
+  if planning fails or is canceled: return to manual policy, no automatic retry
+ON-SELECT:
+  cancel any pending Auto plan and invalidate its response epoch
+  discard the guided route, keep current holds, choose manual hold-edit input
+ON-AUTO-OFF:
+  cancel planning or discard the guided route, keep current holds
+  choose manual policy and Swap 1 input
+GUIDED-FIRST-HINT(a) := a is the first marker of a certified next-stage choice
+GUIDED-SECOND-HINT(b | a) := (a,b) is a certified next-stage choice
+// Auto never imports unrelated manual hints into its guided choices.
+// While a step is executing, hold-policy controls cannot alter it.`)+
+      code('Derive visible choices for one certified stage', `CERTIFIED-CHOICES(stage, snapshot):
+  p := composition of the stage's legal primitive permutations
+  inverseAt[t] := the current occupied source v with p(v)=t, if any
+  choices := empty
+  for each t in stage.newlySolvedNodes:
+    a := inverseAt[t]
+    skip if a is absent, a=t, or t already meets its goal before the stage
+    if t is currently occupied:
+      b := t
+      kind := swap if p(t)=a, otherwise placement
+    otherwise:
+      b := first occupied v!=a outside stage.protectedNodes with p(v)!=v
+      skip if no such physical participant exists
+      kind := participants
+    append distinct (firstNode=a, secondNode=b, sourceNode=a, targetNode=t, kind)
+  if choices is empty:
+    defer this stage's word and newly secured nodes into the next stage
+    // This handles progress that only secures coincidental matches.
+    // It does not protect every incidental color or merge visible stages.
+  independently replay the accepted stage and check every secured goal
+  return choices`)+
+      code('Execute one certified choice', `ON-GUIDED-SECOND-MARKER(a,b):
+  require (a,b) belongs to the retained next stage
+  require current map, model fingerprint and request epoch still match
+  require verifyAutoHoldsStage(model, snapshot, stage, K)
+  retain current K; preview briefly; play stage.moveIndices in bounded chunks
+  verify the engine's resulting sticker-address map and all secured goals
+  K_next := K union stage.protectedNodes union stage.newlySolvedNodes
+  require K subset K_next and |K_next| > |K|
+  rebind held addresses K_next to their current physical occupants
+  increment the retained stage cursor; clear the two markers
+  keep Auto selected and choose Move 1 input
+  if all stages completed: keep all goal holds; report Goal reached
+  otherwise expose the next stage's certified choices immediately
+  // No Auto click or replanning is required between steps.
+ON-UNRELATED-STATE-CHANGE-OR-LEAVING-CONSTRAINED-SOLVER:
+  discard the guided certificate; return to ordinary Swap tools
+ON-PARTIAL-STOP:
+  finish the current primitive turn; discard the remaining route
+  clear holds and markers because the complete checkpoint was not reached`)+
+      `<p><strong>Markers are honest about the operation.</strong> Auto uses Move ① and Move ②. A choice is classified as a true <code>swap</code> only if the stage permutation exchanges its endpoints. A <code>placement</code> carries the first sticker to the occupied target address but need not send the other sticker back. If a shape-changing target pose is currently empty, a <code>participants</code> choice marks two moved physical stickers and separately retains the true target address. No empty address is rendered as a selectable physical tile. Ordinary manual Swap still independently verifies an actual two-way endpoint exchange.</p>
+      <p>Literal exchanges cannot provide a universal completion rule. For example, the cyclic group generated by (1 2 3) contains identity and the two 3-cycles, but no transposition. Its scrambled states are legally solvable although no two locations can be swapped. The guided placement certificate handles such cycles without weakening its secured-set invariant or mislabeling them as exchanges.</p>
+      <p>A stage that only secures coincidentally correct nodes may have no visible placement to mark. Only that invisible-progress stage is joined to the next placement; ordinary visible incremental stages remain separate. The first Auto request may release incidental user holds and retain fewer than all currently correct colors. Thereafter Auto remains selected and reuses its route without another Auto click; completed guided steps never shrink K. A completed route leaves Auto selected with every goal held and no further choices. Select is required before editing or clearing holds. If planning or independent verification fails, Auto turns off without displaying speculative guided choices. A manually overridden or interrupted session requires a new plan from its current legal state. Stop during the preview pause preserves the untouched route; Stop after playback has begun clears it at the primitive boundary. The guarantee assumes the retained complete stages are followed; it does not promise that every arbitrary manual swap improves progress, nor that a bounded planning attempt always returns a route. The existing small-catalog <code>suggestHolds</code> API remains a programmatic local heuristic, but no longer drives the browser’s Auto button.</p>`)+
     subsection('tech-eligibility-ui', 'Selection updates, cache keys, and stale-result rejection',
-      `<p>Before dispatch, map selected nodes to current addresses and capture the complete color array. Holds designate locations whose endpoint colors must be restored; do not let a hold follow a same-colored replacement sticker to a different location. Choosing A again clears both endpoints and leaves holds; choosing B replaces only B. Changes to holds discard the previous manual solve result and recompute eligibility for the current colors. A held endpoint stays selected with a temporary exemption: the effective protected set is the held addresses minus the two current endpoints. Clearing or replacing an endpoint restores its hold immediately.</p>`+
+      `<p>Before dispatch, map selected nodes to current addresses and capture the complete color array. Holds designate locations whose endpoint colors must be restored; do not let a hold follow a same-colored replacement sticker to a different location. Choosing Swap ① again clears both endpoints and leaves holds; selecting the tile for Swap ② submits the pair automatically. Changes to holds discard the previous manual solve result and recompute eligibility for the current colors. A held endpoint stays selected with a temporary exemption: the effective protected set is the held addresses minus the two current endpoints. Clearing or replacing an endpoint restores its hold immediately.</p>`+
       code('Availability scheduling and safe reuse', `ON-IDLE-SELECTION-CHANGE:
   map := current physical-sticker-ID -> address map
   fixed := sorted addresses of selected held sticker IDs
@@ -483,26 +579,32 @@ ON-RESULT(response):
   require matching epoch, still in manual selection mode, idle engine
   require same current stateToken and matching model fingerprint
   otherwise discard response
-  install complete/partial/unknown result; redraw selection states
-  if feasibility status is 2: strongly dim and disable
-  else if retained witness makes endpoint/pair ready: show bright
-  else: moderately dim, show '?', and leave selectable
-  label the action Go in every readiness state
-  enable only for a complete pair not proved impossible
-ON-GO:
+  install complete/partial/unknown result; redraw manual readiness
+  in manual policy, derive local endpoint-goal hints from ready exchanges
+  never add these local choices to an active Auto-guided route
+  if retained witness makes endpoint/pair ready: show bright and enable
+  else: show gray and disable swapping; do not claim impossibility
+  before choosing endpoint 1, aggregate over its possible partners:
+    bright if any partner has a stored verified witness
+    otherwise gray and disable swapping
+ON-SECOND-ENDPOINT-SELECTED:
   if a verified retained word is ready:
     retrieve that word for the selected pair
     require identical colors/holds/occupancy and independent verification
-    play directly; do not launch a fresh search
+    wait briefly; recheck snapshot; play without launching a fresh search
   else:
-    create a retained search session for the full immutable request
-    run the initial time slice; play only a verified successful result
-ON-CONTINUE:
+    reject selection; show that no verified swap is ready
+    do not launch speculative search
+  if no sequence is returned:
+    clear both endpoints; activate Swap ①; retain holds
+    show No solution found. Try another pair.
+    retain technical recovery guidance where applicable
+BACKEND-API-CONTINUATION (not an ordinary UI action):
   require unchanged request, live identity snapshot and retained worker
   extend cumulative budget and resume pending work, without restarting
-  if terminal resource/time limit: remove Continue and explain the limit
+  if terminal resource/time limit: set canContinue=false; return typed unknown
   every non-solved result leaves the puzzle unchanged`)+
-      `<p>While choosing A, use the first-endpoint feasibility and readiness arrays, never a stale B row. While choosing B with A selected, use A's corresponding pair-table rows. Helpers <code>eligibilityReady</code> and <code>eligibilityWitness</code> expose executable readiness and the retained word separately from <code>eligibilityStatus</code>. A 7,000 ms UI timeout for availability leaves choices unchecked rather than blocking interaction. A bright first endpoint means at least one partner is ready, not that every possible B is ready.</p>
+      `<p>While choosing A, use the first-endpoint feasibility and readiness arrays, never a stale B row. While choosing B with A selected, use A's corresponding pair-table rows. Helpers <code>eligibilityReady</code> and <code>eligibilityWitness</code> expose executable readiness and the retained word separately from <code>eligibilityStatus</code>. A 7,000 ms UI timeout for availability leaves unresolved choices gray; Hold remains available, and only verified-ready choices may swap. A bright first endpoint means at least one partner is ready, not that every possible B is ready.</p>
       <p>Two monotonic shortcuts remain sound for an unchanged color state and occupied set: adding color holds can preserve an already-proved negative, and removing holds can preserve an already-proved positive. This follows from constraint inclusion, not subgroup closure. A change in any donor color invalidates that reuse; an arbitrary change both adding and removing holds supports neither inference.</p>
       <p>The analyzer's normalized cache key includes <code>holdSemantics</code>, the full length-N <code>colorByNode</code>, holds, occupancy, candidates, protection, and <code>exemptSwapEndpoints</code>. Its default least-recently-used cache is 2 MiB, capped at 8 MiB, and stores complete tables. Readiness word records have a separate 2 MiB cap and share the working-memory guard; charge each record max(JSON length,128+8·(word length+pair-list length)) bytes. A ready bit must never outlive its retained word. UI table caches and manual witness caches must include the full color state, not only colors on held nodes: an unheld donor can determine reachability. Prepared strict chain data remains model-dependent and reusable independently of colors.</p>
       <p>Manual witness caches are separate: the page retains up to 1 MiB of verified solved or proved-impossible results; its worker result cache is 2 MiB. An unfinished search session is live working memory, not a result cache and not an impossibility proof. Selection or state changes destroy its frontier. Unknown results are not cached as impossibility. Reused words are independently replayed against the current color request and exact 1/2 mappings. A changed live identity snapshot during planning is rejected even when the displayed colors happen to match.</p>`);
@@ -513,6 +615,6 @@ ON-CONTINUE:
     holds: section('tech-holds', 'Arbitrary holds and ordered-pair transport', holdsBody,
       'This exact subgroup solves the strict fallback; its positive answers remain valid for color holds.'),
     eligibility: section('tech-eligibility', 'Eligibility and readiness: proof versus a sequence ready to run', eligibilityBody,
-      'Bright means an executable witness is stored; dim question marks can still be checked.')
+      'Bright means an executable witness is stored; gray means no verified swap is ready.')
   };
 };

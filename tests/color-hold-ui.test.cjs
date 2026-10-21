@@ -5,14 +5,15 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const {createPage}=require('./solver-dom.cjs');
+const {offerVerifiedSwap}=require('./verified-swap-fixture.cjs');
 const games=path.join(__dirname,'../dist/games');
 const clean=value=>JSON.parse(JSON.stringify(value));
 const fetchFile=async url=>{const file=path.join(games,new URL(String(url),'https://atlas.test/games/').pathname.replace(/^\/games\//,''));return {ok:fs.existsSync(file),text:async()=>fs.readFileSync(file,'utf8')};};
 
 function host(id='cube2'){
-  const requests=[];
+  const requests=[],workers=[];
   class DeferredWorker {
-    constructor(){this.listeners={};this.terminated=false;}
+    constructor(){this.listeners={};this.terminated=false;workers.push(this);}
     postMessage(request){this.request=clean(request);requests.push({worker:this,request:this.request});}
     addEventListener(type,fn){(this.listeners[type]||=[]).push(fn);}
     removeEventListener(type,fn){this.listeners[type]=(this.listeners[type]||[]).filter(f=>f!==fn);}
@@ -20,13 +21,13 @@ function host(id='cube2'){
     reply(data,force=false){if(this.terminated&&!force)return;const event={data};this.onmessage?.(event);for(const fn of this.listeners.message||[])fn(event);}
   }
   const app=createPage(id,{globals:{Worker:DeferredWorker,fetch:fetchFile}});
-  app.requests=requests;app.model=JSON.parse(fs.readFileSync(path.join(games,'constrained-solver-models',id+'.json'),'utf8'));
+  app.requests=requests;app.workers=workers;app.model=JSON.parse(fs.readFileSync(path.join(games,'constrained-solver-models',id+'.json'),'utf8'));
   app.ui=()=>app.context.ConstrainedSolverUI;app.core=()=>app.context.ConstrainedSolverCore;
   app.mapping=()=>app.core().mapSnapshot(app.model,app.snapshot());
   app.colors=()=>app.core().colorsFromSnapshot(app.model,app.snapshot());
   app.nodeId=node=>app.mapping().nodeToSticker[node];
   app.ready=async()=>{app.ui().setActive(true);for(let i=0;i<80&&app.ui().state().phase==='loading';i++)await app.advance(0);assert.equal(app.ui().state().phase,'selecting');};
-  app.choose=({held,pair})=>{app.ui().setTool('hold');for(const node of held)app.ui().selectNode(app.nodeId(node));app.ui().setTool('swap');for(const node of pair)app.ui().selectNode(app.nodeId(node));assert.equal(app.element('csGo').disabled,false);};
+  app.choose=async({held,pair,move})=>{app.ui().setTool('hold');for(const node of held)app.ui().selectNode(app.nodeId(node));await offerVerifiedSwap(app,app.model,...pair,[move]);app.ui().setTool('swap');for(const node of pair)app.ui().selectNode(app.nodeId(node));await app.advance(0);};
   app.request=task=>requests.findLast(x=>x.request.task===task);
   app.payload=async entry=>{
     const replies=[],ctx={URL,performance,TextEncoder,console,fetch:fetchFile,location:{href:'https://atlas.test/games/constrained-solver-worker.js'},postMessage:data=>replies.push(clean(data))};
@@ -48,10 +49,9 @@ function colorSwapFixture(model){
 }
 
 test('manual color hold accepts a shorter witness that replaces the held sticker and transfers the UI hold',async()=>{
-  const app=host(),f=colorSwapFixture(app.model);await app.ready();const before=app.mapping(),colors=app.colors();app.choose(f);app.click('csGo');
-  const entry=app.request('manual-swap');assert.equal(entry.request.selection.holdSemantics,'color');
-  const payload=await app.payload(entry);assert.equal(payload.result.status,'solved',payload.result.reason);assert.equal(payload.result.moveIndices.length,1,'a direct half-turn suffices with a color hold');
-  entry.worker.reply(payload);await app.settleSolver();const after=app.mapping();
+  const app=host(),f=colorSwapFixture(app.model);await app.ready();const before=app.mapping(),colors=app.colors();await app.choose(f);
+  assert.equal(app.request('manual-swap'),undefined,'verified eligibility avoids a second search');
+  assert.equal(app.ui().state().phase,'executing');await app.settleSolver();const after=app.mapping();
   assert.notEqual(after.nodeToSticker[f.held[0]],before.nodeToSticker[f.held[0]],'this fixture really replaces the original sticker');
   assert.equal(app.colors()[f.held[0]],colors[f.held[0]],'the held location keeps its requested color');
   assert.equal(after.stickerToNode[before.nodeToSticker[f.pair[0]]],f.pair[1],'A still means a specific sticker');
@@ -64,25 +64,25 @@ test('manual color hold accepts a shorter witness that replaces the held sticker
 test('a legal pair swap with the wrong endpoint hold color is rejected before playback',async()=>{
   const app=host(),f=colorSwapFixture(app.model),p=app.model.moves[f.move].perm;
   const held=app.model.nodes.find(n=>!f.pair.includes(n.index)&&p[n.index]!==n.index&&app.model.nodes[p[n.index]].color!==n.color).index;
-  await app.ready();app.choose({held:[held],pair:f.pair});app.click('csGo');const entry=app.request('manual-swap');
-  entry.worker.reply({id:entry.request.id,type:'result',result:{status:'solved',moveIndices:[f.move]},modelFingerprint:app.core().modelFingerprint(app.model)});
+  await app.ready();await app.choose({held:[held],pair:f.pair,move:f.move});
   await app.advance(1000);assert.equal(app.snapshot().history.length,0,'full permutation legality does not override a violated held color');assert.equal(app.ui().state().phase,'selecting');
 });
 
 test('a completed color swap invalidates old color-state eligibility and late replies cannot redim the new state',async()=>{
-  const app=host(),f=colorSwapFixture(app.model);await app.ready();app.choose(f);await app.advance(200);
+  const app=host(),f=colorSwapFixture(app.model);await app.ready();app.ui().setTool('hold');for(const n of f.held)app.ui().selectNode(app.nodeId(n));await app.advance(200);
   const old=app.request('eligible-swaps');assert(old);assert.equal(old.request.selection.holdSemantics,'color');
   const oldPayload=await app.payload(old);old.worker.reply(oldPayload);await app.advance(0);
-  assert.equal(app.element('csGo').getAttribute('data-readiness'),'ready');app.click('csGo');await app.advance(0);assert.equal(app.request('manual-swap'),undefined,'eligibility retained the witness so playback needs no second search');await app.settleSolver();await app.advance(200);
+  app.ui().setTool('swap');for(const n of f.pair)app.ui().selectNode(app.nodeId(n));await app.advance(0);assert.equal(app.ui().state().phase,'executing');await app.advance(350);assert.equal(app.request('manual-swap'),undefined,'eligibility retained the witness so playback needs no second search');await app.settleSolver();await app.advance(200);
   const fresh=app.request('eligible-swaps');assert(fresh&&fresh!==old,'same held spatial address with a changed color state must be reanalyzed');
   const newPayload=await app.payload(fresh);fresh.worker.reply(newPayload);await app.advance(0);const current=clean(app.ui().state().eligibility);
   old.worker.reply(oldPayload,true);await app.advance(0);assert.deepEqual(clean(app.ui().state().eligibility),current,'previous color-state tables cannot change current eligibility');
 });
 
-test('unresolved color feasibility stays selectable instead of inheriting identity-only impossibility',async()=>{
+test('unresolved color feasibility is unavailable without claiming identity-only impossibility',async()=>{
   const app=host(),f=colorSwapFixture(app.model);await app.ready();app.ui().selectNode(app.nodeId(f.held[0]));await app.advance(200);const entry=app.request('eligible-swaps');
   entry.worker.reply({id:entry.request.id,type:'result',result:{status:'unknown',reason:'color_search_budget'},modelFingerprint:app.core().modelFingerprint(app.model)});await app.advance(0);
-  assert.deepEqual(clean(app.ui().state().eligibility.blocked),[]);app.ui().setTool('swap');for(const n of f.pair)assert.equal(app.ui().selectNode(app.nodeId(n)),true);assert.equal(app.element('csGo').disabled,false);
+  assert.deepEqual(clean(app.ui().state().eligibility.blocked),[]);app.ui().setTool('swap');for(const n of f.pair)assert.equal(app.ui().selectNode(app.nodeId(n)),false);
+  assert.equal(app.ui().state().phase,'selecting');assert.equal(app.request('manual-swap'),undefined);assert.equal(app.snapshot().history.length,0);
 });
 
 function colorAutoWitness(app,names=["R'"]){

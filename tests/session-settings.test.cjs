@@ -40,7 +40,7 @@ for(const id of puzzles)test(id+': initial-only preferences survive user moves, 
  app.click('solve');for(let n=0;n<80&&!app.workers.some(w=>w.request?.task==='full-solve');n++)await app.advance(0);
  assert(app.workers.some(w=>w.request?.task==='full-solve'),'Auto Solve started');steady('auto planning');
  app.click('pause');await app.advance(0);steady('auto cancellation');
- await ready(app);ui.setTool('swap');const available=app.context.PUZZLE_SOLVER_BRIDGE.nodes().filter(n=>n.stickerId!=null);ui.selectNode(available[0].stickerId);ui.selectNode(available[1].stickerId);app.click('csGo');await app.advance(0);steady('manual Go');app.click('pause');await app.advance(0);steady('manual cancellation');await ui.setActive(false);steady('exit solver');
+ await ready(app);ui.setTool('swap');const available=app.context.PUZZLE_SOLVER_BRIDGE.nodes().filter(n=>n.stickerId!=null);assert.equal(ui.selectNode(available[0].stickerId),false);assert.equal(ui.selectNode(available[1].stickerId),false);await app.advance(0);steady('blocked unverified choices');assert.equal(ui.state().phase,'selecting');assert(!app.workers.some(w=>w.request?.task==='manual-swap'),'unverified choices do not launch a search');await ui.setActive(false);steady('exit solver');
  const beforeReturn=JSON.stringify(app.snapshot());
  app.win.dispatch('pageshow',{persisted:false});steady('ordinary pageshow does not reset an existing session');
  app.win.dispatch('pageshow',{persisted:true});assert.deepEqual(read(app),defaults,'BFcache re-entry starts a new visit with defaults');assert.equal(JSON.stringify(app.snapshot()),beforeReturn,'fresh-visit preferences do not reset the physical puzzle or journal');

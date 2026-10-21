@@ -189,15 +189,15 @@ test('cache, worker, and compute failures report distinguishable diagnostics and
   assert.equal(new Set(messages).size, cases.length, 'diagnostics identify the actual failure, not one generic compute warning');
 });
 
-test('restarting manual A/B selection does not constrain a subsequent Auto Solve', async () => {
+test('blocked manual swap choices do not constrain a subsequent Auto Solve', async () => {
   const app = host('megaminx'); await app.scramble();
   const activating = app.ui().setActive(true);
   await app.waitFor(() => app.ui().state().phase === 'selecting'); await activating;
   const moved = app.core().solvedProgress(app.model, app.snapshot()).remainingStickerIds;
   assert(moved.length >= 3);
   app.ui().selectNode(moved[0]);
-  app.click('csPairA'); assert.equal(app.ui().selectNode(moved[1]), true); assert.equal(app.ui().selectNode(moved[2]), true);
-  assert.equal(app.ui().state().pair.length, 2);
+  app.click('csPairA'); assert.equal(app.ui().selectNode(moved[1]), false); assert.equal(app.ui().selectNode(moved[2]), false);
+  assert.equal(app.ui().state().pair.length, 0);
   app.click('csPairA'); assert.deepEqual(Array.from(app.ui().state().pair), []);
   assert.deepEqual(Array.from(app.ui().state().held), [moved[0]]);
   const worker = await app.start();

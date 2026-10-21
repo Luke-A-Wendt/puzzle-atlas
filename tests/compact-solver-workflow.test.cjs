@@ -22,7 +22,7 @@ function host(id){
   return{ok:fs.existsSync(file),text:async()=>fs.readFileSync(file,'utf8')};
  }}});app.workers=workers;return app;
 }
-for(const puzzle of puzzles)test(puzzle+': 3D-only axis controls retain constrained search, cancellation and native turn behavior',async()=>{
+for(const puzzle of puzzles)test(puzzle+': 3D-only axis controls retain verified-only selection and native turn behavior',async()=>{
  const app=host(puzzle),D=app.context.PuzzleAxisDisplay,ui=app.context.ConstrainedSolverUI;
  await app.flush();
  const canvas=app.element('cube').parentElement,metrics=app.document.querySelector('.cube-bottom'),top=app.document.querySelector('.cube-top');
@@ -55,23 +55,21 @@ for(const puzzle of puzzles)test(puzzle+': 3D-only axis controls retain constrai
  for(const id of ['ccw','cw','viewRingCCW','viewRingCW']){assert.equal(app.element(id).disabled,true);app.click(id);}
  assert.equal(app.snapshot().history.length,history);assert.equal(app.snapshot().animating,false);
  const available=app.context.PUZZLE_SOLVER_BRIDGE.nodes().filter(n=>n.stickerId!=null);
- assert(available.length>1);ui.setTool('swap');assert.equal(ui.selectNode(available[0].stickerId),true);assert.equal(ui.selectNode(available[1].stickerId),true);
- assert.equal(app.element('csGo').textContent,'Go');assert.equal(app.element('csGo').disabled,false);
- app.click('csGo');for(let n=0;n<10&&ui.state().phase!=='solving';n++)await app.advance(0);
- assert.equal(ui.state().phase,'solving');assert.equal(app.element('csGo').textContent,'Go','unchecked pair does not rename the action');
- assert(app.workers.some(w=>w.request?.task==='manual-swap'),'Go dispatches a search for the unknown pair');
- for(const button of moveButtons)assert.equal(button.disabled,true,'search continues blocking native notation');
- for(const id of ['ccw','cw','viewRingCCW','viewRingCW'])assert.equal(app.element(id).disabled,true,'search continues blocking visible turns and their native handlers');
- assert.equal(app.snapshot().history.length,history,'planning cannot move the puzzle');
- app.click('pause');assert.equal(ui.state().phase,'selecting');assert.equal(ui.state().active,true);
- assert.equal(D.labelMode(),'none','canceling the check preserves hidden labels');assert.equal(D.highlights3D(),true);
+ assert(available.length>1);ui.setTool('swap');assert.equal(ui.selectNode(available[0].stickerId),false);assert.equal(ui.selectNode(available[1].stickerId),false);
+ assert.equal(app.element('csGo'),null,'no separate Go button');
+ assert.equal(ui.state().phase,'selecting');assert.deepEqual(plain(ui.state().pair),[],'unverified nodes never become endpoints');
+ assert(!app.workers.some(w=>w.request?.task==='manual-swap'),'gray choices never dispatch a speculative search');
+ for(const button of moveButtons)assert.equal(button.disabled,true,'selection continues blocking native notation');
+ for(const id of ['ccw','cw','viewRingCCW','viewRingCW'])assert.equal(app.element(id).disabled,true,'selection continues blocking visible turns and their native handlers');
+ assert.equal(app.snapshot().history.length,history,'unavailable choices make no moves');
+ assert.equal(ui.state().active,true);assert.equal(D.labelMode(),'none');assert.equal(D.highlights3D(),true);
  await ui.setActive(false);await app.advance(0);
  assert.equal(ui.state().active,false);assert.equal(D.labelMode(),'none');assert.equal(app.element('viewLabelMode').textContent,'Show some labels');assert.equal(String(app.element('speed').value),'5');
  assert.equal(D.highlights3D(),true,'highlight preference preserved');
  const selector=app.element('viewRingSelector'),first=selector.querySelectorAll('button').find(button=>!button.disabled);assert(first,'exiting restores 3D axis selection');
  first.click();await app.advance(0);
  const selected=app.snapshot().selected;
- assert.equal(app.element('viewRingSelectedName').textContent,app.element('selectedName').textContent,'3D selection synchronizes both captions');
+ assert.equal(app.element('viewRingSelectedName').textContent,'','3D selection removes the redundant caption');
  assert.equal(app.element('viewRingCW').disabled,false,'a chosen axis restores its turn action');
  app.click('viewRingCW');assert.equal(app.snapshot().animating,true,'3D duplicated ring action works again');
  await app.settle();assert.equal(app.snapshot().selected,selected,'the completed 3D turn preserves its actual axis');

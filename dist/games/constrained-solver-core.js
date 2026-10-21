@@ -277,6 +277,111 @@ function verifyGuidedPlan(model,snapshot,plan){
 module.exports={groupGuidedPlan,verifyGuidedPlan,verifyGuidedStep};
 
 },
+"./monotone-plan.cjs":function(module,exports,require){
+'use strict';
+/* Interactive Auto follows one completely verified solution witness. Every
+ * offered pair chooses the same next secured-prefix stage, so user choice
+ * cannot branch into a greedy dead end. A placement is never called a swap
+ * unless the complete stage actually exchanges those two sticker addresses. */
+const {autoRequestFromSnapshot,verifyAutoPlan}=require('./auto-adapter.cjs');
+
+function sameNodes(a,b){return Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&new Set(a).size===a.length&&a.every(n=>b.includes(n));}
+function context(model,snapshot,semantics){
+ const request=autoRequestFromSnapshot(model,snapshot),home=request.homeBySticker,current={...request.currentBySticker};
+ if(semantics==='colors'&&(snapshot?.mirrorMode||model.colorRelaxationSafe!==true||model.requiresOccupiedState))throw Error('color_goal_not_safe');
+ if(!['colors','identity'].includes(semantics))throw Error('invalid_goal_semantics');
+ const ids=Object.keys(home),homeAt=new Map(ids.map(id=>[home[id],id])),colors=model.colorBySticker;
+ const at=()=>new Map(ids.map(id=>[current[id],id]));
+ const correct=(node,positions=at())=>semantics==='colors'?positions.has(node)&&colors[positions.get(node)]===colors[homeAt.get(node)]:current[homeAt.get(node)]===node;
+ return {model,request,home,current,ids,homeAt,colors,semantics,at,correct};
+}
+function permutation(p,word){
+ if(!Array.isArray(word)||!word.length||word.length>20000)throw Error('invalid_guided_word');
+ const perm=Array.from({length:p.model.degree},(_,i)=>i);
+ for(const index of word){const move=p.model.moves[index];if(!Number.isInteger(index)||!move)throw Error('invalid_guided_move');for(let n=0;n<perm.length;n++)perm[n]=move.perm[perm[n]];}
+ return perm;
+}
+function choicesFor(p,stage,perm,before){
+ const choices=[],seen=new Set(),protectedSet=new Set(stage.protectedNodes);
+ const inverse=new Map();for(const node of before.keys())inverse.set(perm[node],node);
+ for(const targetNode of stage.newlySolvedNodes){
+  const sourceNode=inverse.get(targetNode);
+  // Some newly secured nodes were already correct by coincidence. They are
+  // valid holds after this stage, but are not suggestions for a new placement.
+  if(sourceNode===undefined||sourceNode===targetNode||p.correct(targetNode,before))continue;
+  let secondNode=targetNode,kind;
+  if(before.has(targetNode))kind=perm[targetNode]===sourceNode?'swap':'placement';
+  else{
+   // Expanded shape models may place a tile at a currently empty target pose.
+   // Show a second participating visible tile, never a fictitious target tile.
+   secondNode=[...before.keys()].find(n=>n!==sourceNode&&!protectedSet.has(n)&&perm[n]!==n);
+   if(secondNode===undefined)continue;
+   kind='participants';
+  }
+  const key=sourceNode+':'+secondNode;
+  if(seen.has(key))continue;seen.add(key);
+  choices.push({firstNode:sourceNode,secondNode,sourceNode,targetNode,kind});
+ }
+ if(!choices.length)throw Error('guided_stage_has_no_visible_progress_pair');
+ return choices;
+}
+function inspectStage(p,stage,locked){
+ if(!stage||stage.guidedAuto!==true||stage.goalSemantics!==p.semantics||[...locked].some(n=>!p.homeAt.has(n))||!sameNodes(stage.protectedNodes,[...locked])||!Array.isArray(stage.newlySolvedNodes)||!stage.newlySolvedNodes.length||new Set(stage.newlySolvedNodes).size!==stage.newlySolvedNodes.length||stage.newlySolvedNodes.some(n=>locked.has(n)||!p.homeAt.has(n)))throw Error('invalid_guided_secured_growth');
+ const before=p.at();if([...locked].some(n=>!p.correct(n,before)))throw Error('guided_hold_not_solved');
+ const perm=permutation(p,stage.moveIndices),choices=choicesFor(p,stage,perm,before);
+ for(const id of p.ids)p.current[id]=perm[p.current[id]];
+ const after=p.at(),secured=[...locked,...stage.newlySolvedNodes];
+ if(secured.some(n=>!p.correct(n,after)))throw Error('guided_stage_did_not_preserve_goal');
+ if(p.semantics==='identity'&&[...locked].some(n=>perm[n]!==n))throw Error('guided_stage_moved_exact_hold');
+ for(const n of stage.newlySolvedNodes)locked.add(n);
+ return choices;
+}
+function makeAutoHoldsPlan(model,snapshot,baseline){
+ if(baseline?.status!=='solved')return baseline;
+ const fail=reason=>({status:'unknown',reason,optimal:false,guidedAuto:true,stages:[],moveIndices:[]});
+ try{
+  if(!verifyAutoPlan(model,snapshot,baseline))return fail('invalid_full_solution_witness');
+  const semantics=baseline.goalSemantics==='colors'?'colors':'identity',p=context(model,snapshot,semantics),locked=new Set(baseline.initialProtectedNodes||[]),stages=[];
+  let pendingWord=[],pendingNew=[];
+  for(const input of baseline.stages){
+   const newly=input.newlySolvedNodes.filter(n=>!locked.has(n));
+   if(!newly.length||!input.moveIndices.length)return fail('nonprogressing_full_solution_stage');
+   pendingWord.push(...input.moveIndices);pendingNew.push(...newly.filter(n=>!pendingNew.includes(n)));
+   const stage={...input,protectedNodes:[...locked],newlySolvedNodes:pendingNew.slice(),moveIndices:pendingWord.slice(),goalSemantics:semantics,guidedAuto:true};
+   try{stage.choices=inspectStage(p,stage,locked);}catch(error){
+    // A color-optimized stage can merely secure coincidentally correct colors.
+    // Join only such invisible-progress stages to the next visible placement;
+    // do not protect every incidental goal match or regroup the whole solve.
+    if(error.message==='guided_stage_has_no_visible_progress_pair')continue;throw error;
+   }
+   stage.sourceNode=stage.choices[0].sourceNode;stage.targetNode=stage.choices[0].targetNode;
+   stages.push(stage);pendingWord=[];pendingNew=[];
+  }
+  if(pendingWord.length)return fail('guided_final_stage_has_no_visible_progress');
+  if([...p.homeAt.keys()].some(n=>!p.correct(n)))return fail('guided_final_goal_not_reached');
+  const plan={...baseline,guidedAuto:true,goalSemantics:semantics,method:'interactive_secured_prefix',initialProtectedNodes:(baseline.initialProtectedNodes||[]).slice(),finalProtectedNodes:[...locked],stages,moveIndices:baseline.moveIndices.slice(),stats:{...baseline.stats,stages:stages.length,guidedBaselineStages:baseline.stages.length}};
+  if(!verifyAutoHoldsPlan(model,snapshot,plan))return fail('internal_guided_auto_verification_failed');
+  return plan;
+ }catch(error){return fail(error.message);}
+}
+function verifyAutoHoldsPlan(model,snapshot,plan){
+ try{
+  if(plan?.status!=='solved'||plan.guidedAuto!==true||!verifyAutoPlan(model,snapshot,plan))return false;
+  const p=context(model,snapshot,plan.goalSemantics),locked=new Set(plan.initialProtectedNodes||[]);
+  for(const stage of plan.stages){const choices=inspectStage(p,stage,locked);if(JSON.stringify(stage.choices)!==JSON.stringify(choices))return false;}
+  return sameNodes(plan.finalProtectedNodes,[...locked])&&locked.size===p.ids.length&&[...p.homeAt.keys()].every(n=>p.correct(n));
+ }catch{return false;}
+}
+function verifyAutoHoldsStage(model,snapshot,stage,lockedNodes){
+ try{
+  if(stage?.guidedAuto!==true||!Array.isArray(lockedNodes)||new Set(lockedNodes).size!==lockedNodes.length)return false;
+  const p=context(model,snapshot,stage.goalSemantics),locked=new Set(lockedNodes),choices=inspectStage(p,stage,locked);
+  return JSON.stringify(stage.choices)===JSON.stringify(choices);
+ }catch{return false;}
+}
+module.exports={makeAutoHoldsPlan,verifyAutoHoldsPlan,verifyAutoHoldsStage};
+
+},
 "./eligibility-status.cjs":function(module,exports,require){
 'use strict';
 // Mathematical classification: 0 unknown, 1 feasible, 2 proved infeasible.
@@ -314,7 +419,7 @@ const core=require('./index.cjs'),bridge=require('./atlas-adapter.cjs'),autoBrid
 const scriptURL=typeof document==='object'?(document.currentScript?.src||document.baseURI):null;
 const assetBase=scriptURL&&typeof URL==='function'?new URL('.',scriptURL):null;
 
-const assetRelease="a0fca67e4f7c1fd80e4d";
+const assetRelease="29aeb1319829befb841f";
 const fingerprints={"axis":"f1eac5262dbf73df9b77c45c5cd41198828b66bb98de9e486b918589c65a3b66","masterpyraminx":"d3a63fd98bd5060bf92000e304f4db3f431d4937b87a8769b91f17ddb6b2839d","kilominx":"acfe96e01d7f2d427577ef2e59ebf09db0cf42eae45eda2d62fdd55aabc38f49","ghost":"87dd812f7b68fc4b6e0701aa1bf4ea5262f987530c77a2e58e95c23cfd12bc54","cube2":"bd6300422f4d20a2dd194d73a6316b39a31c8eeba580035c4e6dcfe0615d1835","cube3":"25d166c42a1a4214118235c74ee3a8a24621bb2c9a24c73f8a1f76629820f36f","cube4":"4e277a978c084547292e65cee3f4d41fe087cf06645400faac7424852607bdce","cube5":"287fda505a904724f2ce48f4cbfdf1974aa34f00de76c07011edcd02f517a05b","cube6":"85921581eb10c230283d4b67ce212485f1616d610c8c180be27a34dd901184d8","cube7":"f3e758412c8b4b2635e89d3942f798d5af4df3c0c5de57a780e23f3ea9532fb3","cube8":"e42ad273705ff414744840ad6cae0106e6925855193d4fd0b60796f6f0737c19","cube9":"02049d95b0826833ec2b83bd9b4cec83c385a850e973f93e72488d5581fe21d3","cube10":"1d3ab56b23b637bd5f7fc812d49e215f0bfd10e013403ecf81bd2169bb687c89","mirror":"605272ef0ef9ef50aeb651314936b79d9fbff4356518922edaf4a4961c152c7d","homer":"bff3dc966520d46f933654912282bdc86259910c698a4a8df412d342685b29d2","pyraminx":"3e524378a1b02b44b669dea6379847a8187cbd46ae249d4f2169db2140534a46","tetraminx":"1b570c6119b6413f2f4a5256ab86ec60b97030ac0de42f4e4a2866f9357e8a06","megaminx":"097de06949700d957161a1291a154f4a9cc1ffb5d85d4fed620cd7aa1565598b","jing":"03d4ea9509a1a72b192f1b47daf80b575174c512068487aa986edeee96c26d0c","skewb":"a3653e612115769511a43416165b8f3851e2e4ecd14fe35ded8195651904a293","masterskewb":"381158edb4b9e602bc9648f393ca9387daf5ad69522ab41d0c42a7efb6d641f2","ultimate":"040287ae2057b9058be2f5e55e2819aa506bd962b55dc9367a9527f5a26d8371","diamond":"399d3929c7360a902c58778354e82317695d0e4596b2291655f3300c36b7106e","fto":"8dc5763c64af80e7db332227755febc1fe49b8a8fbab42270152076c7451a1f4","crystal":"0dbd962e9441fc787c0340c10d69161e63433dcfab1f279699b96f3d58e0e6c6","dino":"2a7230bbe7f2e5213018e683b44bcfd0ec6deedfa5955f4926366412cdd8782b","rainbow":"fbb0d9d73a826e741408bb771c3e36cbf32a023ce656f83f61d66da76931d9ea","rhombic":"4a439255f4f0949440a0af7493b1aaf1a27f42a8d53fa6c17f23440262a0ab68","flatdiamond":"b2517a2ec399f56e3f1b2060ad222e867531fb107825a9e284ebf854b58fcdfc","cornerocta":"fcb965d8edf9997db266fd28cbe3531864ecd96265a99c534ac2494999880635","trajber":"f4dfa236869f9da9d813864a3616eb461b1422521e5656fe94dc758442410ce1","jewel":"cc09570517865afd844d571bacadd74473ed39bb966eafbab0a404328863654a","pyramorphix":"5d4d35c4bd3efb49dff96f2388eaa40391466a4687b3786140182f90effba86c","mastermorphix":"299861503a765d14ae3f1f2f5ddfb851e22732906e74b16aba69c5183bfb83a5","helicopter":"400b3ab0ba258044c30c81e995b6c942a1ddafd50fc993c9f56c3b741416ee7e","diamondstyle":"8d70b934930c34f5c581522567daa12eba8880110a6e5ca78d6abf6536f0f67a","diamondcube":"5c5c4509433ab3b1e325da59d954531b7800295bf3f8def1e9a92ff8c8628572"};
 const fullCacheFingerprints={"axis":"bbfa140b65e9893ac3a499e9e876f9047f05e304af16ea330e5666ff401b735c","masterpyraminx":"d88b12fefdb6a47d55669832af4cac98cbd3b125f007d621ef8db5adf792c86f","kilominx":"b30e412cce55ffac0dff53813a12eb6d7279c643a2427e24673d6e44bc606d75","ghost":"b54e9cddde3a3f0ad172d0f8289a2d1275ff211cbc39fda1bf23632d68a0c2cd","cube2":"977a35446c3fa849d1dcb68bb61df7e3b9aa49cf5e80c0954aa4370e97ddff31","cube3":"7515e1dcf06572d1dd9e00ec9e0ffdfc9b245ed50931ed98cb901303f400f9cf","cube4":"e6d6a5efbfaa96d92b8d114131e495e9b533d414a90b0728fb552754ce88b517","cube5":"db8fbc940625aba464d9d1d7dbe75732bd1e33c67fc496ae75ce8928f444496c","cube6":"5106d449e8787fd2b429745411cf3e7c3c6fdc41ae5c4e05ce78b39cd93ef351","cube7":"6288df41e07f2c3af0bba888c1b789f24c7373bd2d8a40c3f364c01fbaff3a49","cube8":"7587fff6e07085daf9cf537923ee78a7302e2498ad32d17aa9a1db1f33550711","cube9":"f69d260a3b3d75780b7aadaad8ed7caf3d6034591eab72443857582b9621896d","cube10":"8412d34813ef2cff8bce01dfd4292aa385d6cd81c92026ffcaaec9dfdda5ae7b","mirror":"d44467f7e7c921715134669d6009cf40b658c694e7689814d33174962c95db67","homer":"fd1c506be6c64f76d484449b2fdb726a11ebaf9805d0428266c35d9a798cb1ec","pyraminx":"f60a67d1130ef8de2ccbf63850b137534d6b9f4b5c838bd63c11c81d7c25a9e5","tetraminx":"f917ae48b97fabceebcc56d18f3d51554f5e369ac47decaa7b9f90db784a09dd","megaminx":"0ffc128fffce9cafaf65f82783437562dfdb9d75c8edbacbd367ef62e81b6603","jing":"6a7f7b10ae82142126b2eae16eb6a8b9562d739473308a475c4b93c7baeff8c7","skewb":"947e459a820302317fb5d06b426049039537745d58d24db5dc0df27710b2f4dc","masterskewb":"c8440670a0435b57a23e09161688db39f46d90d1dfb985dd0bfa15226a1b846d","ultimate":"474c205d35d96a2aaf79f7a9098b244bee678100f6a2d411859ec462d1e783bd","diamond":"e14bbda3e373f0bfb80f0089d025cae0a114f70a5ba2e85abcb4b84121c64dfd","fto":"04da5b1d511fb8d8d6dbd3de1cede3e813a6c08de28e8c53f2531893076f88f1","crystal":"be9018f81efde1d2adc841d2daafe3508dc1379b747af564bd4668fb8419ff6a","dino":"9dd4948295c376d46832b9a7bc78024bf91d106e2fc7f2c883b546fb4c22a591","rainbow":"ebbab89e9ed9c72ab4f0fb04ac04349f65fd7c10879616f64bbaa7b66ad3bf10","rhombic":"01bddce752356192e235ea58591ffa0257e145cace3c89162df39356c8e7666a","flatdiamond":"49d53fa0447601c43552a0203c00bc6d6fd2632cf7164b7e4c653b771d4b3eed","cornerocta":"46c1e3ffced843db805bdac0d094c228f20d162e01410c9056ae345901f47c98","trajber":"f72e0f026fb30df04120c5a75dfbe5bf675d7a1e4ba1689dfb9e7dee9763e8cb","jewel":"91d2a4b3982f449eb8a03bdb3e5e4435aa5fa004f0d6678b3abe54a47107da0a","pyramorphix":"e360403344bcf463ba5f21f316a1ad159c9b17e116703c161d9ba8d0b5985ad4","mastermorphix":"b717310183692be7a6e94f547439a75565441f6666809623033544001e28ce1b","helicopter":"1bcff6e508493030c7fd8b2dde4ec156423145d7ff04d20f904bbd71ebee3273","diamondstyle":"eb2aaa82ebd9d87601e483d8b2149d3e4a2f9c056e6874d6db20920f8112ede7","diamondcube":"304c3c927a1ab3493d949bc4c3ec37ce413506dc6acf2b703356d69fa1e2e6fc"};
 const colorCacheFingerprints={"axis":"7dd2206ff43dd04f2aff99c05e3e5e4581bcee6f23268e7757c42c80302f7af7","masterpyraminx":"60e5c3bf363de34e6f4aecb6416c5933a1da814c728ccf099b41cffedd176a4e","kilominx":"0571c7ad4e74467ce745ade7d1c9afbaa82cd9b902973145c10f572babc2136f","ghost":"11e2c6153887a7ecf745b8a66c3b01726c8c479144b71d4df5981bfe2b193804","cube2":"23f383447e6a98ad2b206696724c480c006a8e8cebbe9d1f31bba7081b1d539f","cube3":"7cbde073547d1789f5927a324abc2efcd7cc5a9ab3e39f0604635ae5521d5ab2","cube4":"1c27ea1c537f1e2781ba39e08678de9b521521019ca211133c9ac89a16856959","cube5":"92fdf81de7f3a6a349dccb201cbdfd853390933200cd127bab585db4610d399d","cube6":"edc0b88fd51fa92fd6aee928f25b3ac8cfb878ffba54017794eabd0b16555958","cube7":"fa279efa1e11ee5359e94dc9a97135c62d56908344d087d2a0d9f0d6edc153d3","cube8":"5e28b289a35d2672acb6f7134af99601e9a5a42f3179018f282b66e6c259430e","cube9":"a1e91eb90e5ad9240419f66972dbc02cce1979d2d402e5223f6c97c433e28a03","cube10":"0abd47fef987d7489920a5ca40251b3d5793023bc22c698257b2e0a2f112882b","mirror":"bbdbcb0941caa4e4a60b7755b69fec9ce993bd1dfc837e79de73ad5ad90a838e","homer":"add236ae624b07403cd049cc77e7e4cea47f61c057f45718d466c4d0b2d72725","pyraminx":"a9a847f0fdc7f39c2974851ff1964f245d023691320a87c3b1976b9080d06a0b","tetraminx":"ba0c175a10e4a575daaf61fa67eaee31c9b6231b3e6c33a23d6882c639affee1","megaminx":"314781409e5c978b1e5fda3e3723dfa2539ae9a465b05687e2935a3c972fb798","jing":"c32d72980f7ce65feadbe00d46fbe3514e38d9428f2ba128e5d0c0761f69dedb","skewb":"40bd0d5f384cbdaf3edc914026e76f2ff27e75531f07f4133b7b2f85cc9fde90","masterskewb":"e8d73a67b8e2f0a1b3b727173c568fed573f39780518e1b1c7ffc6f4bed1f183","ultimate":"a183d9a23e278198b062de9671346d0b67a15ff66c617f484ad40145698e01d1","diamond":"cbf4970dbb5e44422f1b890d30d8c31f64364303cc93c19a01475543bb73819a","fto":"ed4a8821c1f5fb45e5981d69fd31918ee47927313eadf8f7c58c39b95ee1560a","crystal":"034bfc3cfb1e85f2132b5a009efc98bda768cc0ed4ffe702382f6b3bcf682dc7","dino":"806746584f7e3af3d8589e96f77fddc3c21228c9622bad49bb77e04c91468569","rainbow":"48cc4a8b5f4f87917c57471fece1e7e01b79a8d5c6ada377f3aa2ec3326d5f4f","rhombic":"450df243761c9ca70a3848b637972a4325328f4c492ffedd896e838c5478ca6b","flatdiamond":"0b0bc9b2120e87ed5f5559038f3b18892bdec0c98a96dd629706e864dccf0d12","cornerocta":"df2a487b4a8adddf5ac48db88d2f3af912d0442157f064a49d7c1fe0dfa93a91","trajber":"a87d65ebb54b20bba793ad7e60aa84d06afe137154c444e853002b187ad7b8fd","jewel":"181d3cdd5e2619df5f82a454baa1df71e2c41cadf16539212c95f7032bc9ac09","pyramorphix":"c5334721a1b26bb6bd8893ee808ba2d3b1e3f76eb4697b3ee8b3404a88d2d2b2","mastermorphix":"015eefa6737c4803093c601313d768f9505f1c0191df25dc71a289cd67548892","helicopter":"b7d00af3568453c10fb450b51f4c4d4cdf889077e2018d2a4fd33fa790982965","diamondstyle":"59d01877ed1cd61c9d9e95ed3dae1c09dc92b2532b194adb141c560518510c4a","diamondcube":"540c57ce86c678030f6a0903411bdd92e4014f83cef0f2d769cd29f73ed6ae2c"};
@@ -370,5 +475,5 @@ async function loadModel(id){
 }
 function freeze(value){if(value&&typeof value==='object'&&!Object.isFrozen(value)){for(const v of Object.values(value))freeze(v);Object.freeze(value);}return value;}
 
-root.ConstrainedSolverCore=Object.freeze({...core,...bridge,...autoBridge,...require('./guided-plan.cjs'),...require('./eligibility-status.cjs'),loadModel,modelFingerprint,modelIds:Object.freeze(Object.keys(fingerprints)),assetBase:assetBase?.href??null,assetRelease,workerURL:assetBase?new URL('constrained-solver-worker.js?v='+assetRelease,assetBase).href:null});
+root.ConstrainedSolverCore=Object.freeze({...core,...bridge,...autoBridge,...require('./guided-plan.cjs'),...require('./monotone-plan.cjs'),...require('./eligibility-status.cjs'),loadModel,modelFingerprint,modelIds:Object.freeze(Object.keys(fingerprints)),assetBase:assetBase?.href??null,assetRelease,workerURL:assetBase?new URL('constrained-solver-worker.js?v='+assetRelease,assetBase).href:null});
 })(globalThis);

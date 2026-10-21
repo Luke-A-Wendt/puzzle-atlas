@@ -55,7 +55,7 @@ function readyResult(app,{word=[f.move],pairs=[f.a,f.b]}={}){
   return result;
 }
 
-test('only nodes with a stored verified sequence are bright, including before A is chosen',async()=>{
+test('only nodes with a stored verified sequence are bright, including before 1 is chosen',async()=>{
   const app=host();await app.ready();const result=readyResult(app);await app.answer(await app.pending(),result);
   let state=app.ui().state().eligibility;
   assert.deepEqual([...state.ready].sort(),[app.id(f.a),app.id(f.b)].sort(),'first-node readiness requires at least one ready partner');
@@ -65,37 +65,75 @@ test('only nodes with a stored verified sequence are bright, including before A 
   app.ui().setTool('swap');assert.equal(app.ui().selectNode(app.id(f.a)),true);
   state=app.ui().state().eligibility;assert.deepEqual(clean(state.ready),[app.id(f.b)],'B readiness is specific to the chosen A');
   assert.equal(app.ui().selectNode(app.id(f.b)),true);
-  assert.equal(app.element('csGo').textContent,'Go');assert.equal(app.element('csGo').getAttribute('data-readiness'),'ready');
+  assert.equal(app.element('csGo'),null,'there is no separate Go control');
+  assert.equal(app.ui().state().phase,'solving','selecting 2 immediately starts verification');
+  await app.advance(0);assert.equal(app.ui().state().phase,'executing');
+  assert.equal(app.snapshot().history.length,0,'the verified sequence waits briefly before moving');
 });
 
-test('Go executes the retained word without a second search that could time out',async()=>{
-  const app=host();await app.ready();await app.answer(await app.pending(),readyResult(app));app.choose(f.a,f.b);
-  const before=app.mapping(),count=app.requests.length;app.click('csGo');await app.advance(0);
+test('selecting 2 executes the retained word after a pause without another search',async()=>{
+  const app=host();await app.ready();await app.answer(await app.pending(),readyResult(app));
+  const before=app.mapping(),count=app.requests.length;app.choose(f.a,f.b);await app.advance(0);
   assert.equal(app.ui().state().phase,'executing');
   assert.equal(app.requests.length,count,'a ready pair does not submit another constrained search');
-  await app.settleSolver();const after=app.mapping();
+  assert.equal(app.snapshot().history.length,0);assert.equal(app.snapshot().animating,false);
+  await app.advance(349);assert.equal(app.snapshot().animating,false,'still paused before the 350ms boundary');
+  assert.equal(app.snapshot().history.length,0);
+  await app.advance(1);await app.settleSolver();const after=app.mapping();
   assert.equal(app.snapshot().history.length,1);assert.equal(after.stickerToNode[before.nodeToSticker[f.a]],f.b);assert.equal(after.stickerToNode[before.nodeToSticker[f.b]],f.a);
   assert.deepEqual(clean(app.ui().state().pair),[]);assert.equal(String(app.element('speed').value),'5','manual mode retains the independent user rate');
 });
 
-test('unknown choices remain selectable but explicitly require checking, and a timeout never makes them ready',async()=>{
+test('unknown choices are gray and cannot launch another search',async()=>{
   const app=host();await app.ready();await app.answer(await app.pending(),{status:'unknown',reason:'time_limit'});
-  const state=app.ui().state().eligibility;assert.deepEqual(clean(state.ready),[]);assert.deepEqual(clean(state.blocked),[]);
-  assert(state.uncertain.includes(app.id(f.a)));assert(state.dimmed.includes(app.id(f.a)));
-  app.choose(f.a,f.b);assert.equal(app.element('csGo').textContent,'Go');assert.equal(app.element('csGo').getAttribute('data-readiness'),'check');assert.match(app.element('csGo').title,/Search for this pair/);
-  app.click('csGo');const entry=app.requests.findLast(x=>x.request.task==='manual-swap');assert(entry);
-  entry.worker.reply({id:entry.request.id,type:'result',result:{status:'unknown',reason:'time_limit'}});await app.advance(0);
-  assert.equal(app.snapshot().history.length,0);assert.equal(app.ui().state().phase,'selecting');assert.match(app.ui().state().status,/not proved impossible|unresolved/i);
-  assert.equal(app.element('csGo').getAttribute('data-readiness'),'check');assert.equal(app.element('csGo').disabled,true,'a stopped search is not silently restarted through Go');
+  const state=app.ui().state().eligibility;assert.deepEqual(clean(state.ready),[]);
+  assert(state.dimmed.includes(app.id(f.a)));
+  app.ui().setTool('swap');const count=app.requests.length;
+  assert.equal(app.ui().selectNode(app.id(f.a)),false);
+  assert.equal(app.ui().selectNode(app.id(f.b)),false);
+  assert.equal(app.requests.length,count);assert.equal(app.requests.some(x=>x.request.task==='manual-swap'),false);
+  assert.equal(app.snapshot().history.length,0);assert.equal(app.ui().state().phase,'selecting');
+  assert.match(app.ui().state().status,/No verified swap ready/);
+  assert.deepEqual(clean(app.ui().state().pair),[]);assert.equal(app.ui().state().pairTarget,0);
+  assert.equal(app.element('csPairA').getAttribute('aria-pressed'),'true');
+  assert.equal(app.element('csGo'),null);
+});
+
+test('Stop during the pre-animation pause cancels the swap without making any move',async()=>{
+  const app=host();await app.ready();await app.answer(await app.pending(),readyResult(app));
+  const before=app.mapping();app.choose(f.a,f.b);await app.advance(0);
+  assert.equal(app.ui().state().phase,'executing');await app.advance(100);
+  assert.equal(app.ui().stop(),true);await app.advance(1000);
+  assert.equal(app.ui().state().phase,'selecting');assert.equal(app.snapshot().animating,false);
+  assert.equal(app.snapshot().history.length,0);assert.deepEqual(app.mapping(),before);
+  assert.deepEqual(clean(app.ui().state().pair),[]);assert.equal(app.ui().state().pairTarget,0);
+  assert.equal(app.element('csPairA').getAttribute('aria-pressed'),'true');
+});
+
+test('an unresolved partner stays gray; changing first-node selection restores aggregate readiness',async()=>{
+  const app=host();await app.ready();const result=readyResult(app);await app.answer(await app.pending(),result);
+  const unresolvedPartner=result.candidateNodes.find(n=>n!==f.a&&n!==f.b&&eligibilityStatus(result,f.a,n)===1);
+  assert.notEqual(unresolvedPartner,undefined);
+  app.ui().setTool('swap');assert.equal(app.ui().selectNode(app.id(f.a)),true);
+  assert.equal(app.ui().selectNode(app.id(unresolvedPartner)),false);
+  assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a)]);
+  assert.equal(app.requests.some(x=>x.request.task==='manual-swap'),false);
+  app.click('csPairA');assert.deepEqual(clean(app.ui().state().pair),[]);assert.equal(app.ui().state().pairTarget,0);
+  assert.equal(app.element('csPairA').getAttribute('aria-pressed'),'true');
+  assert.deepEqual([...app.ui().state().eligibility.ready].sort(),[app.id(f.a),app.id(f.b)].sort());
+  assert(app.ui().state().eligibility.dimmed.includes(app.id(unresolvedPartner)));
+  assert.equal(app.snapshot().history.length,0);
 });
 
 test('adding a conflicting hold withdraws readiness immediately and stale replies cannot restore it',async()=>{
-  const app=host();await app.ready();const old=await app.pending(),payload=await app.answer(old,readyResult(app));app.choose(f.a,f.b);
+  const app=host();await app.ready();const old=await app.pending(),payload=await app.answer(old,readyResult(app));
+  app.ui().setTool('swap');app.ui().selectNode(app.id(f.a));
+  assert(app.ui().state().eligibility.ready.includes(app.id(f.b)));
   app.ui().setTool('hold');app.ui().selectNode(app.id(f.blocks));
-  assert.equal(app.element('csGo').getAttribute('data-readiness'),'check','adding constraints cannot retain an unverified old witness');
+  assert.deepEqual(clean(app.ui().state().eligibility.ready),[],'adding constraints cannot retain an unverified old witness');
   const fresh=await app.pending();assert.notEqual(fresh,old);old.worker.reply(payload,true);await app.advance(0);
-  assert.equal(app.element('csGo').getAttribute('data-readiness'),'check');assert.deepEqual(clean(app.ui().state().eligibility.ready),[]);
-  await app.answer(fresh,{status:'unknown',reason:'time_limit'});assert.equal(app.element('csGo').getAttribute('data-readiness'),'check');
+  assert.deepEqual(clean(app.ui().state().eligibility.ready),[]);
+  await app.answer(fresh,{status:'unknown',reason:'time_limit'});assert.deepEqual(clean(app.ui().state().eligibility.ready),[]);
   assert.equal(app.snapshot().history.length,0);
 });
 
@@ -110,7 +148,7 @@ test('a changed color state invalidates all old readiness and rejects late old r
 
 test('an advertised witness that does not satisfy this request is rejected before any moves',async()=>{
   const app=host();await app.ready();const wrong=model.moves.findIndex(m=>m.name==='R');
-  await app.answer(await app.pending(),readyResult(app,{word:[wrong]}));app.choose(f.a,f.b);app.click('csGo');await app.advance(0);
+  await app.answer(await app.pending(),readyResult(app,{word:[wrong]}));app.choose(f.a,f.b);await app.advance(0);
   assert.equal(app.snapshot().history.length,0,'UI independently verifies the retained word before animation');
   assert.notEqual(app.ui().state().phase,'executing');
   assert.deepEqual(clean(app.ui().state().eligibility.ready),[],'invalid readiness is discarded');

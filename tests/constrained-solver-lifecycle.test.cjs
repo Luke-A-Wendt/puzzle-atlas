@@ -5,6 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const {createPage}=require('./solver-dom.cjs');
+const {offerVerifiedSwap}=require('./verified-swap-fixture.cjs');
 const games=path.join(__dirname,'../dist/games');
 const clean=value=>JSON.parse(JSON.stringify(value));
 function assertPlaybackAction(app,face,dir){
@@ -152,9 +153,9 @@ test('a mixed lasso flips enclosed holds once, preserves outside holds, and canc
   await drag(true);assert.deepEqual(Array.from(app.ui().state().held).sort(),[...expected.slice(1),outside].sort(),'modifier keys do not switch to a hidden removal tool');
 });
 
-test('Hold flips pointer and keyboard selections and swap buttons switch out of hold mode',async()=>{
+test('Select edits holds and pair buttons change input without changing the manual hold policy',async()=>{
   const app=host();await app.ready();const overlay=app.element('csNodeOverlay'),hold=app.element('csHold'),node=app.context.PUZZLE_SOLVER_BRIDGE.nodes()[0];
-  assert.equal(hold.querySelector('.cs-hold-caption').textContent,'Hold');assert.equal(app.element('csHeldCount').textContent,'0');assert.equal(app.element('csRelease'),null);assert.equal(hold.getAttribute('aria-pressed'),'true');
+  assert.equal(hold.querySelector('.cs-hold-caption').textContent,'Select');assert.equal(app.element('csHeldCount').textContent,'0');assert.equal(app.element('csRelease'),null);assert.equal(hold.getAttribute('aria-pressed'),'true');
   const point={clientX:node.x,clientY:node.y,pointerId:17};
   overlay.dispatch('pointerdown',point);overlay.dispatch('pointerup',point);
   assert.deepEqual(Array.from(app.ui().state().held),[node.stickerId]);assert.equal(app.element('csHeldCount').textContent,'1');assert.match(overlay.getAttribute('aria-label'),/Enter to release/);
@@ -162,10 +163,11 @@ test('Hold flips pointer and keyboard selections and swap buttons switch out of 
   assert.deepEqual(Array.from(app.ui().state().held),[]);assert.equal(app.element('csHeldCount').textContent,'0');assert.match(overlay.getAttribute('aria-label'),/Enter to hold/);
   overlay.dispatch('keydown',{key:'Enter'});assert.deepEqual(Array.from(app.ui().state().held),[node.stickerId]);
   overlay.dispatch('keydown',{key:' '});assert.deepEqual(Array.from(app.ui().state().held),[]);
-  app.click('csPairA');assert.equal(hold.getAttribute('aria-pressed'),'false');assert.equal(app.ui().state().tool,'swap');
+  const a=app.core().mapSnapshot(app.model,app.snapshot()).stickerToNode[node.stickerId],half=app.model.moves.findIndex(m=>m.perm[a]!==a&&m.perm[m.perm[a]]===a);await offerVerifiedSwap(app,app.model,a,app.model.moves[half].perm[a],[half]);
+  app.click('csPairA');assert.equal(hold.getAttribute('aria-pressed'),'true');assert.equal(app.ui().state().tool,'swap');
   app.ui().selectNode(node.stickerId);app.click('csHold');assert.equal(hold.getAttribute('aria-pressed'),'true');assert.deepEqual(Array.from(app.ui().state().pair),[node.stickerId]);
-  app.click('csPairB');assert.equal(hold.getAttribute('aria-pressed'),'false');assert.equal(app.ui().state().pairTarget,1);assert.deepEqual(Array.from(app.ui().state().pair),[node.stickerId]);
-  app.click('csHold');app.click('csPairA');assert.equal(hold.getAttribute('aria-pressed'),'false');assert.deepEqual(Array.from(app.ui().state().pair),[]);
+  app.click('csPairB');assert.equal(hold.getAttribute('aria-pressed'),'true');assert.equal(app.ui().state().pairTarget,1);assert.deepEqual(Array.from(app.ui().state().pair),[node.stickerId]);
+  app.click('csHold');app.click('csPairA');assert.equal(hold.getAttribute('aria-pressed'),'true');assert.deepEqual(Array.from(app.ui().state().pair),[]);
   assert.equal(app.snapshot().history.length,0);
 });
 
@@ -183,7 +185,7 @@ test('both progress bars fill the same width while reporting cumulative nodes an
 test('selected swap endpoints use a solid white 4.8px outline with no teal selection styling',async()=>{
   const app=host();await app.ready();const ctx=app.element('csNodeOverlay').drawing,strokes=[];let arc=null,dash=[];
   ctx.clearRect=()=>{strokes.length=0;};ctx.beginPath=()=>{arc=null;};ctx.arc=(x,y,r)=>{arc={x,y,r};};ctx.setLineDash=value=>{dash=Array.from(value);};ctx.stroke=()=>strokes.push({arc,color:ctx.strokeStyle,width:ctx.lineWidth,dash:dash.slice()});
-  const node=app.context.PUZZLE_SOLVER_BRIDGE.nodes()[0];app.ui().setTool('swap');assert.equal(app.ui().selectNode(node.stickerId),true);await app.advance(0);
+  const half=app.model.moves.findIndex(m=>m.name==='R2'),p=app.model.moves[half].perm,a=p.findIndex((v,i)=>v!==i);await offerVerifiedSwap(app,app.model,a,p[a],[half]);const map=app.core().mapSnapshot(app.model,app.snapshot()),node=app.context.PUZZLE_SOLVER_BRIDGE.nodes().find(n=>n.stickerId===map.nodeToSticker[a]);app.ui().setTool('swap');assert.equal(app.ui().selectNode(node.stickerId),true);await app.advance(0);
   const marks=strokes.filter(s=>s.arc&&Math.hypot(s.arc.x-node.x,s.arc.y-node.y)<.001);assert.equal(marks.length,1);assert.equal(marks[0].color,'#ffffff');assert.equal(marks[0].width,4.8);assert.deepEqual(marks[0].dash,[]);
   const css=fs.readFileSync(path.join(games,'constrained-solver.css'),'utf8');assert.match(css,/\.cs-pair-chip\.chosen\{[^}]*background:#33303f[^}]*border-color:#78718c/);
 });
@@ -198,26 +200,22 @@ function eligibilityReply(app,worker,{blockedFirst=[],blockedPairs=[],feasible=[
 }
 async function eligibilityWorker(app){app.ui().setTool('swap');await app.advance(181);const worker=app.workers.findLast(w=>w.request?.task==='eligible-swaps');assert(worker,'background eligibility query started');return worker;}
 
-test('only proved-impossible swap choices reject selection; visibly uncertain choices can start the full solver',async()=>{
+test('unverified and proved-impossible choices are both gray and never start a manual search',async()=>{
   const app=host();await app.ready();const worker=await eligibilityWorker(app),map=app.core().mapSnapshot(app.model,app.snapshot());
   const [blocked,a,b,unknown]=map.occupiedNodes.slice(0,4),id=n=>map.nodeToSticker[n];
-  const fills=[],ctx=app.element('csNodeOverlay').drawing;let circle=null;ctx.clearRect=()=>{fills.length=0;};ctx.beginPath=()=>{circle=null;};ctx.arc=(x,y,r)=>{circle={x,y,r};};ctx.fill=()=>{if(circle)fills.push({...circle,color:ctx.fillStyle});};
+  const fills=[],texts=[],ctx=app.element('csNodeOverlay').drawing;let circle=null;ctx.clearRect=()=>{fills.length=0;};ctx.beginPath=()=>{circle=null;};ctx.arc=(x,y,r)=>{circle={x,y,r};};ctx.fill=()=>{if(circle)fills.push({...circle,color:ctx.fillStyle});};ctx.fillText=text=>texts.push(text);
   worker.reply(eligibilityReply(app,worker,{blockedFirst:[blocked],blockedPairs:[[a,b]]}));await app.advance(0);
-  const drawn=app.context.PUZZLE_SOLVER_BRIDGE.nodes(),blockedDot=drawn.find(n=>n.stickerId===id(blocked)),unknownDot=drawn.find(n=>n.stickerId===id(unknown));
-  assert(fills.some(f=>Math.hypot(f.x-blockedDot.x,f.y-blockedDot.y)<.001&&/^rgba\(/.test(f.color)),'proved-impossible node is visibly dimmed on the overlay');assert(fills.some(f=>Math.hypot(f.x-unknownDot.x,f.y-unknownDot.y)<.001),'unknown node receives a distinct uncertain overlay');assert(app.ui().state().eligibility.uncertain.includes(id(unknown)));
-  assert.equal(app.ui().state().eligibility.status,'partial');assert.deepEqual(Array.from(app.ui().state().eligibility.blocked),[id(blocked)]);
-  assert.equal(app.ui().selectNode(id(blocked)),false);assert.equal(app.ui().state().pair.length,0);assert.equal(app.snapshot().history.length,0);
-  assert.equal(app.ui().selectNode(id(a)),true);assert(app.ui().state().eligibility.blocked.includes(id(b)));
-  assert.equal(app.ui().selectNode(id(b)),false);assert.deepEqual(Array.from(app.ui().state().pair),[id(a)]);
-  assert.equal(app.ui().selectNode(id(unknown)),true);assert.equal(app.ui().state().phase,'selecting');app.click('csGo');assert.equal(app.ui().state().phase,'solving');
-  assert.equal(app.workers.filter(w=>w.request.task==='manual-swap').length,1,'unknown partner launches the full exact swap search');
+  const drawn=app.context.PUZZLE_SOLVER_BRIDGE.nodes();for(const n of [blocked,unknown]){const dot=drawn.find(v=>v.stickerId===id(n));assert(fills.some(f=>Math.hypot(f.x-dot.x,f.y-dot.y)<.001&&/^rgba\(/.test(f.color)),'unavailable node is visibly dimmed');}
+  assert(!texts.includes('?'));assert.equal(app.ui().state().eligibility.status,'partial');assert.deepEqual(Array.from(app.ui().state().eligibility.blocked),[id(blocked)],'unknown is not mislabeled mathematically impossible');
+  for(const n of [blocked,a,b,unknown])assert.equal(app.ui().selectNode(id(n)),false);assert.equal(app.ui().state().pair.length,0);assert.equal(app.snapshot().history.length,0);
+  assert.equal(app.workers.filter(w=>w.request.task==='manual-swap').length,0);
 });
 
-test('eligibility timeouts leave every unresolved node selectable and never imply impossibility',async()=>{
-  const app=host();await app.ready();const worker=await eligibilityWorker(app);worker.reply(eligibilityReply(app,worker,{status:'unknown'}));await app.advance(0);
-  assert.equal(app.ui().state().eligibility.status,'unknown');assert.deepEqual(Array.from(app.ui().state().eligibility.blocked),[]);
-  const ids=app.context.PUZZLE_SOLVER_BRIDGE.nodes().slice(0,2).map(n=>n.stickerId);
-  for(const id of ids)assert.equal(app.ui().selectNode(id),true);app.click('csGo');assert.equal(app.ui().state().phase,'solving');assert.equal(app.snapshot().history.length,0);
+test('eligibility timeouts leave unresolved swaps unavailable without implying impossibility',async()=>{
+ const app=host();await app.ready();const worker=await eligibilityWorker(app);worker.reply(eligibilityReply(app,worker,{status:'unknown'}));await app.advance(0);
+ assert.equal(app.ui().state().eligibility.status,'unknown');assert.deepEqual(Array.from(app.ui().state().eligibility.blocked),[]);
+ for(const node of app.context.PUZZLE_SOLVER_BRIDGE.nodes())assert.equal(app.ui().selectNode(node.stickerId),false);
+ assert.equal(app.ui().state().phase,'selecting');assert.equal(app.snapshot().history.length,0);assert.equal(app.workers.filter(w=>w.request.task==='manual-swap').length,0);
 });
 
 test('changing held nodes invalidates old eligibility results before accepting a new constraint-specific table',async()=>{
@@ -230,13 +228,10 @@ test('changing held nodes invalidates old eligibility results before accepting a
   app.click('ringPanelHide');assert.equal(app.ui().state().active,false);assert.equal(app.ui().state().eligibility.status,'idle');
 });
 
-test('changing A after an unresolved request clears both endpoints and the stale result',async()=>{
-  const app=host();await app.ready();const worker=await eligibilityWorker(app),map=app.core().mapSnapshot(app.model,app.snapshot()),[a,b,c,d]=map.occupiedNodes.slice(0,4),id=n=>map.nodeToSticker[n];
-  worker.reply(eligibilityReply(app,worker,{blockedPairs:[[a,c]],feasible:[[c,d]]}));await app.advance(0);
-  assert.equal(app.ui().selectNode(id(a)),true);assert.equal(app.ui().selectNode(id(b)),true);app.click('csGo');const search=app.workers.findLast(w=>w.request.task==='manual-swap');assert(search);
-  search.reply({id:search.request.id,type:'result',result:{status:'unknown',reason:'time_limit'}});await app.advance(0);
-  assert.equal(app.ui().state().phase,'selecting');assert.equal(app.ui().state().pair.length,0,'unsuccessful checks release both endpoints');app.click('csPairA');assert(!app.ui().state().eligibility.blocked.includes(id(c)));
-  assert.equal(app.ui().selectNode(id(c)),true,'C can replace A even though exchanging it with old A is impossible');assert.deepEqual(Array.from(app.ui().state().pair),[id(c)]);assert.equal(app.ui().state().result,null);assert.equal(app.element('csGo').disabled,true);
+test('editing the first verified endpoint clears the partner restriction without running a search',async()=>{
+ const app=host();await app.ready();const half=app.model.moves.findIndex(m=>m.name==='R2'),p=app.model.moves[half].perm,a=p.findIndex((v,i)=>v!==i),b=p[a],map=app.core().mapSnapshot(app.model,app.snapshot());
+ await offerVerifiedSwap(app,app.model,a,b,[half]);app.ui().setTool('swap');assert.equal(app.ui().selectNode(map.nodeToSticker[a]),true);app.click('csPairA');
+ assert.deepEqual(Array.from(app.ui().state().pair),[]);assert.equal(app.ui().selectNode(map.nodeToSticker[b]),true);assert.deepEqual(Array.from(app.ui().state().pair),[map.nodeToSticker[b]]);assert.equal(app.ui().state().result,null);assert.equal(app.element('csGo'),null);assert.equal(app.workers.filter(w=>w.request.task==='manual-swap').length,0);
 });
 
 test('mirror mode keeps the constrained solver and holds usable while ending goal preview',async()=>{
@@ -266,14 +261,15 @@ test('Auto Solve preserves independent label, highlight, ring and speed preferen
   await app.settle();app.assertSolved();assert.equal(D.labelMode(),'some');assert.equal(D.highlights3D(),false);assert.equal(D.ringLabelsVisible(),true);assert.equal(app.element('ringFocus').textContent,'Focus on rings');assert.equal(String(app.element('speed').value),'7','completion preserves 8x');
 });
 
-test('Suggest holds replaces prior holds, clears endpoints, and immediately selects the first swap endpoint tool',async()=>{
+test('Auto guide planning clears endpoints and selects the first placement tool without executing moves',async()=>{
   const app=host();await app.scramble();await app.ready();
-  const goal=app.core().solvedProgress(app.model,app.snapshot());
   const node=app.context.PUZZLE_SOLVER_BRIDGE.nodes()[0].stickerId;app.ui().selectNode(node);app.ui().setTool('swap');app.ui().selectNode(node);
   app.click('csSuggestHolds');const state=app.ui().state();
-  assert.equal(state.tool,'swap');assert.equal(state.pairTarget,0);assert.deepEqual(Array.from(state.pair),[]);
+  assert.equal(state.tool,'swap');assert.equal(state.pairTarget,0);assert.deepEqual(Array.from(state.pair),[]);assert.equal(state.autoHolds,true);assert.equal(state.phase,'solving');
   assert.equal(app.element('csHold').getAttribute('aria-pressed'),'false');assert.equal(app.element('csSwap').getAttribute('aria-pressed'),'true');
-  assert.deepEqual(Array.from(state.held).sort(),Array.from(goal.solvedStickerIds).sort());
+  const worker=app.workers.findLast(w=>w.request?.task==='auto-holds-plan');assert(worker);assert.equal(app.fullWorker(),undefined,'interactive guidance uses its distinct planning request');
+  worker.reply({id:worker.request.id,type:'result',result:{status:'unknown',reason:'time_limit',stages:[],moveIndices:[]},modelFingerprint:app.core().modelFingerprint(app.model)});await app.advance(0);
+  assert.equal(app.ui().state().phase,'selecting');assert.equal(app.ui().state().autoHolds,false);assert.equal(app.ui().state().guided,null);assert.equal(app.runCalls.length,0,'no puzzle turns while planning guidance');
 });
 
 test('first Auto Stop completes and verifies the whole stage across native queue chunks',async()=>{
@@ -296,9 +292,8 @@ test('manual setup, verified swap playback and exit preserve independent user pr
     await app.ready();assert.equal(D.labelMode(),'none',id);assert.equal(D.highlights3D(),false,id);assert.equal(String(app.element('speed').value),'5');assert.equal(app.ui().blocksManualMoves(),true);
     assert.equal(app.context.PUZZLE_API.move('U'),false,'manual move entry is locked during setup');
     const map=app.core().mapSnapshot(app.model,app.snapshot()),half=app.model.moves.find(m=>m.name==='R2'),a=map.occupiedNodes.find(n=>half.perm[n]!==n),b=half.perm[a];
-    app.ui().setTool('swap');app.ui().selectNode(map.nodeToSticker[a]);app.ui().selectNode(map.nodeToSticker[b]);app.click('csGo');
-    const worker=app.workers.findLast(w=>w.request?.task==='manual-swap'),r=app.model.moves.findIndex(m=>m.name==='R');
-    worker.reply({id:worker.request.id,type:'result',result:{status:'solved',moveIndices:[r,r]},modelFingerprint:app.core().modelFingerprint(app.model)});await app.advance(0);
+    const r=app.model.moves.findIndex(m=>m.name==='R');await offerVerifiedSwap(app,app.model,a,b,[r,r]);
+    app.ui().setTool('swap');app.ui().selectNode(map.nodeToSticker[a]);app.ui().selectNode(map.nodeToSticker[b]);await app.advance(0);
     D.setLabelMode('some');D.setHighlights3D(false);app.element('speed').value='4';app.element('speed').dispatch('input');
     await app.settle();assert.equal(app.ui().state().phase,'selecting');assert.equal(D.labelMode(),'some');assert.equal(D.highlights3D(),false);assert.equal(String(app.element('speed').value),'4','completion preserves the user override while still in manual mode');
     app.ui().setActive(false);assert.equal(D.labelMode(),'some');assert.equal(D.highlights3D(),false);assert.equal(String(app.element('speed').value),'4');assert.equal(app.ui().blocksManualMoves(),false);
@@ -318,12 +313,12 @@ test('repeated mode selection cannot escalate graceful Auto Stop and enters manu
 function solverLayout(app,width){
   const {createCascade,px,measure}=require('./css-budget-helper.cjs');
   const panelWidth=width>680?400:width-8,style=createCascade(app,'cube2',width,panelWidth),controls=app.element('constrainedSolverControls'),actions=controls.querySelector('.cs-action-row'),toolbar=controls.querySelector('.cs-toolbar'),selection=controls.querySelector('.cs-selection'),feedback=controls.querySelector('.cs-feedback'),slot=controls.querySelector('.cs-progress-slot'),detail=controls.querySelector('.cs-detail-slot');
-  assert(slot&&detail&&feedback,'progress and detail slots exist even before Go');
+  assert(slot&&detail&&feedback,'progress and detail slots exist before endpoint selection');
   assert.equal(app.element('csSearchProgress').parentNode,slot);assert.equal(app.element('csAutoProgress').parentNode,slot);
   const f=style(feedback),rows=f['grid-template-rows'].split(/\s+/).map(Number.parseFloat);
   assert(rows.every(Number.isFinite),'feedback uses fixed rows, not content-sized rows');
   const c=style(controls),available=panelWidth-px(c,'padding-left')-px(c,'padding-right');
-  const intrinsic=el=>{const s=style(el);if(el.classList.contains('cs-tools'))return groupWidth(el)+px(s,'padding-left')+px(s,'padding-right')+2;if(el.id==='csHold')return px(style(app.element('csHeldCount')),'min-width')+measure('Hold',s)+px(s,'gap')+px(s,'padding-left')+px(s,'padding-right')+2;if(el.classList.contains('cs-pair-chip'))return Math.max(px(s,'min-width'),20+Math.max(px(style(el.querySelector('.cs-slot-value')),'min-width'),measure('Swap',style(el.querySelector('.cs-slot-value'))))+px(s,'column-gap')+px(s,'padding-left')+px(s,'padding-right')+2);return Math.max(px(s,'min-width'),px(s,'width'),measure(el.textContent,s)+px(s,'padding-left')+px(s,'padding-right')+2);};
+  const intrinsic=el=>{const s=style(el);if(el.classList.contains('cs-tools')||el.classList.contains('cs-manual-hold'))return groupWidth(el)+px(s,'padding-left')+px(s,'padding-right')+2;if(el.id==='csHold')return px(style(app.element('csHeldCount')),'min-width')+measure('Select',s)+px(s,'gap')+px(s,'padding-left')+px(s,'padding-right')+2;if(el.classList.contains('cs-pair-chip'))return Math.max(px(s,'min-width'),20+Math.max(px(style(el.querySelector('.cs-slot-value')),'min-width'),measure('Swap',style(el.querySelector('.cs-slot-value'))))+px(s,'column-gap')+px(s,'padding-left')+px(s,'padding-right')+2);return Math.max(px(s,'min-width'),px(s,'width'),measure(el.textContent,s)+px(s,'padding-left')+px(s,'padding-right')+2);};
   const groupWidth=el=>{const children=el.children.filter(e=>e.nodeType!==3&&!e.hidden&&style(e).display!=='none');return children.reduce((sum,e)=>sum+intrinsic(e),0)+px(style(el),'gap')*(children.length-1);};
   const twoRows=style(selection)['grid-row']==='2',actionHeight=actions.hidden?0:twoRows?64+px(style(actions),'row-gap',5):32;
   return {height:actionHeight+rows.reduce((a,b)=>a+b,0)+px(f,'row-gap')*(rows.length-1)+px(c,'gap')+px(c,'padding-top')+px(c,'padding-bottom'),toolbar:!toolbar.hidden,rows,slot:px(style(slot),'height')};
@@ -332,14 +327,14 @@ test('manual selecting, checking, running and completion retain one reserved fee
   const app=host();await app.ready();const widths=[320,360,412,1280],base=widths.map(width=>solverLayout(app,width));
   assert.equal(app.element('csAutoProgress').hidden,true,'idle progress remains visually blank');
   const map=app.core().mapSnapshot(app.model,app.snapshot()),half=app.model.moves.find(m=>m.name==='R2'),a=map.occupiedNodes.find(n=>half.perm[n]!==n),b=half.perm[a];
+  const r=app.model.moves.findIndex(m=>m.name==='R');await offerVerifiedSwap(app,app.model,a,b,[r,r]);
   app.ui().setTool('swap');app.ui().selectNode(map.nodeToSticker[a]);app.ui().selectNode(map.nodeToSticker[b]);
   const unchanged=()=>widths.forEach((width,i)=>assert.deepEqual(solverLayout(app,width),base[i],width+'px '+app.ui().state().phase));
-  unchanged();app.click('csGo');assert.equal(app.ui().state().phase,'solving');unchanged();
+  unchanged();assert.equal(app.ui().state().phase,'solving');unchanged();
   assert.equal(app.element('csSuggestHolds').hidden,false,'the action keeps its footprint while locked');assert.equal(app.element('csSuggestHolds').disabled,true);
-  const worker=app.workers.findLast(w=>w.request?.task==='manual-swap'),r=app.model.moves.findIndex(m=>m.name==='R');
-  worker.reply({id:worker.request.id,type:'result',result:{status:'solved',moveIndices:[r,r]},modelFingerprint:app.core().modelFingerprint(app.model)});await app.advance(0);
+  await app.advance(0);
   assert.equal(app.ui().state().phase,'executing');assert.equal(app.element('csAutoProgress').hidden,false);assert.equal(app.element('csStatus').parentElement.hidden,true,'the progress caption replaces redundant move-count status text');unchanged();
-  const firstPulse=assertPlaybackAction(app,'R',1);await app.advance(2000);assert.notEqual(assertPlaybackAction(app,'R',1),firstPulse,'the second consecutive R move starts a fresh paired flash');unchanged();await app.settle();
+  await app.advance(350);const firstPulse=assertPlaybackAction(app,'R',1);await app.advance(2000);assert.notEqual(assertPlaybackAction(app,'R',1),firstPulse,'the second consecutive R move starts a fresh paired flash');unchanged();await app.settle();
   assert.equal(app.ui().state().phase,'selecting');assert.equal(app.element('csSuggestHolds').disabled,false);unchanged();
   assert.equal(app.element('csStatus').hidden,false);assert.equal(app.element('csEligibilityNote').hidden,true,'completion and background eligibility never overlay one another');
   assertPlaybackAction(app,null);

@@ -46,7 +46,7 @@ const help=`<details id="how-to-play" class="how-to"><summary>How to play <span>
 <p><strong>Turn the puzzle</strong>Drag along a ring, or use ↶ Rotate / Rotate ↷ below the 3D view. The arrows mean counterclockwise / clockwise looking inward from the selected axis.</p>
 <p><strong>Connect the views</strong><span class="help-pointer">Hover over a 3D tile to outline its ring-map node.</span><span class="help-touch">In Constrained Solver, tap either a 3D tile or its ring-map node to make the same selection.</span> <span class="help-pointer">Click</span><span class="help-touch">Tap</span> empty ring-map space to deselect the axis.</p>
 <p><strong>Scramble or solve</strong>Randomize scrambles the current state. Auto Solve works through it in stages. Stop once to finish the stage; twice to finish just the current move.</p>
-<p><strong>Try a constrained swap</strong>Use Hold to protect node colors. Choose a tile for Swap ① and Swap ②, then Go. Clear releases holds; Suggest chooses holds for you.</p>
+<p><strong>Try a constrained swap</strong>In Hold, turn on Auto once. Choose white-ringed Move ①, then Move ②; holds and next choices update after every step. Repeat to solve. Choose Select for manual holds, then bright Swap ① and Swap ②. White circles in manual mode suggest a locally goal-improving swap.</p>
 <p><strong>Replay your moves</strong>The player steps backward or forward through moves or whole sequences. Stop ends playback after the current move.</p>
 <p><strong>Find help</strong>Show guide opens this puzzle’s solution. The <a href="solver-handbook.html">solving handbook</a> explains every control, solver, and algorithm.</p>
 </div></details>`;

@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {createPage}=require('./solver-dom.cjs');
+const {offerVerifiedSwap}=require('./verified-swap-fixture.cjs');
 const games=path.join(__dirname,'../dist/games'),clean=x=>JSON.parse(JSON.stringify(x));
 const catalog=JSON.parse(fs.readFileSync(path.join(games,'constrained-solver-models/manifest.json'))).models;
 const fetchFile=async url=>{const file=path.join(games,new URL(String(url),'https://atlas.test/games/').pathname.replace(/^\/games\//,''));return{ok:fs.existsSync(file),text:async()=>fs.readFileSync(file,'utf8')};};
@@ -12,16 +13,17 @@ function host(id='cube2'){
  app.settleSolver=async()=>{for(let i=0;i<2000;i++){await app.advance(2000);const snap=app.snapshot();if(!snap.animating&&snap.mode==='idle'&&!['solving','executing','loading','auto-gap'].includes(app.ui.state().phase))return;}throw Error('Solver did not settle');};
  return app;
 }
-test('all puzzles offer real constrained swaps and suggested holds without a disguised full-solve suggestion',async()=>{
- for(const {id}of catalog){const app=host(id);await app.ready();assert.equal(app.element('csSuggest'),null,id);assert(app.element('csSuggestHolds'),id);app.click('csSuggestHolds');assert.equal(app.workers.filter(w=>w.request?.task==='guided-solve'||w.request?.task==='full-solve').length,0,id+' selecting holds does not plan a full solution');assert.equal(app.ui.state().pair.length,0,id);assert.equal(app.ui.state().phase,'selecting',id);}
+test('all solved puzzles offer manual swaps and a completed Auto guide without starting playback',async()=>{
+ for(const {id}of catalog){const app=host(id);await app.ready();assert.equal(app.element('csSuggest'),null,id);assert(app.element('csSuggestHolds'),id);assert.equal(app.ui.state().holdMode,'manual',id);assert.equal(app.element('csHold').getAttribute('aria-pressed'),'true',id);assert.equal(app.element('csSuggestHolds').getAttribute('aria-pressed'),'false',id);app.click('csSuggestHolds');assert.equal(app.ui.state().autoHold,true,id);assert.equal(app.element('csSuggestHolds').getAttribute('aria-pressed'),'true',id);assert.equal(app.element('csHold').getAttribute('aria-pressed'),'false',id);assert.equal(app.workers.filter(w=>w.request?.task==='guided-solve'||w.request?.task==='full-solve').length,0,id+' already solved state requires no remote planning');assert.equal(app.ui.state().pair.length,0,id);assert.equal(app.ui.state().phase,'selecting',id);assert.equal(app.ui.state().held.length,app.model.stickerCount,id);assert.equal(app.snapshot().history.length,0,id);}
 });
 
 test('completed manual swap clears native default-reset flags before later ordinary turns',async()=>{
  const app=host(),api=app.context.PUZZLE_API,display=app.context.PuzzleAxisDisplay;await app.ready();
  const moveIndex=app.model.moves.findIndex(m=>m.name==='R2'),move=app.model.moves[moveIndex],map=app.core.mapSnapshot(app.model,app.snapshot());
  const a=map.occupiedNodes.find(n=>move.perm[n]!==n),b=move.perm[a];assert.equal(move.perm[b],a);
- app.ui.setTool('swap');app.ui.selectNode(String(map.nodeToSticker[a]));app.ui.selectNode(String(map.nodeToSticker[b]));app.ui.go();
- const worker=app.workers.findLast(w=>w.request?.task==='manual-swap');assert(worker);worker.onmessage({data:{id:worker.request.id,type:'result',result:{status:'solved',moveIndices:[moveIndex]},modelFingerprint:app.core.modelFingerprint(app.model)}});
+ await offerVerifiedSwap(app,app.model,a,b,[moveIndex]);
+ app.ui.setTool('swap');assert(app.ui.selectNode(String(map.nodeToSticker[a])));assert(app.ui.selectNode(String(map.nodeToSticker[b])));
+ assert(!app.workers.some(w=>w.request?.task==='manual-swap'),'stored witness needs no manual search');
  await app.settleSolver();assert.equal(app.ui.state().phase,'selecting');assert.equal(display.labelMode(),'none');
  display.setLabelMode('all');display.setHighlights3D(false);display.setTileLabels(true);
  app.ui.setActive(false);assert.equal(api.move('U'),true);await app.settleSolver();

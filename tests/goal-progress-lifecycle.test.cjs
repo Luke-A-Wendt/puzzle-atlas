@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {createPage}=require('./solver-dom.cjs');
+const {offerVerifiedSwap}=require('./verified-swap-fixture.cjs');
 const games=path.join(__dirname,'../dist/games'),clean=x=>JSON.parse(JSON.stringify(x));
 function host(id='cube2'){
  const workers=[];class Worker{constructor(){workers.push(this);}postMessage(request){this.request=clean(request);}terminate(){}addEventListener(){}removeEventListener(){}}
@@ -18,8 +19,9 @@ function assertBar(app){const state=app.ui.state(),bar=app.element('csAutoProgre
 test('manual constrained Stop still finishes the current permutation and discards remaining sequence after metric removal',async()=>{
  const app=host();await app.ready();await app.ui.setActive(true);
  const map=app.core.mapSnapshot(app.model,app.snapshot()),move=app.model.moves.find(m=>m.name==='R2'),a=map.occupiedNodes.find(n=>move.perm[n]!==n),b=move.perm[a];
- app.ui.setTool('swap');app.ui.selectNode(map.nodeToSticker[a]);app.ui.selectNode(map.nodeToSticker[b]);app.ui.go();
- const worker=app.worker('manual-swap'),index=app.model.moves.findIndex(m=>m.name==='R');app.reply(worker,{status:'solved',moveIndices:Array(6).fill(index)});
+ const index=app.model.moves.findIndex(m=>m.name==='R');await offerVerifiedSwap(app,app.model,a,b,Array(6).fill(index));
+ app.ui.setTool('swap');assert(app.ui.selectNode(map.nodeToSticker[a]));assert(app.ui.selectNode(map.nodeToSticker[b]));
+ assert(!app.worker('manual-swap'),'stored witness needs no speculative search');
  await app.until(()=>app.context.PuzzleJournal.state().cursor===1);
  app.ui.stop();assert(app.snapshot().animating,'active permutation finishes smoothly');await app.until(()=>app.ui.state().phase==='selecting');assert.equal(app.context.PuzzleJournal.state().cursor,2);assert.equal(app.ui.state().held.length,0);assert.equal(app.ui.state().pair.length,0);assert.match(app.ui.state().status,/unfinished sequence/);await app.advance(5000);assert.equal(app.context.PuzzleJournal.state().cursor,2,'remaining turns discarded');
 });

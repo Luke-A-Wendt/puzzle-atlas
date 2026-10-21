@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {createPage}=require('./solver-dom.cjs');
+const {offerVerifiedSwap}=require('./verified-swap-fixture.cjs');
 const {EligibilityAnalyzer,eligibilityStatus}=require('../solver-backend/src/eligibility.cjs');
 const games=path.join(__dirname,'../dist/games');
 const clean=value=>JSON.parse(JSON.stringify(value));
@@ -43,118 +44,55 @@ function host(){
   return app;
 }
 
-function fixture(){
-  const occupied=model.initialOccupied||Array.from({length:model.degree},(_,i)=>i);
-  const open=analyzer.analyze({occupiedNodes:occupied});assert.equal(open.status,'complete');
-  for(const a of occupied)for(const b of occupied){
-    if(eligibilityStatus(open,a,b)!==1)continue;
-    const c=occupied.find(n=>n!==a&&n!==b&&eligibilityStatus(open,n,b)===1);
-    const d=occupied.find(n=>![a,b,c].includes(n)&&eligibilityStatus(open,c,n)===1);
-    if(c===undefined||d===undefined)continue;
-    for(const hold of occupied.filter(n=>n!==a&&n!==b)){
-      const limited=analyzer.analyze({protected:[hold],occupiedNodes:occupied},{maxMs:5000});
-      if(limited.status==='complete'&&eligibilityStatus(limited,a,b)===2)return {a,b,c,d,hold,open,limited};
-    }
-  }
-  throw Error('Could not find a real cube pair made incompatible by one hold');
-}
-const f=fixture();
+const move=model.moves.findIndex(m=>m.name==='U2'),p=model.moves[move].perm;
+const a=model.nodes.find(n=>n.face!=='U'&&p[n.index]!==n.index&&p[p[n.index]]===n.index).index;
+const f={move,a,b:p[a],hold:p.findIndex((v,i)=>v===i)};
+const offer=app=>offerVerifiedSwap(app,model,f.a,f.b,[f.move]);
 
-test('legacy eligibility is prepared early without mistaking held-partner exclusions for first-node impossibility',async()=>{
-  const app=host();await app.ready();assert.equal(app.ui().state().tool,'hold');
-  app.ui().selectNode(app.id(f.hold));const entry=await app.eligibilityRequest(),result=await app.answer(entry);
-  assert.deepEqual(entry.request.selection.protectedStickerIds,[app.id(f.hold)]);
-  const impossible=result.candidateNodes.filter(node=>eligibilityStatus(result,node)===2).map(app.id);
-  assert(impossible.length,'real held corner excludes some first nodes');
-  for(const id of impossible)assert(!app.ui().state().eligibility.blocked.includes(id),'a legacy first-node table omits held partners and cannot prove the relaxed request impossible');
-  app.ui().setTool('swap');const count=app.requests.length;
-  assert.equal(app.ui().selectNode(impossible[0]),true,'held-partner possibilities remain selectable');app.click('csPairA');
-  const a=result.candidateNodes.find(node=>eligibilityStatus(result,node)===1);assert.notEqual(a,undefined);
-  app.ui().selectNode(app.id(a));assert.equal(app.ui().state().pairTarget,1);
-  const blocked=result.candidateNodes.filter(node=>node!==a&&eligibilityStatus(result,a,node)===2).map(app.id);
-  assert(blocked.length);for(const id of blocked)assert(app.ui().state().eligibility.blocked.includes(id),'B filtering updates synchronously');
-  assert.equal(app.ui().selectNode(blocked[0]),false);assert.equal(app.requests.length,count,'choosing A reuses the pair table');
-  const b=result.candidateNodes.find(node=>node!==a&&eligibilityStatus(result,a,node)===1);
-  assert.equal(app.ui().selectNode(app.id(b)),true);await app.advance(0);
-  app.click('csPairA');await app.advance(0);
-  assert.deepEqual(clean(app.ui().state().pair),[]);
-  assert.deepEqual(clean(app.ui().state().held),[app.id(f.hold)],'restarting the pair preserves holds');
-  assert(app.ui().state().anchors.every(anchor=>anchor.id===app.id(f.hold)),'old A/B background markers are cleared');
-  for(const id of impossible)assert(!app.ui().state().eligibility.blocked.includes(id),'first-node choices again include possible held partners');
-  assert.equal(app.snapshot().history.length,0);
+test('feasibility-only tables never advertise a selectable first node without a verified word',async()=>{
+ const app=host();await app.ready();app.ui().selectNode(app.id(f.hold));const entry=await app.eligibilityRequest();await app.answer(entry);
+ assert.deepEqual(entry.request.selection.protectedStickerIds,[app.id(f.hold)]);
+ app.ui().setTool('swap');for(const node of app.mapping().occupiedNodes)assert.equal(app.ui().selectNode(app.id(node)),false);
+ assert.equal(app.requests.filter(x=>x.request.task==='manual-swap').length,0);assert.equal(app.snapshot().history.length,0);
+ app.ui().setTool('hold');assert.equal(app.ui().selectNode(app.id(f.hold)),true,'hold tool stays usable');
 });
 
-test('choosing A again clears both endpoints and immediately releases the old B restriction',async()=>{
-  const app=host();await app.ready();await app.answer(await app.eligibilityRequest());app.selectPair(f.a,f.b);
-  const requests=app.requests.length;
-  const newA=f.open.candidateNodes.find(node=>![f.a,f.b].includes(node)&&eligibilityStatus(f.open,node,f.b)===2&&eligibilityStatus(f.open,node)===1);
-  assert.notEqual(newA,undefined);
-  app.click('csPairA');assert.equal(app.ui().state().pairTarget,0);assert.deepEqual(clean(app.ui().state().pair),[]);
-  assert(!app.ui().state().eligibility.blocked.includes(app.id(newA)),'old B no longer excludes a valid first choice');
-  assert.equal(app.element('csGo').disabled,true);
-  assert.equal(app.ui().selectNode(app.id(newA)),true);assert.deepEqual(clean(app.ui().state().pair),[app.id(newA)]);
-  assert.equal(app.ui().state().pairTarget,1);assert.equal(app.element('csGo').disabled,true);
-  const newB=f.open.candidateNodes.find(node=>node!==newA&&eligibilityStatus(f.open,newA,node)===1);
-  assert.equal(app.ui().selectNode(app.id(newB)),true);assert.equal(app.element('csGo').disabled,false);
-  app.click('csPairB');assert.equal(app.ui().state().pairTarget,1);
-  assert.deepEqual(clean(app.ui().state().pair),[app.id(newA),app.id(newB)],'editing B keeps A');
-  assert.equal(app.requests.length,requests,'endpoint editing reuses the eligibility table');
-  assert.equal(app.snapshot().history.length,0,'selection alone never executes');
+test('first-node editing clears old endpoint restrictions and verified endpoint two starts automatically',async()=>{
+ const app=host();await app.ready();await offer(app);app.ui().setTool('swap');assert.equal(app.ui().selectNode(app.id(f.a)),true);
+ const count=app.requests.length;app.click('csPairA');assert.deepEqual(clean(app.ui().state().pair),[]);assert.equal(app.ui().state().pairTarget,0);
+ assert.equal(app.ui().selectNode(app.id(f.b)),true);assert.equal(app.ui().selectNode(app.id(f.a)),true);
+ assert.equal(app.ui().state().phase,'solving');assert.equal(app.requests.length,count,'stored word needs no manual search');
+ await app.advance(0);assert.equal(app.ui().state().phase,'executing');assert.equal(app.snapshot().history.length,0,'preview pause precedes animation');assert.equal(app.element('csGo'),null);
 });
 
-test('holding an existing endpoint preserves the pair and restores its constraint when the pair clears',async()=>{
-  const app=host();await app.ready();app.selectPair(f.a,f.b);app.ui().setTool('hold');app.ui().selectNode(app.id(f.a));
-  assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a),app.id(f.b)]);assert(app.ui().state().held.includes(app.id(f.a)));
-  assert.deepEqual(clean(app.ui().state().effectiveHeld),[],'the held endpoint has a temporary exemption');
-  assert.equal(app.element('csGo').disabled,false);app.click('csPairA');
-  assert.deepEqual(clean(app.ui().state().pair),[]);assert.deepEqual(clean(app.ui().state().effectiveHeld),[app.id(f.a)]);
-  app.ui().selectNode(app.id(f.a));assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a)],'a held node can be selected again');
+test('holding a selected endpoint waives only that endpoint and clears its exemption when edited',async()=>{
+ const app=host();await app.ready();await offer(app);app.ui().setTool('swap');app.ui().selectNode(app.id(f.a));app.ui().setTool('hold');app.ui().selectNode(app.id(f.a));
+ assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a)]);assert.deepEqual(clean(app.ui().state().effectiveHeld),[]);
+ app.click('csPairA');assert.deepEqual(clean(app.ui().state().pair),[]);assert.deepEqual(clean(app.ui().state().effectiveHeld),[app.id(f.a)]);
+ await offer(app);assert.equal(app.ui().selectNode(app.id(f.a)),true,'held endpoint remains selectable once verified');
 });
 
-test('changed holds revalidate the retained pair and both disabled Go and public Go reject a proved-impossible request',async()=>{
-  const app=host();await app.ready();await app.answer(await app.eligibilityRequest());app.selectPair(f.a,f.b);
-  assert.equal(app.element('csGo').disabled,false);app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));
-  assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a),app.id(f.b)]);
-  const entry=await app.eligibilityRequest();await app.answer(entry);
-  assert.equal(app.element('csGo').disabled,true,'a retained pair is rechecked when its holds change');
-  const before=app.requests.length;app.ui().go();assert.equal(app.ui().state().phase,'selecting');assert.equal(app.requests.length,before,'public Go does not bypass proved impossibility');
-  assert.equal(app.snapshot().history.length,0);
-  app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));await app.advance(200);
-  const latest=app.requests.findLast(x=>x.request.task==='eligible-swaps');if(latest!==entry)await app.answer(latest);
-  assert.equal(app.element('csGo').disabled,false,'removing the hold restores the already selected pair');
-  assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a),app.id(f.b)]);
+test('changed holds invalidate readiness immediately and reject stale eligibility replies',async()=>{
+ const app=host();await app.ready();await offer(app);app.ui().setTool('swap');app.ui().selectNode(app.id(f.a));
+ app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a)]);
+ app.click('csPairB');assert.equal(app.ui().selectNode(app.id(f.b)),false,'old word is unavailable pending revalidation');
+ const stale=await app.eligibilityRequest(),payload=app.resultFor(stale);
+ app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));await offer(app);
+ const before=clean(app.ui().state().eligibility);stale.worker.reply(payload,true);await app.advance(0);assert.deepEqual(clean(app.ui().state().eligibility),before);
+ app.click('csPairB');assert.equal(app.ui().selectNode(app.id(f.b)),true);assert.equal(app.requests.filter(x=>x.request.task==='manual-swap').length,0);
 });
 
-test('Clear all immediately drops hold and endpoint restrictions and rejects late old tables',async()=>{
-  const app=host();await app.ready();const open=await app.eligibilityRequest();await app.answer(open);
-  app.selectPair(f.a,f.b);app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));
-  const pending=await app.eligibilityRequest(),stale=app.resultFor(pending);await app.answer(pending);
-  assert(app.ui().state().eligibility.blocked.length);
-  app.click('csClear');
-  assert.deepEqual(clean(app.ui().state().held),[]);assert.deepEqual(clean(app.ui().state().pair),[]);
-  assert.equal(app.ui().state().pairTarget,0);assert.deepEqual(clean(app.ui().state().eligibility.blocked),[]);
-  pending.worker.reply(stale,true);await app.advance(0);
-  assert.deepEqual(clean(app.ui().state().eligibility.blocked),[]);
-  app.ui().setTool('swap');assert.equal(app.ui().selectNode(app.id(f.a)),true);
+test('Clear removes holds and endpoints without enabling unresolved nodes or accepting late old tables',async()=>{
+ const app=host();await app.ready();app.ui().selectNode(app.id(f.hold));const pending=await app.eligibilityRequest(),stale=app.resultFor(pending);
+ app.click('csClear');assert.deepEqual(clean(app.ui().state().held),[]);assert.deepEqual(clean(app.ui().state().pair),[]);assert.equal(app.ui().state().pairTarget,0);
+ pending.worker.reply(stale,true);await app.advance(0);app.ui().setTool('swap');assert.equal(app.ui().selectNode(app.id(f.a)),false);
+ await offer(app);assert.equal(app.ui().selectNode(app.id(f.a)),true,'fresh verified readiness restores interaction');
 });
 
-test('a late table for removed holds cannot dim or disable the current pair',async()=>{
-  const app=host();await app.ready();await app.answer(await app.eligibilityRequest());app.selectPair(f.a,f.b);
-  app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));const stale=await app.eligibilityRequest(),payload=app.resultFor(stale);
-  assert.equal(eligibilityStatus(payload.result,f.a,f.b),2);
-  app.ui().setTool('hold');app.ui().selectNode(app.id(f.hold));await app.advance(200);
-  const current=app.requests.findLast(x=>x.request.task==='eligible-swaps');if(current!==stale)await app.answer(current);
-  const before=clean(app.ui().state().eligibility);assert.equal(app.element('csGo').disabled,false);
-  stale.worker.reply(payload,true);await app.advance(0);
-  assert.deepEqual(clean(app.ui().state().eligibility),before);assert.equal(app.element('csGo').disabled,false);
-  assert.deepEqual(clean(app.ui().state().pair),[app.id(f.a),app.id(f.b)]);assert.equal(app.snapshot().history.length,0);
-});
-
-test('unknown feasibility does not block full checking or falsely reject candidates',async()=>{
-  const app=host();await app.ready();const entry=await app.eligibilityRequest();
-  entry.worker.reply({id:entry.request.id,type:'result',result:{status:'unknown',reason:'time_limit'},modelFingerprint:app.core().modelFingerprint(model)});await app.advance(0);
-  assert.deepEqual(clean(app.ui().state().eligibility.blocked),[]);app.selectPair(f.a,f.b);assert.equal(app.element('csGo').disabled,false);
-  app.click('csGo');assert.equal(app.ui().state().phase,'solving');assert(app.requests.some(x=>x.request.task==='manual-swap'),'unknown feasibility delegates to the full solver');
+test('unknown eligibility stays unavailable without calling a full swap search or declaring impossibility',async()=>{
+ const app=host();await app.ready();const entry=await app.eligibilityRequest();entry.worker.reply({id:entry.request.id,type:'result',result:{status:'unknown',reason:'time_limit'},modelFingerprint:app.core().modelFingerprint(model)});await app.advance(0);
+ assert.deepEqual(clean(app.ui().state().eligibility.blocked),[]);app.ui().setTool('swap');assert.equal(app.ui().selectNode(app.id(f.a)),false);assert.equal(app.ui().selectNode(app.id(f.b)),false);
+ assert.equal(app.ui().state().phase,'selecting');assert.equal(app.requests.filter(x=>x.request.task==='manual-swap').length,0);
 });
 
 test('the visible mode switch is explicit, solver selection is idempotent, and normal mode clears solver state',async()=>{
@@ -167,18 +105,6 @@ test('the visible mode switch is explicit, solver selection is idempotent, and n
   app.context.PUZZLE_API.select('R');app.click('cw');await app.settle();assert.equal(app.snapshot().history.length,1,'ordinary ring rotation works after leaving solver mode');
 });
 
-test('normal mode requested during a manual sequence finishes the active turn and exits',async()=>{
-  const app=host();await app.ready();let one;
-  for(let move=0;move<model.moves.length&&!one;move++){const p=model.moves[move].perm;for(let a=0;a<model.degree;a++){const b=p[a],held=p.findIndex((v,i)=>v===i);if(a!==b&&p[b]===a&&held>=0){one={move,a,b,held};break;}}}
-  assert(one);app.ui().selectNode(app.id(one.held));app.selectPair(one.a,one.b);app.click('csGo');
-  const entry=app.requests.findLast(x=>x.request.task==='manual-swap');assert(entry);const indices=[0,model.moves[0].inverse,one.move],before=app.mapping();
-  entry.worker.reply({id:entry.request.id,type:'result',result:{status:'solved',moveIndices:indices,optimal:false},modelFingerprint:app.core().modelFingerprint(model)});await app.advance(0);
-  assert.equal(app.ui().state().phase,'executing');app.click('ringModeDefault');assert.equal(app.ui().state().active,true,'a manual step finishes before leaving');
-  await app.settleSolver();assert.equal(app.ui().state().active,false);assert.equal(app.snapshot().history.length,1,'only the active permutation executes');
-  const after=app.mapping();for(const [id,node] of Object.entries(before.stickerToNode))assert.equal(after.stickerToNode[id],model.moves[indices[0]].perm[node],'exact committed permutation');assert.equal(app.ui().state().held.length,0);
-  assert.equal(app.element('ringModeDefault').getAttribute('aria-pressed'),'true');
-});
-
 test('normal mode cancels Auto Solve planning and keeps stale plans from entering playback',async()=>{
   const app=host();app.context.PUZZLE_API.move('R');await app.settle();app.click('solve');
   for(let i=0;i<80&&!app.requests.some(x=>x.request.task==='full-solve');i++)await app.advance(0);
@@ -188,26 +114,23 @@ test('normal mode cancels Auto Solve planning and keeps stale plans from enterin
   assert.equal(app.ui().state().active,false);assert.equal(app.snapshot().history.length,1);
 });
 
-test('manual constrained playback preserves independent label and speed choices',async()=>{
-  const app=host();await app.ready();const D=app.context.PuzzleAxisDisplay;let one;
-  for(let move=0;move<model.moves.length&&!one;move++){const p=model.moves[move].perm;for(let a=0;a<model.degree;a++){const b=p[a],held=p.findIndex((v,i)=>v===i);if(a!==b&&p[b]===a&&held>=0){one={move,a,b,held};break;}}}
-  assert(one);app.ui().selectNode(app.id(one.held));app.selectPair(one.a,one.b);
-  D.setLabelMode('all');app.element('speed').value='4';app.element('speed').dispatch('input');
-  app.click('csGo');assert.equal(D.labelMode(),'all');assert.equal(String(app.element('speed').value),'4','starting a run preserves the chosen rate');
-  const entry=app.requests.findLast(x=>x.request.task==='manual-swap');assert(entry);
-  entry.worker.reply({id:entry.request.id,type:'result',result:{status:'solved',moveIndices:[0,model.moves[0].inverse,one.move],optimal:false},modelFingerprint:app.core().modelFingerprint(model)});await app.advance(0);
-  D.setLabelMode('none');assert.equal(String(app.element('speed').value),'4');
-  app.element('speed').value='2';app.element('speed').dispatch('input');await app.advance(2000);
-  assert.equal(app.ui().state().phase,'executing');assert.equal(String(app.element('speed').value),'2','later turns retain the override');
-  D.setLabelMode('some');app.element('speed').value='4';app.element('speed').dispatch('input');
-  await app.settleSolver();assert.equal(D.labelMode(),'some');assert.equal(String(app.element('speed').value),'4');assert.equal(app.ui().state().phase,'selecting');
+test('normal mode requested during a verified manual sequence completes only the active turn',async()=>{
+ const app=host();await app.ready();const indices=[0,model.moves[0].inverse,f.move],before=app.mapping();app.ui().selectNode(app.id(f.hold));
+ await offerVerifiedSwap(app,model,f.a,f.b,indices);app.selectPair(f.a,f.b);await app.advance(0);await app.advance(350);app.click('ringModeDefault');
+ await app.settleSolver();assert.equal(app.ui().state().active,false);assert.equal(app.snapshot().history.length,1);
+ const after=app.mapping();for(const [id,node]of Object.entries(before.stickerToNode))assert.equal(after.stickerToNode[id],model.moves[indices[0]].perm[node]);assert.equal(app.ui().state().held.length,0);
 });
 
-test('failed manual check and cancellation preserve the current label and playback choices',async()=>{
-  const app=host();await app.ready();const D=app.context.PuzzleAxisDisplay;app.selectPair(f.a,f.b);app.click('csGo');
-  assert.equal(D.labelMode(),'none');assert.equal(String(app.element('speed').value),'5');
-  const entry=app.requests.findLast(x=>x.request.task==='manual-swap');entry.worker.reply({id:entry.request.id,type:'result',result:{status:'unknown',reason:'time_limit'}});await app.advance(0);
-  assert.equal(D.labelMode(),'none');assert.equal(String(app.element('speed').value),'5');
-  app.selectPair(f.a,f.b);app.click('csGo');assert.equal(D.labelMode(),'none');app.ui().cancel();
-  assert.equal(D.labelMode(),'none');assert.equal(String(app.element('speed').value),'5');
+test('manual verified playback preserves independent label and playback choices',async()=>{
+ const app=host();await app.ready();const D=app.context.PuzzleAxisDisplay;app.ui().selectNode(app.id(f.hold));await offerVerifiedSwap(app,model,f.a,f.b,[0,model.moves[0].inverse,f.move]);
+ D.setLabelMode('all');app.element('speed').value='4';app.element('speed').dispatch('input');app.selectPair(f.a,f.b);await app.advance(0);
+ D.setLabelMode('none');assert.equal(String(app.element('speed').value),'4');app.element('speed').value='2';app.element('speed').dispatch('input');await app.advance(2000);
+ assert.equal(app.ui().state().phase,'executing');D.setLabelMode('some');app.element('speed').value='4';app.element('speed').dispatch('input');await app.settleSolver();assert.equal(D.labelMode(),'some');assert.equal(String(app.element('speed').value),'4');assert.equal(app.ui().state().phase,'selecting');
+});
+
+test('rejected readiness and canceled verification leave preferences and puzzle state intact',async()=>{
+ for(const corrupt of [true,false]){
+  const app=host();await app.ready();const D=app.context.PuzzleAxisDisplay;await offerVerifiedSwap(app,model,f.a,f.b,corrupt?[]:[f.move]);app.ui().setTool('swap');app.ui().selectNode(app.id(f.a));app.ui().selectNode(app.id(f.b));
+  if(corrupt)await app.advance(0);else app.ui().cancel();assert.equal(D.labelMode(),'none');assert.equal(String(app.element('speed').value),'5');assert.equal(app.snapshot().history.length,0);assert.deepEqual(clean(app.ui().state().pair),[]);
+ }
 });

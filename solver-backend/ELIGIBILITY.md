@@ -1,16 +1,15 @@
 # Exact strict swap eligibility and color proof bounds
 
-The detailed subgroup algorithm below remains the exact strict subroutine. The website now wraps it with `src/color-eligibility.cjs`: full-group no-holds negatives stay negative, held-stabilizer positives stay positive, and replay-verified color-preserving short catalog operations supply additional positives. Strict held-subgroup negatives are discarded; unresolved pairs remain selectable. With no holds, use the complete global classification. Full current colors belong in every relaxed cache key. See [`COLOR_SOLVER.md`](COLOR_SOLVER.md) for the exact contract and merge pseudocode.
+The detailed subgroup algorithm below remains the exact strict subroutine. The website now wraps it with `src/color-eligibility.cjs`: full-group no-holds negatives stay negative, held-stabilizer positives stay positive, and replay-verified color-preserving short catalog operations supply additional positives. Strict held-subgroup negatives are discarded; unresolved pairs remain unknown to the proof layer and are not selectable in the verified-only website. With no holds, use the complete global classification. Full current colors belong in every relaxed cache key. See [`COLOR_SOLVER.md`](COLOR_SOLVER.md) for the exact contract and merge pseudocode.
 
 ## Feasibility is separate from executable readiness
 
 A positive orbit proof means a legal sequence exists; it may not provide a sequence short enough to expand and animate within the current budget. Bright UI choices therefore require a separately retained verified word, not just `feasiblePairs`.
 
-- **Ready:** bright; a full verified sequence of at most 5,000 primitive moves is stored. **Go** rechecks and executes that word directly, without a new witness search.
-- **Feasible but not ready, or unknown:** moderately dim with `?`, selectable. **Check & solve** begins bounded witness construction; **Continue** retains the same projected search while raising the cumulative budget from 3 to 10, 30 and 60 seconds. A terminal resource or final-time limit removes that action and leaves the puzzle unchanged, without claiming impossibility.
-- **Proved impossible:** strongly dim and disabled.
+- **Ready:** bright; a full verified sequence of at most 5,000 primitive moves is stored. Selecting endpoint 2 rechecks that word and executes it after a short pause, without a new witness search.
+- **Not ready:** gray and disabled, including feasible-without-a-word, unresolved, and proved-impossible choices. Gray means no executable witness is ready, not an impossibility proof. The backend retains those separate proof statuses and bounded construction APIs.
 
-The relaxed result adds `readyPairs` (a packed `N²`-bit table), `readyFirstStatus` (`N` bytes), and `readyWitnesses:[{word,pairs}]`. A record's `pairs` is a flattened list `[a,b,…]` of exchanges performed by its one stored word. `eligibilityReady` and `eligibilityWitness` read readiness and the actual primitive word independently of the three-state `eligibilityStatus` proof result. A ready first endpoint has at least one ready partner. A suggestion selects only a retained verified pair and never starts moves; it is a convenience layer over the same readiness table, not a new reachability proof.
+The relaxed result adds `readyPairs` (a packed `N²`-bit table), `readyFirstStatus` (`N` bytes), and `readyWitnesses:[{word,pairs}]`. A record's `pairs` is a flattened list `[a,b,…]` of exchanges performed by its one stored word. `eligibilityReady` and `eligibilityWitness` read readiness and the actual primitive word independently of the three-state `eligibilityStatus` proof result. Before endpoint 1 is selected, its display status aggregates over all potential partners: bright if at least one verified partner is ready; gray and disabled otherwise. The manual Select tool may still toggle gray nodes. Once endpoint 1 is selected, the display uses that endpoint’s pair row. In manual mode, a separate cached hint layer adds white circles to ready exchanges with an unheld partner that newly correct at least one endpoint color. Before marker 1, it aggregates those choices; afterward, it filters to the chosen first endpoint. These local hints do not guarantee overall progress. Auto-guided play uses the separately verified complete route in `monotone-plan.cjs`, whose certified choices have white rings and whose completed stages strictly grow the secured set. Auto is a persistent hold policy: it prepares selections without executing moves, then automatically refreshes holds and next choices after each completed user-selected step.
 
 Primitive and catalog operations are scanned before global and held-subgroup proofs, including when no holds are present. Every catalog word is replayed against its complete sparse support and checked against the current held colors before being used. Group proofs without words do not set ready bits. A missing catalog still permits primitive witnesses.
 
@@ -18,7 +17,7 @@ Readiness payloads share the working-storage budget and have a separate 2 MiB ca
 
 With the three pair bitsets and two status arrays, base result-array payload is `3*ceil(N²/8)+2N` bytes; for the 384-address cube this is 56,064 bytes, plus words and other metadata. `complete` describes mathematical classification, not that all pairs are ready.
 
-For selected pairs requiring further construction, `src/cached-swap.cjs` retains legal word DAG references through the certified adjacent-base-change procedure below and runs weighted ordered-pair transport. It reuses the complete cache instead of rebuilding a full chain. See the detailed constructive pseudocode in `COLOR_SOLVER.md`; no additional precomputed table is needed.
+For programmatic requests requiring further construction, `src/cached-swap.cjs` retains legal word DAG references through the certified adjacent-base-change procedure below and runs weighted ordered-pair transport. It reuses the complete cache instead of rebuilding a full chain. See the detailed constructive pseudocode in `COLOR_SOLVER.md`; no additional precomputed table is needed.
 
 ## Strict proof subroutine
 
@@ -141,3 +140,31 @@ endpoint versus throughout semantics, physical occupancy, budget cutoffs, and
 cache isolation. `tests/eligibility-worker.test.cjs` originally exercised all 28
 engines after moves, held-node mapping, typed arrays, lazy cache loading,
 fingerprints, corruption rejection, invalid input, and resource limits.
+
+## Certified Auto-guided choices
+
+Local readiness proves that a requested manual exchange works. It cannot prove that repeated greedy exchanges finish the puzzle. In particular, an endpoint can become correct while another unheld goal color is lost, and some legal groups contain no two-cycles at all.
+
+The browser’s Auto button uses `makeAutoHoldsPlan` and `verifyAutoHoldsPlan` in `monotone-plan.cjs`. The worker task is `auto-holds-plan`; it derives the guided route from the existing verified `solveFull` result. Let `K_i` be the secured addresses before stage `i`, `H_i` its declared protected nodes, and `Delta_i` its newly solved nodes. Every stage must satisfy
+
+```text
+H_i = K_i
+all H_i and Delta_i meet the declared goal after the complete word
+K_(i+1) = K_i union H_i union Delta_i
+|K_(i+1)| > |K_i|
+K_final = all physical home addresses
+```
+
+Thus `M - |K_i|` is a nonnegative integer ranking function decreasing after each completed step. There are at most `M - |K_0|` stages. Safe fixed-geometry color goals can use same-colored replacements; exact shape, picture and mirror goals retain their stricter home-pose semantics.
+
+Each stage supplies `choices`, with `firstNode`, `secondNode`, `sourceNode`, `targetNode`, and `kind`. Before marker 1, white rings mark the first nodes of these choices. After marker 1, white rings mark its compatible second nodes. All choices for one stage execute the same legal word and have the same next checkpoint. Choices are derived from newly secured targets that were incorrect before the stage: invert the stage permutation to find the occupied source. A color-optimized stage that only secures coincidental matches has no visible placement and is joined to the next stage; other incremental stages remain separate. Background manual eligibility cannot add unrelated white choices.
+
+A `swap` choice is a genuine endpoint exchange; a `placement` carries the first sticker to the target without promising the reverse exchange. When a shape-changing target is empty, `participants` marks two moved visible stickers while retaining the actual target address separately. Guided controls say Move ①/Move ②; ordinary manual controls remain Swap ①/Swap ②. The solid white circle stays outside any dashed hold circle.
+
+The UI retains the plan, cursor and active Auto hold policy. After a verified complete stage, it rebinds the enlarged held set to its new occupants, clears the markers and immediately exposes the next stage while Auto stays on. No additional Auto click or planning request is required. The first Auto request can replace incidental user holds; later certified stages cannot reduce them. Select explicitly turns Auto off, preserves current holds and enables editing; Clear is disabled until then. Clicking an active Auto also returns to manual policy, with pair input selected. Changing the puzzle independently or stopping partway through a stage discards guidance. Canceling a not-yet-played preview keeps the untouched route. Failed or canceled planning turns Auto off without retrying automatically. Late results are rejected using the snapshot, epoch and model fingerprint. A completed route keeps all goal addresses held.
+
+This finite-completion guarantee applies to the retained verified route, not an arbitrary manual swap or an unverified planning attempt. If a complete route cannot be obtained and checked, the browser offers no speculative white choice. Auto Solve itself keeps its existing stage playback unchanged.
+
+### Programmatic local hold heuristic
+
+`ColorEligibilityAnalyzer.suggestHolds()` remains an optional API. For canonical goal colors `q` and current colors `c`, it finds a retained two-cycle `(a,b)` with at least one newly corrected endpoint and holds currently correct non-endpoint locations restored by that word. It scans the existing operation catalog and can return `ready`, `solved`, `no_ready_swap`, or `invalid`. That local criterion has no eventual-completion guarantee and does not supply the browser’s Auto-guided white rings. Manual white-ring hints evaluate the same kind of endpoint-color predicate only over already-ready pairs; they do not run this hold-selection API or alter the current holds.

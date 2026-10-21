@@ -37,7 +37,7 @@ for(const puzzle of puzzles)test(puzzle+': compact selected-axis controls, indep
   }
   D.resetDefaults();assert.equal(D.labelMode(),'all');assert.equal(String(app.element('playbackSpeed').value),'2','transient selection reset preserves settings');
   const axis=app.document.querySelector('.notation-key').dataset.face;
-  api.select(axis);D.syncTurnControls();assert(app.element('viewRingSelectedName').textContent.length>0);
+  api.select(axis);D.syncTurnControls();assert.equal(app.element('viewRingSelectedName').textContent,'');
   for(const id of ['viewRingCCW','viewRingCW'])assert.equal(app.element(id).disabled,false,id+' enabled for a legal selected axis');
   D.clear();D.syncTurnControls();assert.equal(app.element('viewRingSelectedName').textContent,'Select axis');
 
@@ -55,7 +55,7 @@ for(const puzzle of puzzles)test(puzzle+': compact selected-axis controls, indep
   const ui=app.context.ConstrainedSolverUI;
   await ui.setActive(true);for(let n=0;n<30&&ui.state().phase==='loading';n++)await app.advance(0);
   assert.equal(ui.state().phase,'selecting');ui.setTool('hold');
-  assert.equal(ui.suggestHolds(),true);assert.equal(ui.state().tool,'swap','Suggest holds advances directly to the 1/2 selection tool');
+  assert.equal(ui.suggestHolds(),true);assert.equal(ui.state().tool,'swap','Auto advances directly to the 1/2 selection tool');
   assert.equal(ui.state().pairTarget,0);assert.deepEqual(plain(ui.state().pair),[]);
   ui.setActive(false);
 });

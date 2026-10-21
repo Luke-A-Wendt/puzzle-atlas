@@ -8,7 +8,7 @@
 .cs-mode-switch[aria-busy="true"]{border-color:#5d5869}
 #constrainedSolverControls[hidden],#csNodeOverlay[hidden],#csAnchorBackdrop[hidden],#csCancel[hidden],#csRetry[hidden]{display:none!important}
 .cs-toolbar[hidden],#csHeldCount[hidden]{display:none!important}
-#csGo[hidden],#csAutoProgress[hidden],#csClear[hidden],.cs-tools[hidden],.cs-hold-label[hidden]{display:none!important}
+#csAutoProgress[hidden],#csClear[hidden],.cs-tools[hidden],.cs-hold-label[hidden]{display:none!important}
 #csAutoProgressBar[hidden],#csAutoProgressLabel[hidden]{display:none!important}
 #csAutoNotice[hidden],#csAutoNoticeProgress[hidden],#csAutoNoticeRetry[hidden],#csAutoNoticeDismiss[hidden]{display:none!important}
 .action-panel.cs-notice-visible{flex-wrap:wrap}
@@ -56,10 +56,10 @@
 .cs-pair-chip:disabled .cs-slot-action{color:var(--muted)}
 .cs-auto-active .cs-pair-chip:disabled{opacity:1;cursor:default}
 .cs-swap-arrow{align-self:center;flex:0 0 auto;font-size:15px;color:#a9a3b5}
-.cs-go{align-self:stretch;flex:0 0 auto;min-width:48px;padding:6px 12px;font-size:12px;font-weight:700}
-.cs-go:not(:disabled){background:#33303f;border-color:#aaa4b8;color:#fff}
-.cs-go[data-readiness="check"]:not(:disabled){background:#25252f;border-style:dashed}
-.cs-go:disabled{opacity:.4}
+
+
+
+
 .cs-status{font-size:11px;line-height:1.5;color:#d7d2e4;margin:8px 0 4px;min-height:1.5em;max-width:64em;overflow-wrap:anywhere}
 .cs-eligibility{font-size:10px;line-height:1.45;color:#aaa6b8;margin:4px 0 8px;overflow-wrap:anywhere}
 .cs-eligibility[data-state="checking"]{color:#d1ccdd}
@@ -79,9 +79,9 @@
 @media(max-width:1100px){.cs-active .ring-panel-head h2{font-size:11px}.cs-controls{padding:8px 10px}.cs-tools button{padding-inline:6px}.cs-hold-label{display:none}.cs-keyboard{font-size:8px}.ring-panel-head .cs-mode-switch button{padding-inline:5px}}
 @media(max-width:850px) and (orientation:portrait),(max-width:680px){.cs-controls{padding:10px 12px}.ring-panel-head .cs-mode-switch button{min-height:32px}.cs-tools button{min-height:38px}.cs-toolbar>.small,.cs-search-actions button{min-height:38px}.cs-pair-chip{min-height:50px}.cs-status{font-size:12px}.cs-keyboard,.cs-bottom{display:none}}
 @container ring-map-panel (max-width:420px){.ring-panel-head{flex-wrap:wrap}.ring-panel-head .cs-mode-switch{order:3;flex:1 1 100%}.ring-panel-head .cs-mode-switch button{flex:1}.cs-hold-label{display:none}}
-@media(max-width:420px){.ring-panel-head:has(.cs-mode-switch){flex-wrap:wrap}.ring-panel-head .cs-mode-switch{order:3;flex:1 1 100%}.ring-panel-head .cs-mode-switch button{flex:1}.cs-tools{flex-basis:160px}.cs-selection{gap:4px}.cs-pair-chip{column-gap:5px;padding-inline:6px}.cs-pair-chip .cs-slot-value{font-size:10px}.cs-go{min-width:42px;padding-inline:8px}.cs-swap-arrow{font-size:13px}}
+@media(max-width:420px){.ring-panel-head:has(.cs-mode-switch){flex-wrap:wrap}.ring-panel-head .cs-mode-switch{order:3;flex:1 1 100%}.ring-panel-head .cs-mode-switch button{flex:1}.cs-tools{flex-basis:160px}.cs-selection{gap:4px}.cs-pair-chip{column-gap:5px;padding-inline:6px}.cs-pair-chip .cs-slot-value{font-size:10px}.cs-swap-arrow{font-size:13px}}
 
-@container ring-map-panel (max-width:330px){.cs-selection{flex-wrap:wrap}.cs-go{flex:1 0 100%;min-height:34px}.cs-pair-chip{min-width:85px}.cs-search-actions button{flex:1 1 auto}}
+@container ring-map-panel (max-width:330px){.cs-selection{flex-wrap:wrap}.cs-pair-chip{min-width:85px}.cs-search-actions button{flex:1 1 auto}}
 
 /* Keep display controls accessible in either ring-map mode. */
 .ring-panel-head{flex-wrap:wrap}
@@ -114,7 +114,7 @@ body.puzzle-axis-muted .ring-key.active{color:var(--ink);border-color:transparen
 .cs-pair-chip .cs-slot-label{grid-row:1;width:20px;height:20px}
 .cs-pair-chip .cs-slot-action{display:none}
 .cs-pair-chip .cs-slot-value{font-size:10px}
-.cs-go{width:64px;min-width:64px;flex:0 0 64px;padding:3px 5px;font-size:11px;line-height:1.15;white-space:normal}
+
 .cs-eligibility,.cs-status{margin:0;min-height:0;line-height:1.35;font-size:10px;max-width:none}
 .cs-eligibility:empty,.cs-status:empty{display:none}
 .cs-search-progress,.cs-auto-progress{margin:0;min-height:0;gap:3px;font-size:10px;line-height:1.25}
@@ -158,7 +158,7 @@ body.puzzle-axis-muted .ring-key.active{color:var(--ink);border-color:transparen
  .ring-panel-head>button,.ring-panel-head>#ringFocus{order:1;flex:1 0 auto;min-width:0;min-height:34px;height:34px;padding:2px 3px;font-size:10px;line-height:1.15;white-space:nowrap;overflow-wrap:normal}
  .cs-controls{padding:5px 8px;gap:4px}
  .cs-tools button,.cs-toolbar>.small,.cs-search-actions>button{min-height:32px;font-size:10px}
- .cs-pair-chip{min-height:36px}.cs-go{min-height:36px}
+ .cs-pair-chip{min-height:36px}
  .cs-status,.cs-eligibility{font-size:10px}
  .action-panel>.cs-auto-notice{grid-column:1/-1;grid-row:3}
  .action-panel>.cs-auto-notice[data-state="loading"]{grid-column:10/13;grid-row:2;display:block;max-height:34px;overflow:hidden}
@@ -187,7 +187,20 @@ body.puzzle-axis-muted .ring-key.active{color:var(--ink);border-color:transparen
 .cs-action-row .cs-pair-chip{flex:0 0 auto;min-width:90px;min-height:32px;height:32px;padding:4px 9px;grid-template-columns:minmax(42px,max-content) 20px;column-gap:5px}
 .cs-action-row .cs-pair-chip .cs-slot-value{grid-column:1;width:max-content;min-width:42px;overflow:visible;text-overflow:clip;font-size:10px;line-height:1.2}
 .cs-action-row .cs-pair-chip .cs-slot-label{grid-column:2;grid-row:1}
-.cs-action-row .cs-go{flex:0 0 36px;width:36px;min-width:36px;min-height:32px;height:32px;padding:3px 6px;white-space:nowrap}
 .cs-action-row .cs-swap-arrow{font-size:13px}
+
+/* Hold policy stays visible while the pair picker has input focus. The manual
+   count/clear controls form one unit; Auto is a separate persistent toggle. */
+.cs-action-row .cs-hold-group{gap:4px;padding:2px 3px;align-items:center;white-space:nowrap}
+.cs-action-row .cs-hold-title{padding:0 1px;color:var(--muted);font-size:10px;font-weight:600;line-height:1.2;flex:0 0 auto}
+.cs-action-row .cs-manual-hold{display:flex;align-items:center;gap:2px;padding:1px;border:1px solid #45404e;border-radius:6px;flex:0 0 auto;min-width:0}
+.cs-action-row .cs-hold-group #csHold{padding-right:7px}
+.cs-action-row .cs-hold-group #csHold.selecting{border-color:#d1cbdc;box-shadow:inset 0 0 0 1px #d1cbdc}
+.cs-action-row .cs-hold-group #csClear{padding-inline:6px}
+.cs-action-row .cs-hold-group #csSuggestHolds{padding-inline:8px}
+.cs-action-row .cs-hold-group button{white-space:nowrap;flex-shrink:0}
+.cs-action-row .cs-hold-group button:disabled{opacity:.42;cursor:not-allowed}
+.cs-action-row .cs-hold-group button:focus-visible{outline:2px solid #f4f1fc;outline-offset:2px}
+.cs-action-row .cs-hold-group[data-hold-mode="auto"] .cs-manual-hold{border-color:#35313e}
 
 @container ring-map-panel (min-width:560px){.cs-action-row{grid-template-columns:auto auto minmax(0,1fr)}.cs-action-row>.cs-selection{grid-column:2;grid-row:1}.cs-action-row>.cs-guide{grid-column:3;grid-row:1}}
