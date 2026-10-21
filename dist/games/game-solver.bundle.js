@@ -659,8 +659,8 @@ root.ConstrainedSolverCore=Object.freeze({...core,...bridge,...autoBridge,...req
   // One persistent feedback area prevents the canvas moving when a check turns
   // into playback. Search and playback use the same slot; idle keeps it blank.
   const feedback=make('div','','cs-feedback'),progressSlot=make('div','','cs-progress-slot'),detailSlot=make('div','','cs-detail-slot');
-  const completion=make('div','csCompletion','cs-completion'),completionValue=make('strong','csCompletionValue','','0%'),completionCaption=make('span','','cs-completion-caption','complete');
-  completion.append(completionValue,completionCaption);completion.hidden=true;wrap.appendChild(completion);
+  const completion=make('div','csCompletion','cs-completion'),completionValue=make('strong','csCompletionValue','','0%');
+  completion.append(completionValue);completion.hidden=true;wrap.appendChild(completion);
   progressSlot.append(searchProgress,autoProgress);detailSlot.append(eligibilityNote,status);
   feedback.append(progressSlot,searchActions,detailSlot);
   actionRow.append(toolbar,selection,guide);controls.append(actionRow, feedback, bottom); panel.appendChild(controls);

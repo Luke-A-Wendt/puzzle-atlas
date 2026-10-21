@@ -57,8 +57,8 @@ test('completion floats at the map top-right without blocking gestures or adding
   const style=createCascade(app,'cube2',width,panel),readout=app.element('csCompletion'),value=app.element('csCompletionValue'),caption=readout.querySelector('.cs-completion-caption');
   assert.equal(readout.parentElement,app.element('rings').parentElement);assert.equal(style(readout).position,'absolute');assert.equal(style(readout).top,'10px');assert.equal(style(readout).right,'10px');assert.equal(style(readout)['pointer-events'],'none');assert.equal(style(readout).background,'transparent','no separate tinted background');assert.equal(style(readout)['white-space'],'nowrap');
   assert.equal(style(app.element('constrainedSolverControls').querySelector('.cs-feedback'))['grid-template-rows'],'30px','no extra row or play-space loss');
-  assert(measure('100%',style(value))<=px(style(readout),'width')-16);assert(measure('complete',style(caption))<=px(style(readout),'width')-16);
-  assert(px(style(value),'line-height')+px(style(caption),'line-height')<=30);assert(px(style(value),'font-size')>=24);assert(px(style(value),'font-weight')>=700);
+  assert(measure('100%',style(value))<=px(style(readout),'width')-16);assert.equal(caption,null);
+  assert(px(style(value),'line-height')<=30);assert(px(style(value),'font-size')>=24);assert(px(style(value),'font-weight')>=700);
  }
  assert.equal(app.element('csCompletion').hidden,false);app.ui.closePanel();assert.equal(app.element('csCompletion').hidden,true,'readout is exclusive to constrained mode');
 });

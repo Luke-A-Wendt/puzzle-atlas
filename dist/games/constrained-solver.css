@@ -128,7 +128,6 @@ body.puzzle-axis-muted .ring-key.active{color:var(--ink);border-color:transparen
 .cs-completion{position:absolute;top:10px;right:10px;z-index:4;pointer-events:none;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;min-width:0;width:92px;box-sizing:border-box;padding:6px 8px;border-radius:8px;background:transparent;color:#f4f1fc;font-variant-numeric:tabular-nums;white-space:nowrap}
 .cs-completion[hidden]{display:none!important}
 .cs-completion strong{font-size:24px;font-weight:800;line-height:22px;letter-spacing:-.5px}
-.cs-completion-caption{font-size:8px;font-weight:600;line-height:8px;letter-spacing:.35px;color:var(--muted)}
 .cs-progress-slot{grid-column:1;grid-row:1;display:grid;grid-template-columns:minmax(0,1fr);align-items:center;min-width:0;height:30px}
 .cs-progress-slot>.cs-search-progress,.cs-progress-slot>.cs-auto-progress{grid-area:1 / 1;min-width:0;width:100%;margin:0}
 .cs-feedback>.cs-search-actions{grid-column:2;grid-row:1;align-self:center;flex-wrap:nowrap;min-width:0;max-width:132px}

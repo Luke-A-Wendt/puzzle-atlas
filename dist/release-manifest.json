@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "50a382473e10476603da",
+  "release": "9b0002619b302a15bffb",
   "files": {
     ".nojekyll": {
       "bytes": 0,
@@ -424,7 +424,7 @@
     },
     "games/axis.html": {
       "bytes": 8785,
-      "sha256": "9e89ee5703f120f4e71cfcb1c69d8e0a8d830fdacbabe829c0511a9d43600955"
+      "sha256": "8aca390046dfc32937e5ed854f64f9cf5179bc84ca2281b30c98078325885325"
     },
     "games/balanced-ring-projection.js": {
       "bytes": 2965,
@@ -899,16 +899,16 @@
       "sha256": "c2e1be02c33c64150e73c6c732d8c2620800c7f4a56e118a6e37e3f2582e1a36"
     },
     "games/constrained-solver.css": {
-      "bytes": 22720,
-      "sha256": "c0b515859729f5797174d103afa72b4c4bcc23469d3fe1a6d8af1b172996481a"
+      "bytes": 22610,
+      "sha256": "a8e34753e5c57a7306e2d60ffd83ccb8fd49f31376187e71330b210710161dc2"
     },
     "games/constrained-solver.js": {
-      "bytes": 104970,
-      "sha256": "b2de757961e8314e6370a35e22351352490d903cff5d27ca72a4ec473fe5e8d7"
+      "bytes": 104883,
+      "sha256": "96a6bf915f945e9846122fc97ec9d68015388865bf95010631ddc5a3644961a2"
     },
     "games/cornerocta.html": {
       "bytes": 8919,
-      "sha256": "6cb04620c4250efef486fa61cf825b6eab03c1e7fe9cffa0ecac198ed452302a"
+      "sha256": "ad7b8cac40df12874cf1ec7bc7de55fde222fbbab5833adaea25c85c27989079"
     },
     "games/crystal-app.js": {
       "bytes": 24990,
@@ -920,7 +920,7 @@
     },
     "games/crystal.html": {
       "bytes": 8613,
-      "sha256": "a4ab584f742a3d3dafec8b666747fb6dbf3c75436b05a3a80ca1e142e9b05f31"
+      "sha256": "b4febb0b56dbd8bf02178a5234646cc09bdf48c9beb73bf3bcb5184bde165ef2"
     },
     "games/cube-face-tracks.js": {
       "bytes": 12032,
@@ -928,51 +928,51 @@
     },
     "games/cube10.html": {
       "bytes": 56165,
-      "sha256": "ba39df22f782e1a6e65be2accdb80a96da2ef9371c43a391e1ed6376f4764fde"
+      "sha256": "8ba1a3381c07706c7792552256e689fb3b4379b34d460d41317b090b64d837e5"
     },
     "games/cube2.html": {
       "bytes": 47576,
-      "sha256": "36efd2491920e358dfeb97aeffc5347b7283c4df5a915edc4508ad2daa56d450"
+      "sha256": "729316e9632a5d945b1f8bef0998a4554e01a3d26fbc8fbf6eacad302af7a2c1"
     },
     "games/cube3.html": {
       "bytes": 47749,
-      "sha256": "e997d87eab9f3d4d7eb6a44323edee575f464fa585887b0063a8bb8cf5dd1ad2"
+      "sha256": "bb3720457b3867fbfb19211858bbeda4289f29a79caaba9f41583bb6ccd06423"
     },
     "games/cube4.html": {
       "bytes": 53240,
-      "sha256": "69ad9b51d9b6fef22eddd0e73af5cf411e7fece9e2ef8f68ba9efa7aae9473a1"
+      "sha256": "76507676575f1e8c6702f0328b7680220b04f1c281508767c4f2e80f8a6343dc"
     },
     "games/cube5.html": {
       "bytes": 55962,
-      "sha256": "9413824fe723a09ff7e7ae3cc5e268e236edd8c3afa9db59a8150afeb3c259c9"
+      "sha256": "0419aceff06539e4b48220da66b3b6b6aeb3f309ca7ac285348d1092851d70a5"
     },
     "games/cube6.html": {
       "bytes": 55971,
-      "sha256": "16dd17a2b02af11c0b7dadae307cfa40c446bf51cdaa895db732ca8727a97dc0"
+      "sha256": "56775c94eb10da2a5fd9d76e4dba0c9e4570a4995c0382b60ba56aa6c679a864"
     },
     "games/cube7.html": {
       "bytes": 55983,
-      "sha256": "944cf8b9a213594eb4336a6e05ff6f6ee1322b2dd27eea881773583613a388a2"
+      "sha256": "b1cd85ada25013ed7f564621cc4bac3d1b710bb85602f18046c1f532005170d3"
     },
     "games/cube8.html": {
       "bytes": 56035,
-      "sha256": "c2601ce8effbab5a74bd41d51b1a5ca271be28064dd6e8142f20ae995df89a80"
+      "sha256": "3a7dca89d42aa0f9c929a2f12936b28815ca97ef70ae1e47b33c07f06a2ce881"
     },
     "games/cube9.html": {
       "bytes": 55995,
-      "sha256": "d9ced3000d4fd56a5e27e184a283e0db9390191c81459ba399042f55fed4ea92"
+      "sha256": "e610f9a7d9de58c439eb717b545a5d5b451ef4ee84a3b3c1ca449eb8d9fb2f1e"
     },
     "games/diamond.html": {
       "bytes": 8889,
-      "sha256": "ef0e5e0d479c4c6ecfd2ae50219471507087f14578570d0f73a21ec61583b151"
+      "sha256": "6fbdc9b69797b26fd5f50e1e0c7d2e63ce2647ad5c45b6e75025cd9a70a6d73d"
     },
     "games/diamondcube.html": {
       "bytes": 8693,
-      "sha256": "c7150c13e3618cc846b2ac0bf2870e93c3afb8bcf61a3938f09cc9a075adf5a1"
+      "sha256": "222fa80b2cdd3f80f7060b57729f7a66ffa946a297cf1069045d16017e5e5302"
     },
     "games/diamondstyle.html": {
       "bytes": 8677,
-      "sha256": "913e23125e2a1af8fbd5c7717be5d3e4d8ef8ae93313186675c204df632edff1"
+      "sha256": "02d2feaab2dd8eef8a3a924d2e099b0fdde3ab7070833dc5c6f78f063a40fe18"
     },
     "games/dino-app.js": {
       "bytes": 25296,
@@ -988,7 +988,7 @@
     },
     "games/dino.html": {
       "bytes": 8579,
-      "sha256": "6d8f967470d0a48d7fc23bb720f9b5667062d7cd846739f6ac0491db4808f009"
+      "sha256": "50f1bc364704454e363dacbe0a2ce6cf8c8073615925174a828337aadb76aeb1"
     },
     "games/face-grouped-rings.js": {
       "bytes": 344,
@@ -996,7 +996,7 @@
     },
     "games/flatdiamond.html": {
       "bytes": 8800,
-      "sha256": "5a04b33d0155b69e6a96ff9500e02c10052ef520555d32f1b642d6e9159da582"
+      "sha256": "3bb03fed92b80fddf3541c9f39206faab1bf86c0c062f9afb03e438f1e51d2d8"
     },
     "games/fto-engine.js": {
       "bytes": 10672,
@@ -1004,15 +1004,15 @@
     },
     "games/fto.html": {
       "bytes": 8502,
-      "sha256": "4abba78871d87536668feba2e8c2caa530bc842113f1fd59fc4fa91506624acd"
+      "sha256": "1716caf2820bda677e8cfbe4cc51f37101936f257a234e0e523e33022431b506"
     },
     "games/game-controls.bundle.js": {
       "bytes": 80772,
       "sha256": "a2d14f98b33e8674b26c91d2e270cf6e416013f3aacbe82db4ce594946083176"
     },
     "games/game-solver.bundle.js": {
-      "bytes": 161032,
-      "sha256": "1e6b21329efd57876f766bf86d0ac9defb75d5a18b13990865c07c58bfcfde18"
+      "bytes": 160945,
+      "sha256": "74380e683b2a00f972e46721a9492043dea54b568559af0612ef7afadfadf68f"
     },
     "games/game-theme.css": {
       "bytes": 30918,
@@ -1032,7 +1032,7 @@
     },
     "games/ghost.html": {
       "bytes": 9106,
-      "sha256": "6910fe3c49cf755588ef4ca90c8016ec747d9db87fffc89300555c87e267550d"
+      "sha256": "d9f75649b2ad63f9797ed9d6b4e2d08d64d1175f4df6051a101cff427a1ab532"
     },
     "games/helicopter-app.js": {
       "bytes": 29413,
@@ -1048,7 +1048,7 @@
     },
     "games/helicopter.html": {
       "bytes": 9694,
-      "sha256": "9400bd0c58fe72b1aa28636e54af1bc6908780b412bf652e87eb948a9c96e5c9"
+      "sha256": "d219e8257a1bbe0fba0026b1b82cc9b0f1823e8262f8ded80bc9f1ff3658d74a"
     },
     "games/homer-geometry.js": {
       "bytes": 12189,
@@ -1060,15 +1060,15 @@
     },
     "games/homer.html": {
       "bytes": 44729,
-      "sha256": "0c4ae42df46e7db0eef52222d2281f7c36a039e61a4ff97e82e4fbc3c2718400"
+      "sha256": "32c4bea756db8f15c20b20f916c18d37a962c40a2b48623cb8dab5aaae0bc5b8"
     },
     "games/jewel.html": {
       "bytes": 8825,
-      "sha256": "eb936ef94e105ff717a1f60b1aefdc51da59c595d73ed5d37cd4386655fe1be3"
+      "sha256": "266dd5e4d304ffe23d99499747dd02a1f3ae174dd70647efdf9268b74af19c83"
     },
     "games/jing.html": {
       "bytes": 8959,
-      "sha256": "3b43ad5366fcb45bfe1340d07f44df3a718f9b8b0aa3e436b1d68f8881d82a56"
+      "sha256": "029833381cf64d9ba67912e87e4d5c66ff1412dda74948c3cd976ea534a0e8c5"
     },
     "games/kilominx-app.js": {
       "bytes": 24994,
@@ -1084,11 +1084,11 @@
     },
     "games/kilominx.html": {
       "bytes": 8576,
-      "sha256": "1b7dfdedec34b5c69561bdd732efe237be7f037505e41ec31aa814f2587e3637"
+      "sha256": "ac8656b008d2f08cd4478785e651adeecae652f8670464a2c32ea7d03eb54c4e"
     },
     "games/mastermorphix.html": {
       "bytes": 8814,
-      "sha256": "0a52796d79a01a8da4660de327f3d68d84fe463cb09de804394a398c46f2ab3c"
+      "sha256": "238fa3c6498ae1c902de53a9f6ce4f48428c92a9ee1176c576c48f68331869b0"
     },
     "games/masterpyraminx-app.js": {
       "bytes": 25024,
@@ -1100,19 +1100,19 @@
     },
     "games/masterpyraminx.html": {
       "bytes": 8751,
-      "sha256": "402ecd7f9eb3fbdb989e1bbf26c3d2ee92564a61f8ed1d2dbd3b15900c161d36"
+      "sha256": "d9b197ca738b46470d811c086787ae2fd130f3f68a07a8c4145b2496c6f92ee7"
     },
     "games/masterskewb.html": {
       "bytes": 8899,
-      "sha256": "2868d8ab0521e2a6b8dcb719cf1ee804d41d3ac65fd8efeb6d761d0f812a92d9"
+      "sha256": "9aba8e9d5477c32bb42e6349a0b7bc32b850d05b1777e3fef2ec6516a37d7aaf"
     },
     "games/megaminx.html": {
       "bytes": 48101,
-      "sha256": "8c2f3f9d676806741be9b27368ec03f58663c0fe335d01daba54916e0d6ce8b2"
+      "sha256": "e46187ee622eb23694b423cdc3234c1e429bafdf2634f2fd478d63f99d5bf42b"
     },
     "games/mirror.html": {
       "bytes": 62363,
-      "sha256": "51d315ca881516b57e913cc8d4300323fe75b45415ab8f7537aec048f16cadf9"
+      "sha256": "d829b72ef12faad72ae3005a8e31bfb7179d21116df54b7fad140fb97be05ba3"
     },
     "games/move-journal.css": {
       "bytes": 1635,
@@ -1160,19 +1160,19 @@
     },
     "games/pyraminx.html": {
       "bytes": 53071,
-      "sha256": "812d4ef04ca4412f466f33e104ca15d4e839013cc9be47ab6f0b4369e0f9406e"
+      "sha256": "1b79baa74ecdb26552c8e3a536dc3d19362e956cd31509593b21744bd0ef2023"
     },
     "games/pyramorphix.html": {
       "bytes": 8799,
-      "sha256": "2fac66c2edd482d4f5f89c49af243049513f8acfb2f244622f0209065cc99e29"
+      "sha256": "95aeed738438c3886c8de46d6cf99463924cd07f5d4d669b7d302fd87625d199"
     },
     "games/rainbow.html": {
       "bytes": 8579,
-      "sha256": "68652a0db30a131618fb04e4061ae871ad54c2bf8d1ec37ea4d7635d0020044a"
+      "sha256": "a152c7eee13d9b747a74314ee43ab1723314011111830dba3ecc10316ef151c0"
     },
     "games/rhombic.html": {
       "bytes": 8830,
-      "sha256": "58feb3827b8357da7e3a045956057fe919331c283ddf1b44a9c51deef717087c"
+      "sha256": "579caa1abfdbc66ba69c6294558fdd627423acc67e3828195405ee8d830a4681"
     },
     "games/ring-map-navigation.js": {
       "bytes": 7777,
@@ -1220,19 +1220,19 @@
     },
     "games/skewb.html": {
       "bytes": 8865,
-      "sha256": "eecb5cac41a9cf25eef30260148a03260d85303f61dd8f6b5b53c5f91c7fb1de"
+      "sha256": "f80ac7a4588084a7c0722f9d9a79c8fcd3bb8b5bf322593837d2f7d29aff9419"
     },
     "games/tetraminx.html": {
       "bytes": 52639,
-      "sha256": "9c8c18f3187de4eef46b0efa76c18187bb811cdcbac7fbcef7d28f9b9278211c"
+      "sha256": "e6608332192a6fb4c4975d155e808eeba01499daa0fdee2eac3a33033b57b352"
     },
     "games/trajber.html": {
       "bytes": 8827,
-      "sha256": "c81ef9c3c69ccb0a808c9c6e4fb98f89cce5a713038466c3e39225b4842c7e27"
+      "sha256": "22e06bff7e8ac1a6cebec190a216e1602c4ecc0993736632530725faab4e9afd"
     },
     "games/ultimate.html": {
       "bytes": 8904,
-      "sha256": "2a30265328294fcc71fa03c740c70344bdcfaf2647754840010e01209a69a4c9"
+      "sha256": "2404001a5a6a8a66cd50c26ec4d6857bc0dce20d9d251c009ab7c8d1a4c6b088"
     },
     "home.js": {
       "bytes": 1897,
@@ -1248,7 +1248,7 @@
     },
     "index.html": {
       "bytes": 48011,
-      "sha256": "a53707dc2edc344e68dda9a90eaf8181c0e5fc02c0c6fdac1c1b87afdd5681d8"
+      "sha256": "dd245a036685c460d5df46711ec505a22427bfe5d40dd6a01875ff6070829fb4"
     },
     "large-cube-guides.js": {
       "bytes": 15537,
@@ -1268,7 +1268,7 @@
     },
     "play.html": {
       "bytes": 5805,
-      "sha256": "05501958142850c53a5f147db091801971e789f929053123d7d1d23ba1c102c8"
+      "sha256": "58bf84dfb08daa96e20b228ed56f4b10bed0da16c7726378f4f2b8265722a142"
     },
     "play.js": {
       "bytes": 11584,
@@ -1308,7 +1308,7 @@
     },
     "solver-handbook.html": {
       "bytes": 3698,
-      "sha256": "b701af10fa0a5a771f36b8f13a24b548e833fa98b45075a11871c54ae6383a48"
+      "sha256": "9abdaaf5d50cdc3e71f6e784a83ef3fd66750ac4ba3f5a282b0c774a1780e0ac"
     },
     "solver-handbook.js": {
       "bytes": 1327,
